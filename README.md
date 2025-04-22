@@ -1,11 +1,13 @@
 # Agents for Vulnerable Dockers and related Benchmarks
-This thesis project focuses on the creation of an autonomous agent that is capable of understanding CVE description and create from its interpretation a vulnerable Docker container, which can then be used to gather attack patterns data. The Docker creation process is benchmarked in order to understand how well the agent is performing its tasks.
+This thesis project focuses on automating the creation of systems vulnerable to a specific vulnerability. These systems are emulated using **Docker lightweight virtualization** and all the associated files are created autonomously by an **agent** that is capable of:
+- Retrieving from the Internet a description/summary of a given CVE
+- Create a vulnerable system with Docker
 
+These containers can then be used to gather real/synthetic attack data from:
+- an unsafe environment, exposing the container to real attackers
+- a safe environment, by letting another autonomous agent perform the attack
 
-## TO DO LIST:
-- Creating an autonomous agent capable of scraping the web to gather information about a specific CVE.
-- Creating another autonomous agent that (through a multi-agent framework) is fetched with the characteristics of the CVE and creates a vulnerable Docker container.
-- Creating another autonomous capable of searching for the correct exploit (e.g. from https://www.exploit-db.com/) in order to test the container.
+The Docker creation process (_should_) be benchmarked in order to understand how well the agent is performing its tasks.
 
 
 ## Detailed Exploit Status Table
@@ -40,30 +42,35 @@ Table of all the exploits that have been scripted in order to work with the rela
 
 
 ## Replication Complexity Table
-Table of all exploitable CVE that lists the number of files needed to replicate a container vulnerable to such CVE. This is used as an indicator of how difficult it can be for an LLM to create such container.
+Table of all exploitable CVE that lists:
+- If the CVE was already replicated
+- The __*number of files*__ needed to replicate the CVE using Docker
+- The names of the files
+
+The __*number of files*__ is used as an indicator of how difficult it can be for an LLM to create such container.
 
 **NOTE**: only CVEs with a _script.sh_ file and **REPLICABLE** status are considered
 
-| CVE/WooYun ID      | # Files to Replicate | Files to Replicate     
-|--------------------|----------------------|--------------------
-| CVE-2012-1823      | 9/10                 | _docker-compose, php:5.4.1-cgi (Dockerfile (php:5.4.1 (Dockerfile + apache2-foreground + docker-php-entrypoint + docker-php-ext-configure + docker-php-ext-install)) + apache2-foreground)_ and (1/2?) _.php_ files
-| CVE-2016-5734      | 8                    | _docker-compose, phpmyadmin:4.4.15.6 (Dockerfile (php:5.3-apache (Dockerfile + apache2-foreground + docker-php-entrypoint + docker-php-ext-configure + docker-php-ext-install)) + config.inc.php)_ and _mysql:5.5_ (local/remote)
-| WooYun-2016-199433 | 7                    | _docker-compose, phpmyadmin:2.8.0.4 (Dockerfile (php:5.4.x-apache (Dockerfile + apache2-foreground + docker-php-entrypoint + docker-php-ext-configure + docker-php-ext-install)))_
-| CVE-2018-12613     | 8                    | _docker-compose, phpmyadmin:4.8.1 (Dockerfile (php:7.2-apache (Dockerfile + apache2-foreground + docker-php-entrypoint + docker-php-ext-configure + docker-php-ext-install)) + config.inc.php)_ and _mysql:5.5_ (local/remote)
-| CVE-2020-7247      | 4                    | _docker-compose, opensmtpd:6.6.1p1 (Dockerfile + aliases + smtpd.conf)_
-| CVE-2020-11651     | 3                    | _docker-compose, saltstack:2019.2.3 (Dockerfile + saltinit.py)_
-| CVE-2020-11652     | 3                    | _docker-compose, saltstack:2019.2.3 (Dockerfile + saltinit.py)_
-| CVE-2021-3129      | 2                    |_docker-compose, laravel:8.4.2 (Dockerfile (php:7.4-apache_ (local/remote)_))_.
-| CVE-2021-28164     | 2                    |_docker-compose, jetty:9.4.37 (Dockerfile)_
-| CVE-2021-34429     | 2                    |_docker-compose, jetty:9.4.40 (Dockerfile)_
-| CVE-2021-41773     | 3                    |_docker-compose, apache (Dockerfile (httpd:2.4.49 (Dockerfile)))_
-| CVE-2021-42013     | 3                    |_docker-compose, apache (Dockerfile (httpd:2.4.50 (Dockerfile)))_
-| CVE-2021-43798     | 2                    |_docker-compose, grafana:8.2.6 (Dockerfile)_
-| CVE-2021-44228     | 3                    |_docker-compose, solr:8.11.0 (Dockerfile + docker-entrypoint.sh)_
-| CVE-2022-22947     | 6                    |_docker-compose, spring-cloud-gateway:3.1.0 (Dockerfile + pom.xml + .gitignore + application.xml + SpringCloudGatewayApplication.java)_
-| CVE-2022-22963     | 4                    |_docker-compose, spring-cloud-function:3.2.2 (Dockerfile + pom.xml + SpringCloudApplicationFunctionSample.java)_
-| CVE-2022-24706     | 3                    |_docker-compose, couchdb:3.2.1 (Dockerfile + docker-entrypoint.sh)_
-| CVE-2022-46169     | 5                    |_docker-compose, cacti:1.2.22 (Dockerfile (php:7.4-apache_ (local/remote)_) + cacti.ini + config.php) + entrypoint.sh_ and _mysql:5.7_ (local/remote) 
-| CVE-2023-23752     | 4                    |_docker-compose, joomla:4.2.7 (Dockerfile (php:7.4.33-apache_ (local/remote)_) + docker-entrypoint + .htaccess) and mysql:5.7_ (local/remote) 
-| CVE-2023-42793     | 2                    |_docker-compose, teamcity:2023.05.3 (Dockerfile (jetbrains/teamcity-server:2023.05.3_ (local/remote)_))_
-| CVE-2024-23897     | 3                    |_docker-compose, jenkins:2.441 (Dockerfile + init.groovy)_
+| CVE/WooYun ID      | Replicated | # Files to Replicate | Files to Replicate     
+|--------------------|------------|----------------------|--------------------
+| CVE-2012-1823      |   **No**   | 9/10                 | _docker-compose, php:5.4.1-cgi (Dockerfile (php:5.4.1 (Dockerfile + apache2-foreground + docker-php-entrypoint + docker-php-ext-configure + docker-php-ext-install)) + apache2-foreground)_ and (1/2?) _.php_ files
+| CVE-2016-5734      |   **No**   | 8                    | _docker-compose, phpmyadmin:4.4.15.6 (Dockerfile (php:5.3-apache (Dockerfile + apache2-foreground + docker-php-entrypoint + docker-php-ext-configure + docker-php-ext-install)) + config.inc.php)_ and _mysql:5.5_ (local/remote)
+| WooYun-2016-199433 |   **No**   | 7                    | _docker-compose, phpmyadmin:2.8.0.4 (Dockerfile (php:5.4.x-apache (Dockerfile + apache2-foreground + docker-php-entrypoint + docker-php-ext-configure + docker-php-ext-install)))_
+| CVE-2018-12613     |   **No**   | 8                    | _docker-compose, phpmyadmin:4.8.1 (Dockerfile (php:7.2-apache (Dockerfile + apache2-foreground + docker-php-entrypoint + docker-php-ext-configure + docker-php-ext-install)) + config.inc.php)_ and _mysql:5.5_ (local/remote)
+| CVE-2020-7247      |   **No**   | 4                    | _docker-compose, opensmtpd:6.6.1p1 (Dockerfile + aliases + smtpd.conf)_
+| CVE-2020-11651     |   **No**   | 3                    | _docker-compose, saltstack:2019.2.3 (Dockerfile + saltinit.py)_
+| CVE-2020-11652     |   **No**   | 3                    | _docker-compose, saltstack:2019.2.3 (Dockerfile + saltinit.py)_
+| CVE-2021-3129      |   **No**   | 2                    |_docker-compose, laravel:8.4.2 (Dockerfile (php:7.4-apache_ (local/remote)_))_.
+| CVE-2021-28164     |   **Yes**  | 2                    |_docker-compose, jetty:9.4.37 (Dockerfile)_
+| CVE-2021-34429     |   **No**   | 2                    |_docker-compose, jetty:9.4.40 (Dockerfile)_
+| CVE-2021-41773     |   **No**   | 3                    |_docker-compose, apache (Dockerfile (httpd:2.4.49 (Dockerfile)))_
+| CVE-2021-42013     |   **No**   | 3                    |_docker-compose, apache (Dockerfile (httpd:2.4.50 (Dockerfile)))_
+| CVE-2021-43798     |   **No**   | 2                    |_docker-compose, grafana:8.2.6 (Dockerfile)_
+| CVE-2021-44228     |   **No**   | 3                    |_docker-compose, solr:8.11.0 (Dockerfile + docker-entrypoint.sh)_
+| CVE-2022-22947     |   **No**   | 6                    |_docker-compose, spring-cloud-gateway:3.1.0 (Dockerfile + pom.xml + .gitignore + application.xml + SpringCloudGatewayApplication.java)_
+| CVE-2022-22963     |   **No**   | 4                    |_docker-compose, spring-cloud-function:3.2.2 (Dockerfile + pom.xml + SpringCloudApplicationFunctionSample.java)_
+| CVE-2022-24706     |   **No**   | 3                    |_docker-compose, couchdb:3.2.1 (Dockerfile + docker-entrypoint.sh)_
+| CVE-2022-46169     |   **No**   | 5                    |_docker-compose, cacti:1.2.22 (Dockerfile (php:7.4-apache_ (local/remote)_) + cacti.ini + config.php) + entrypoint.sh_ and _mysql:5.7_ (local/remote) 
+| CVE-2023-23752     |   **No**   | 4                    |_docker-compose, joomla:4.2.7 (Dockerfile (php:7.4.33-apache_ (local/remote)_) + docker-entrypoint + .htaccess) and mysql:5.7_ (local/remote) 
+| CVE-2023-42793     |   **No**   | 2                    |_docker-compose, teamcity:2023.05.3 (Dockerfile (jetbrains/teamcity-server:2023.05.3_ (local/remote)_))_
+| CVE-2024-23897     |   **No**   | 3                    |_docker-compose, jenkins:2.441 (Dockerfile + init.groovy)_
