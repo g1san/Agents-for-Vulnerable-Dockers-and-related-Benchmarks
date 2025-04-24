@@ -74,9 +74,3 @@ The __*number of files*__ is used as an indicator of how difficult it can be for
 | CVE-2023-23752     |     No     | 4                    |_docker-compose, joomla:4.2.7 (Dockerfile (php:7.4.33-apache_ (local/remote)_) + docker-entrypoint + .htaccess) and mysql:5.7_ (local/remote) 
 | CVE-2023-42793     |     No     | 2                    |_docker-compose, teamcity:2023.05.3 (Dockerfile (jetbrains/teamcity-server:2023.05.3_ (local/remote)_))_
 | CVE-2024-23897     |   **Yes**  | 3                    |_docker-compose, jenkins:2.441 (Dockerfile + init.groovy)_
-
-
-## CVEs To Add From https://github.com/SmartData-Polito/VDaaS/tree/auto-chart
-- 2020-14882 	Remote Code Execution (RCE) 	Oracle WebLogic Server RCE
-- 2020-17519 	File Read/Inclusion 	Apache Flink Unauthenticated Arbitrary File Read
-- 2021-22205 	Remote Code Execution (RCE) 	GitLab RCE
