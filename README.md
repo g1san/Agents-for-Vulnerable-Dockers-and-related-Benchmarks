@@ -1,7 +1,7 @@
 # Agents for Vulnerable Dockers and related Benchmarks
-This thesis project focuses on automating the creation of systems vulnerable to a specific vulnerability. These systems are emulated using **Docker lightweight virtualization** and all the associated files are created autonomously by an **agent** that is capable of:
+This thesis project focuses on automating the creation of systems vulnerable to a specific CVE. These systems are emulated using **Docker lightweight virtualization** and all the associated files are created autonomously by an **agentic workflow** that is capable of:
 - Retrieving from the Internet a description/summary of a given CVE
-- Create a vulnerable system with Docker
+- Create, test and exploit a vulnerable system with Docker
 
 These containers can then be used to gather real/synthetic attack data from:
 - an unsafe environment, exposing the container to real attackers
