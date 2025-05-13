@@ -1,14 +1,17 @@
-# Agents for Vulnerable Dockers and related Benchmarks
-This thesis project focuses on automating the creation of systems vulnerable to a specific CVE. These systems are emulated using **Docker lightweight virtualization** and all the associated files are created autonomously by an **agentic workflow** that is capable of:
-- Retrieving from the Internet a description/summary of a given CVE
+# Agents for Vulnerable Dockers Creation & Testing
+This thesis project focuses on automating the creation of systems vulnerable to a specific CVE through the use of **LLMs** and **Agentic Workflows**. All these systems are created using **Docker lightweight virtualization**. The goals of the agentic workflow are to:
+- Retrieve from the Internet a description/summary of a given CVE
 - Create, test and exploit a vulnerable system with Docker
 
+
+## Potential Use Cases
 These containers can then be used to gather real/synthetic attack data from:
 - an unsafe environment, exposing the container to real attackers
 - a safe environment, by letting another autonomous agent perform the attack
 
-The Docker creation process (_should_) be benchmarked in order to understand how well the agent is performing its tasks.
 
+# Smartdata's VDaaS Respository
+The [VDaaS repository](https://github.com/SmartData-Polito/VDaaS/tree/main) contains a series of manually created vulnerable docker systems (taken from the [Vulhub repository](https://github.com/vulhub/vulhub), an open-source collection of pre-built vulnerable docker environments for security researchers and educators) and (for some of these systems) the associated exploits.
 
 ## Detailed Exploit Status Table
 Table of all the exploits that have been scripted in order to work with the related CVE
@@ -43,8 +46,9 @@ Table of all the exploits that have been scripted in order to work with the rela
 
 ## Replication Complexity Table
 Table of all exploitable CVE that lists:
-- If the CVE was already replicated
-- The __*number of files*__ needed to replicate the CVE using Docker
+- The CVE-ID
+- If the CVE was already replicated through the LLM web interface
+- The __*number of files*__ the LLM needs to replicate to create a vulnerable Docker
 - The names of the files
 
 The __*number of files*__ is used as an indicator of how difficult it can be for an LLM to create such container.
