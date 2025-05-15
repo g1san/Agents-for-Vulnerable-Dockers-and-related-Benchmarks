@@ -30,7 +30,10 @@ pip-delete-this-directory.txt
 # Exclude virtual environment
 .venv/
 
+# Exclude the __pycache__ directory and all its contents
+__pycache__
+
 # Other files
 requirements.txt
 secrets.txt
-agentic_workflow/tests
+agents/tests
