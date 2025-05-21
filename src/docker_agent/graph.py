@@ -13,7 +13,9 @@ import nodes
 
 workflow = StateGraph(OverallState)
 
+# Add nodes to the workflow
 workflow.add_node("get_cve_id", nodes.get_cve_id)
+workflow.add_node("assess_cve_id", nodes.assess_cve_id)
 workflow.add_node("web_search", nodes.web_search)
 workflow.add_node("generate_docker_code", nodes.generate_docker_code)
 workflow.add_node("test_docker_code", nodes.test_docker_code)
@@ -21,8 +23,17 @@ workflow.add_node(
     "save_results", nodes.save_results
 )  # TODO: continue with exploiter agent
 
+# Add edges to the workflow
 workflow.add_edge(START, "get_cve_id")
-workflow.add_edge("get_cve_id", "web_search")
+workflow.add_edge("get_cve_id", "assess_cve_id")
+workflow.add_conditional_edges(
+    "assess_cve_id",
+    nodes.route_cve,
+    {
+        "Found": "web_search",
+        "Not Found": END,
+    },
+)
 workflow.add_edge("web_search", "generate_docker_code")
 workflow.add_edge("generate_docker_code", "test_docker_code")
 workflow.add_conditional_edges(

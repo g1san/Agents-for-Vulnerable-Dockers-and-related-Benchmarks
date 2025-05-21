@@ -4,6 +4,7 @@ import os
 from langfuse.callback import CallbackHandler
 from langchain_openai import ChatOpenAI
 from tools import web_search
+from pydantic import BaseModel, Field
 
 # Initialize Langfuse CallbackHandler for LangGraph/Langchain (tracing)
 langfuse_handler = CallbackHandler(
@@ -14,7 +15,6 @@ langfuse_handler = CallbackHandler(
 
 
 #! Structured output for the web search
-# from pydantic import BaseModel, Field
 # class WebSearchResult(BaseModel):
 #     """Pydantic object for web search result"""
 #
@@ -25,11 +25,28 @@ langfuse_handler = CallbackHandler(
 #     )
 
 
+class CodeGenerationResult(BaseModel):
+    """Pydantic object for code generation result"""
+
+    file_name: list[str] = Field(
+        description="Name of the files needed to reproduce the CVE"
+    )
+
+    file_code: list[str] = Field(
+        description="Name and code of the various files needed to reproduce the CVE"
+    )
+
+    directory_tree: str = Field(
+        description="Directory tree where the files will be stored, rooted in the CVE-ID folder"
+    )
+
+
 # Initialize the LLM with OpenAI's GPT-4o model
-llm = ChatOpenAI(model="gpt-4o", temperature=0, max_tokens=750, max_retries=2)
+llm = ChatOpenAI(model="gpt-4o", temperature=0, max_tokens=1000, max_retries=2)
 
 # Bind the LLM with its built-in web_search tool
 llm_web_search_tool = llm.bind_tools([web_search])
 
-#! Set the LLM to return a structured output from the web search
-# structured_llm = llm.with_structured_output(WebSearchResult)
+# * Might want to use o4-mini to generate the code
+# Set the LLM to return a structured output from code generation
+code_generation_llm = llm.with_structured_output(CodeGenerationResult)

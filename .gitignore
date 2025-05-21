@@ -36,4 +36,4 @@ __pycache__
 # Other files
 requirements.txt
 secrets.txt
-agents/tests
+src/tests
