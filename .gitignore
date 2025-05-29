@@ -35,5 +35,4 @@ __pycache__
 
 # Other files
 requirements.txt
-secrets.txt
 src/tests

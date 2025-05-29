@@ -16,12 +16,12 @@ workflow = StateGraph(OverallState)
 # Add nodes to the workflow
 workflow.add_node("get_cve_id", nodes.get_cve_id)
 workflow.add_node("assess_cve_id", nodes.assess_cve_id)
-workflow.add_node("web_search", nodes.web_search)
+workflow.add_node("get_docker_services", nodes.get_docker_services)
+workflow.add_node("assess_docker_services", nodes.assess_docker_services)
 workflow.add_node("generate_docker_code", nodes.generate_docker_code)
+workflow.add_node("save_code", nodes.save_code)
 workflow.add_node("test_docker_code", nodes.test_docker_code)
-workflow.add_node(
-    "save_results", nodes.save_results
-)  # TODO: continue with exploiter agent
+# TODO: continue with exploiter agent
 
 # Add edges to the workflow
 workflow.add_edge(START, "get_cve_id")
@@ -30,21 +30,29 @@ workflow.add_conditional_edges(
     "assess_cve_id",
     nodes.route_cve,
     {
-        "Found": "web_search",
+        "Found": "get_docker_services",
         "Not Found": END,
     },
 )
-workflow.add_edge("web_search", "generate_docker_code")
-workflow.add_edge("generate_docker_code", "test_docker_code")
+workflow.add_edge("get_docker_services", "assess_docker_services")
+workflow.add_conditional_edges(
+    "assess_docker_services",
+    nodes.route_docker_services,
+    {
+        "Ok": "generate_docker_code",
+        "Not Ok": END,
+    },
+)
+workflow.add_edge("generate_docker_code", "save_code")
+workflow.add_edge("save_code", "test_docker_code")
 workflow.add_conditional_edges(
     "test_docker_code",
     nodes.route_code,
     {
-        "Ok": "save_results",  # TODO: continue with exploiter agent
+        "Ok": END,  # TODO: continue with exploiter agent
         "Reject + Feedback": "generate_docker_code",
     },
 )
-workflow.add_edge("save_results", END)
 
 # Compile the graph
 compiled_workflow = workflow.compile()
