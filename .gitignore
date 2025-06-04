@@ -34,5 +34,4 @@ pip-delete-this-directory.txt
 __pycache__
 
 # Other files
-requirements.txt
 src/tests

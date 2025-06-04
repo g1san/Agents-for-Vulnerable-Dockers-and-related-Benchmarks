@@ -41,7 +41,7 @@ workflow.add_conditional_edges(
     "assess_docker_services",
     nodes.route_docker_services,
     {
-        "Ok": "generate_docker_code",
+        "Ok": "generate_docker_code",   # TODO: continue by checking code generation
         "Not Ok": END,
     },
 )

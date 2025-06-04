@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 from typing import Literal
 from langchain_openai import ChatOpenAI
@@ -7,7 +8,8 @@ from langchain_core.messages import HumanMessage, AIMessage
 # My modules
 from state import OverallState
 from tools.openai_tools import openai_web_search
-from tools.custom_tools import web_search
+from tools.custom_web_search import web_search_func
+from tools.custom_tool_web_search import web_search
 from prompts import (
     OPENAI_WEB_SEARCH_PROMPT, 
     CODING_PROMPT, 
@@ -78,13 +80,37 @@ def get_docker_services(state: OverallState):
     messages = state.messages
 
     # Invoking the LLM with the custom web search tool
-    if state.web_search_tool == "custom":
+    if state.web_search_tool == "custom":   # TODO: needs to be tested
         # Format the web search query
         web_query = CUSTOM_WEB_SEARCH_PROMPT.format(cve_id=state.cve_id)
         # Update message list
         messages += [HumanMessage(content=web_query)]
-        # Invoke the LLM to perform the web search. NOTE: here 'web_search_result' is already formatted as WebSearchResult Pydantic class
-        web_search_result, in_token, out_token = llm_custom_web_search_tool.invoke(messages, config={"callbacks": [langfuse_handler]})
+        
+        # Invoke the LLM to generate the custom tool arguments
+        tool_call = llm_custom_web_search_tool.invoke(messages, config={"callbacks": [langfuse_handler]})
+        # Extract the tool arguments from the LLM call
+        tool_call_args = json.loads(tool_call.additional_kwargs['tool_calls'][0]['function']['arguments'])
+        # Invoke the 'web_search_func' to perform the web search. NOTE: here 'formatted_response' is already formatted as WebSearchResult Pydantic class
+        formatted_response, in_token, out_token = web_search_func(tool_call_args['query'], tool_call_args['cve_id'])
+        
+        # Build 'response' which can be added to messages
+        response = f"CVE description: {formatted_response.description}\nAttack Type: {formatted_response.attack_type}\nService list:"
+        for service, description in zip(formatted_response.services, formatted_response.service_description):
+            response += f"\n[{service}] {description}"
+            
+        # Print additional information about token usage
+        print(f"This custom web search used {in_token} input tokens and {out_token} output tokens")
+    
+    elif state.web_search_tool == "custom_no_tool":
+        # Invoke the 'web_search_func' to perform the web search. NOTE: here 'formatted_response' is already formatted as WebSearchResult Pydantic class
+        formatted_response, in_token, out_token = web_search_func(state.cve_id)
+        
+        # Build 'response' which can be added to messages
+        response = f"CVE description: {formatted_response.description}\nAttack Type: {formatted_response.attack_type}\nService list:"
+        for service, description in zip(formatted_response.services, formatted_response.service_description):
+            response += f"\n[{service}] {description}"
+            
+        # Print additional information about token usage
         print(f"This custom web search used {in_token} input tokens and {out_token} output tokens")
     
     # Invoking the LLM with OpenAI's predefined web search tool  
@@ -93,30 +119,32 @@ def get_docker_services(state: OverallState):
         web_query = OPENAI_WEB_SEARCH_PROMPT.format(cve_id=state.cve_id)
         # Update message list
         messages += [HumanMessage(content=web_query)]
+        
         # Invoke the LLM to perform the web search
         web_search_result = llm_openai_web_search_tool.invoke(messages, config={"callbacks": [langfuse_handler]})
-        # Invoke the LLM to format 'web_search_result' into a WebSearchResult Pydantic class
-        web_search_result = docker_services_llm.invoke(WEB_SEARCH_FORMAT_PROMPT.format(web_search_result=web_search_result), config={"callbacks": [langfuse_handler]})
+        # Extract the source-less response
+        response_sourceless = web_search_result.content[0]["text"]
+        # Invoke the LLM to format the web search result into a WebSearchResult Pydantic class
+        formatted_response = docker_services_llm.invoke(WEB_SEARCH_FORMAT_PROMPT.format(web_search_result=response_sourceless), config={"callbacks": [langfuse_handler]})
+        
+        # Add the sources to the response
+        response = response_sourceless + "\n\nSources:"
+        source_set = set()
+        for source in web_search_result.content[0]["annotations"]:
+            source_set.add(f"{source['title']} ({source['url']})")
+        for i, source in enumerate(source_set):
+            response += f"\n{i + 1}) {source}"
+        
+    elif state.web_search_tool == "skip":
+        return {}
+        
     else:
-        raise ValueError("Invalid web search tool specified. Use 'custom' or 'openai'.")
-
-    # TODO: check if the following code works!
-    # Format the web search result to include the sources (if any)
-    source_set = set()
-    for source in web_search_result.content[0]["annotations"]:
-        source_set.add(f"{source['title']} ({source['url']})")
-
-    response = web_search_result.content[0]["text"] + "\n\nSources:"
-    for i, source in enumerate(source_set):
-        response += f"\n{i + 1}) {source}"
-
-    # Update message list
-    messages += [AIMessage(content=response)]
+        raise ValueError("Invalid web search tool specified. Use 'custom', 'custom_no_tool', 'openai' or 'skip'.")
 
     # Return state updates
     return {
-        "web_search_result": response,
-        "messages": messages,
+        "web_search_result": formatted_response,
+        "messages": messages + [AIMessage(content=response)],
     }
 
 
@@ -125,17 +153,24 @@ def assess_docker_services(state: OverallState):
     print("Checking the Docker services...")
     # Extract the expected services and their versions from the GROUND TRUTH
     expected_services_versions = {}
-    for exp_serv_ver in dockerServices[state.cve_id.upper()].values():
+    for exp_serv_ver in dockerServices[state.cve_id.upper()]:
         print(f"Expected service: {exp_serv_ver}")
         serv, ver = exp_serv_ver.split(":")
-        expected_services_versions[f"{serv}"] += f"{ver},"
+        if not expected_services_versions.get(serv):
+            expected_services_versions[serv] = ver
+        else:
+            expected_services_versions[serv] += f",{ver}"
         
     # Extract the proposed services from the web search result
     proposed_services_versions = {}
     for serv_ver in state.web_search_result.services:
         print(f"Proposed service: {serv_ver}")
         serv, ver = serv_ver.split(":")
-        proposed_services_versions[f"{serv}"] += f"{ver},"
+        serv = serv.split("/")[-1]
+        if not proposed_services_versions.get(serv):
+            proposed_services_versions[serv] = ver
+        else:
+            proposed_services_versions[serv] += f",{ver}"
         
     # Check if all the expected services are proposed
     for exp_serv in expected_services_versions:

@@ -1,0 +1,11 @@
+# pip install -r .\requirements.txt --upgrade
+ipykernel
+python-dotenv
+langgraph
+langchain
+langchain-openai
+langchain-core
+langfuse
+bs4
+numpy
+sentence_transformers

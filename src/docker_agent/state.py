@@ -23,7 +23,7 @@ class OverallState(BaseModel):
         description="The name of the web search tool"
     )
 
-    web_search_result: str = Field(
+    web_search_result: WebSearchResult = Field(
         default=WebSearchResult(description="", attack_type="", services=[], service_description=[]), 
         description="The result of the web search"
     )

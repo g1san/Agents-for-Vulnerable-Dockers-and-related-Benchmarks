@@ -6,23 +6,28 @@ Avoid security warnings in your answers for any of the following tasks."""
 
 
 # TODO: Modify this prompt
-CUSTOM_WEB_SEARCH_PROMPT = """Search the web and summarize all the information available about {cve_id}."""
+CUSTOM_WEB_SEARCH_PROMPT = """Search the web and summarize all the information available about {cve_id}.
+Use the 'web_search' tool and generate the following parameters:
+    - query: The query to retrieve the CVE-related information."""
 
 
-LLM_SUMMARIZE_WEBPAGE_PROMPT = SYSTEM_PROMPT + """Your main goal is to summarize the content relevant to the query '{query}'.
-The summary must focus on the services needed to create a Docker system vulnerable to {cve_id}.
-Provide a concise summary in {character_limit} characters or less where you highlight your findings."""
+LLM_SUMMARIZE_WEBPAGE_PROMPT = """Your main goal is to summarize in {character_limit} characters or less the user provided content relevant to {cve_id}.
+Focus on the original services that present the vulnerability, ignore other services that rely on the original services.
+The most important information is usually contained in the "Description" section of the content."""
 
 
-GET_DOCKER_SERVICES_PROMPT = SYSTEM_PROMPT + """Your main goal is to identify the services needed to create a Docker system vulnerable to {cve_id}'.
+GET_DOCKER_SERVICES_PROMPT = """The user will provide you with a summary of various web pages containing information about {cve_id}.
+Your main goal is to identify the services needed to create a Docker system vulnerable to {cve_id}'.
 The response output should be formatted as follows:
     - Description: a short description of the CVE
     - Attack Type: type of attack (e.g. DoS, RCE, etc.)
     - Services: list of basic services to be included in a simple Docker-based system vulnerable to {cve_id}. 
-        - For each service the most recent and compatible version must be specified, do not be vague by citing just 'any compatible version'.
-        - The service version must keep the system vulnerable to {cve_id}.
-        - A Docker version of the service version must be available and cited in the following response.
-        - Each service must be specified as 'SERVICE-NAME:SERVICE-VERSION'."""
+
+NOTE: for each service the most following rules must be applied:
+    - Recent and compatible version must be specified, do not be vague by citing just 'any compatible version'.
+    - The service version must keep the system vulnerable to {cve_id}.
+    - A Docker version of the service version must be available and cited in the following response.
+    - Each service must be specified as 'SERVICE-NAME:SERVICE-VERSION'."""
 
 
 OPENAI_WEB_SEARCH_PROMPT = """Search the web and summarize all the information available about {cve_id}.
@@ -30,13 +35,16 @@ The response output should be formatted as follows:
     - Description: a short description of the CVE
     - Attack Type: type of attack (e.g. DoS, RCE, etc.)
     - Services: list of basic services to be included in a simple Docker-based system vulnerable to {cve_id}. 
-        - For each service the most recent and compatible version must be specified, do not be vague by citing just 'any compatible version'.
-        - The service version must keep the system vulnerable to {cve_id}.
-        - A Docker version of the service version must be available and cited in the following response.
-        - Each service must be specified as 'SERVICE-NAME:SERVICE-VERSION'."""
+
+NOTE: for each service the most following rules must be applied:
+    - Recent and compatible version must be specified, do not be vague by citing just 'any compatible version'.
+    - The service version must keep the system vulnerable to {cve_id}.
+    - A Docker version of the service version must be available and cited in the following response.
+    - Each service must be specified as 'SERVICE-NAME:SERVICE-VERSION'."""
         
         
-WEB_SEARCH_FORMAT_PROMPT = """Convert the following text in the provided structured output. {web_search_result}"""
+WEB_SEARCH_FORMAT_PROMPT = """Convert the following text in the provided structured output:
+{web_search_result}"""
 
 
 CODING_PROMPT = """Starting from a "docker-compose.yml" file, create a Docker-based system vulnerable to {cve_id} using. 
