@@ -9,7 +9,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from state import OverallState
 from tools.openai_tools import openai_web_search
 from tools.custom_web_search import web_search_func
-from tools.custom_tool_web_search import web_search
+from tools.custom_tool_web_search import web_search, web_search_tool_func
 from prompts import (
     OPENAI_WEB_SEARCH_PROMPT, 
     CODING_PROMPT, 
@@ -80,7 +80,7 @@ def get_docker_services(state: OverallState):
     messages = state.messages
 
     # Invoking the LLM with the custom web search tool
-    if state.web_search_tool == "custom":   # TODO: needs to be tested
+    if state.web_search_tool == "custom":
         # Format the web search query
         web_query = CUSTOM_WEB_SEARCH_PROMPT.format(cve_id=state.cve_id)
         # Update message list
@@ -90,8 +90,10 @@ def get_docker_services(state: OverallState):
         tool_call = llm_custom_web_search_tool.invoke(messages, config={"callbacks": [langfuse_handler]})
         # Extract the tool arguments from the LLM call
         tool_call_args = json.loads(tool_call.additional_kwargs['tool_calls'][0]['function']['arguments'])
-        # Invoke the 'web_search_func' to perform the web search. NOTE: here 'formatted_response' is already formatted as WebSearchResult Pydantic class
-        formatted_response, in_token, out_token = web_search_func(tool_call_args['query'], tool_call_args['cve_id'])
+        query, cve_id = tool_call_args['query'], tool_call_args['cve_id']
+        print(f"The LLM invoked the 'web search' tool with parameters: query={query}, cve_id={cve_id}\n")
+        # Invoke the tool 'web_search_tool_func' to perform the web search. NOTE: here 'formatted_response' is already formatted as WebSearchResult Pydantic class
+        formatted_response, in_token, out_token = web_search_tool_func(query, cve_id)
         
         # Build 'response' which can be added to messages
         response = f"CVE description: {formatted_response.description}\nAttack Type: {formatted_response.attack_type}\nService list:"
@@ -99,8 +101,9 @@ def get_docker_services(state: OverallState):
             response += f"\n[{service}] {description}"
             
         # Print additional information about token usage
-        print(f"This custom web search used {in_token} input tokens and {out_token} output tokens")
+        print(f"TOKEN USAGE INFO: this custom web search used {in_token} input tokens and {out_token} output tokens\n")
     
+    # Uses the web search function directly, instead of its tool counterpart
     elif state.web_search_tool == "custom_no_tool":
         # Invoke the 'web_search_func' to perform the web search. NOTE: here 'formatted_response' is already formatted as WebSearchResult Pydantic class
         formatted_response, in_token, out_token = web_search_func(state.cve_id)
@@ -111,7 +114,7 @@ def get_docker_services(state: OverallState):
             response += f"\n[{service}] {description}"
             
         # Print additional information about token usage
-        print(f"This custom web search used {in_token} input tokens and {out_token} output tokens")
+        print(f"TOKEN USAGE INFO: this custom web search used {in_token} input tokens and {out_token} output tokens\n")
     
     # Invoking the LLM with OpenAI's predefined web search tool  
     elif state.web_search_tool == "openai":
@@ -134,7 +137,8 @@ def get_docker_services(state: OverallState):
             source_set.add(f"{source['title']} ({source['url']})")
         for i, source in enumerate(source_set):
             response += f"\n{i + 1}) {source}"
-        
+    
+    # Skips the web search phase
     elif state.web_search_tool == "skip":
         return {}
         
@@ -152,10 +156,15 @@ def assess_docker_services(state: OverallState):
     """Checks if the services needed to generate the vulnerable Docker code are correct against a GROUND TRUTH"""
     print("Checking the Docker services...")
     # Extract the expected services and their versions from the GROUND TRUTH
+    if not dockerServices.get(state.cve_id.upper()):
+        print(f"There is no GT for {state.cve_id.upper()}!")
+        return {"docker_services_ok": True}
+    
     expected_services_versions = {}
     for exp_serv_ver in dockerServices[state.cve_id.upper()]:
         print(f"Expected service: {exp_serv_ver}")
         serv, ver = exp_serv_ver.split(":")
+        serv = serv.lower()
         if not expected_services_versions.get(serv):
             expected_services_versions[serv] = ver
         else:
@@ -166,7 +175,7 @@ def assess_docker_services(state: OverallState):
     for serv_ver in state.web_search_result.services:
         print(f"Proposed service: {serv_ver}")
         serv, ver = serv_ver.split(":")
-        serv = serv.split("/")[-1]
+        serv = serv.split("/")[-1].lower()
         if not proposed_services_versions.get(serv):
             proposed_services_versions[serv] = ver
         else:

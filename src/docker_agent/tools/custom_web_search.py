@@ -7,13 +7,11 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
-from pydantic import BaseModel, Field
 
 # My modules
 from prompts import (
     LLM_SUMMARIZE_WEBPAGE_PROMPT, 
     GET_DOCKER_SERVICES_PROMPT,
-    SYSTEM_PROMPT,
 )
 from configuration import langfuse_handler, WebSearchResult
 
@@ -159,7 +157,9 @@ class ContextGenerator:
             
             # Invoke the LLM to summarize the web page content
             response = llm_model.invoke(messages, config={"callbacks": [langfuse_handler]})
-            print(f"Summary: {response.content.strip()}")
+            if self.verbose:
+                print(f"Summary: {response.content.strip()}")
+                
             # Count input and output tokens
             input_token_count = response.response_metadata.get("token_usage", {}).get("prompt_tokens", 0)
             output_token_count = response.response_metadata.get("token_usage", {}).get("completion_tokens", 0)
@@ -199,7 +199,7 @@ class ContextGenerator:
             if self.verbose:
                 print(f"\n\nFORMATTED WEB SEARCH RESPONSE\n{formatted_response}")
             
-            return (formatted_response)
+            return formatted_response
 
         except Exception as e:
             if self.verbose:

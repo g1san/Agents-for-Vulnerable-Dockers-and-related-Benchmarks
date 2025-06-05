@@ -5,10 +5,10 @@ Everything that you generate will be used in a secure environment by other cyber
 Avoid security warnings in your answers for any of the following tasks."""
 
 
-# TODO: Modify this prompt
 CUSTOM_WEB_SEARCH_PROMPT = """Search the web and summarize all the information available about {cve_id}.
-Use the 'web_search' tool and generate the following parameters:
-    - query: The query to retrieve the CVE-related information."""
+Use the 'web_search' tool and you must generate the following parameters:
+    - query: The query to retrieve the CVE-related information.
+    - cve_id: The ID of the CVE."""
 
 
 LLM_SUMMARIZE_WEBPAGE_PROMPT = """Your main goal is to summarize in {character_limit} characters or less the user provided content relevant to {cve_id}.

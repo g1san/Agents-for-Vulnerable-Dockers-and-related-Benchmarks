@@ -23,7 +23,6 @@ workflow.add_node("assess_docker_services", nodes.assess_docker_services)
 workflow.add_node("generate_docker_code", nodes.generate_docker_code)
 workflow.add_node("save_code", nodes.save_code)
 workflow.add_node("test_docker_code", nodes.test_docker_code)
-# TODO: continue with exploiter agent
 
 # Add edges to the workflow
 workflow.add_edge(START, "get_cve_id")
@@ -51,7 +50,7 @@ workflow.add_conditional_edges(
     "test_docker_code",
     nodes.route_code,
     {
-        "Ok": END,  # TODO: continue with exploiter agent
+        "Ok": END,
         "Reject + Feedback": "generate_docker_code",
     },
 )
