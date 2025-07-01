@@ -24,6 +24,7 @@ The response output should be formatted as follows:
     - Services: list of basic services to be included in a simple Docker-based system vulnerable to {cve_id}. 
 
 NOTE: for each service the most following rules must be applied:
+    - A tag must be associated specifying if the service is 'MAIN' (i.e. vulnerable to {cve_id}) or 'AUX' (i.e. not vulnerable to {cve_id} but needed for the system to work).
     - Recent and compatible version must be specified, do not be vague by citing just 'any compatible version'.
     - The service version must keep the system vulnerable to {cve_id}.
     - A Docker version of the service version must be available and cited in the following response.
@@ -37,6 +38,7 @@ The response output should be formatted as follows:
     - Services: list of basic services to be included in a simple Docker-based system vulnerable to {cve_id}. 
 
 NOTE: for each service the most following rules must be applied:
+    - A tag must be associated specifying if the service is 'MAIN' (i.e. vulnerable to {cve_id}) or 'AUX' (i.e. not vulnerable to {cve_id} but needed for the system to work).
     - Recent and compatible version must be specified, do not be vague by citing just 'any compatible version'.
     - The service version must keep the system vulnerable to {cve_id}.
     - A Docker version of the service version must be available and cited in the following response.

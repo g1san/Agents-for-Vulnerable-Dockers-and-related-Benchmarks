@@ -24,7 +24,7 @@ class OverallState(BaseModel):
     )
 
     web_search_result: WebSearchResult = Field(
-        default=WebSearchResult(description="", attack_type="", services=[], service_description=[]), 
+        default=WebSearchResult(description="", attack_type="", services=[], service_type=[], service_description=[]), 
         description="The result of the web search"
     )
     

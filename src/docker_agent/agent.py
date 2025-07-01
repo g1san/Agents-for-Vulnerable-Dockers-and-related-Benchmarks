@@ -21,8 +21,8 @@ def draw_graph():
 try:
     result = compiled_workflow.invoke(
         input={
-            "cve_id": "CVE-2024-23897",#    CVE-2021-28164    CVE-2022-46169    CVE-2024-23897
-            "web_search_tool": "custom_no_tool",#   custom  custom_no_tool  openai  skip
+            "cve_id": "CVE-2021-28164",#    CVE-2021-28164    CVE-2022-46169    CVE-2024-23897
+            "web_search_tool": "openai",#   custom  custom_no_tool  openai  skip
             #"web_search_result": WebSearchResult(description="", attack_type="", services=[], service_description=[]),
             #"code": CodeGenerationResult(file_name=[], file_code=[], directory_tree=""),
             "messages": [SystemMessage(content=SYSTEM_PROMPT)],
@@ -39,8 +39,12 @@ try:
 except Exception as e:
     print(f"Workflow invocation failed: {e}.")
 
-print(f"description='{result['web_search_result'].description},'")
-print(f"attack_type='{result['web_search_result'].attack_type},'")
-print(f"services={result['web_search_result'].services},")
-print(f"service_description={result['web_search_result'].service_description},")
+try:
+    print(f"description='{result['web_search_result'].description},'")
+    print(f"attack_type='{result['web_search_result'].attack_type},'")
+    print(f"services={result['web_search_result'].services},")
+    print(f"service_type={result['web_search_result'].service_type},")
+    print(f"service_description={result['web_search_result'].service_description},")
+except:
+    print("NO DATA RECOVERED FROM THE WEB")
   

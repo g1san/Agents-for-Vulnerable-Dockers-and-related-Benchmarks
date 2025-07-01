@@ -1,12 +1,12 @@
 # TODOLIST
 - ***"get_docker_services"***
-    - Improve it by making the LLM associate a specific tag to the **main service**, i.e., the service that is vulnerable to the CVE.
-    - Add **auxiliary** tag to services added just to make the main service work or to make the docker work
-    - Add manual retrieval of CVE data from NIST website for _custom_web_search_ because of error 502
+    - (***DONE***) Improve it by making the LLM associate a specific tag to the **main service**, i.e., the service that is vulnerable to the CVE.
+    - (***DONE***) Add **auxiliary** tag to services added just to make the main service work or to make the docker work
+    - (***DONE***) Add manual retrieval of CVE data from NIST website for _custom_web_search_ because of error 502
     - Check if order of URL provided by Google API is the same every time
     - Benchmark how many URLs does the LLM need to check for a given CVE to get the GT services
 - ***"assess_docker_services"***
-    - Improve it by having the LLM check if the **main service** version is a vulnerable one
+    - (***DONE***) Improve it by having the LLM check if the **main service** version is a vulnerable one
     - If assessment is OK, save the result locally in order to improve GT database
 - ***"save_code"***
     - The whole node functionality needs to be assessed

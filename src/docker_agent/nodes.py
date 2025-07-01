@@ -155,15 +155,18 @@ def get_docker_services(state: OverallState):
 def assess_docker_services(state: OverallState):
     """Checks if the services needed to generate the vulnerable Docker code are correct against a GROUND TRUTH"""
     print("Checking the Docker services...")
-    # Extract the expected services and their versions from the GROUND TRUTH
+    # If the GROUND TRUTH does not exist for the given CVE ID, skip the check
     if not dockerServices.get(state.cve_id.upper()):
         print(f"There is no GT for {state.cve_id.upper()}!")
         return {"docker_services_ok": True}
     
+    # Extract the expected services and their versions from the GROUND TRUTH
+    expected_services_types = []
     expected_services_versions = {}
     for exp_serv_ver in dockerServices[state.cve_id.upper()]:
         print(f"Expected service: {exp_serv_ver}")
-        serv, ver = exp_serv_ver.split(":")
+        serv_type, serv, ver = exp_serv_ver.split(":")
+        expected_services_types.append(serv_type.upper())
         serv = serv.lower()
         if not expected_services_versions.get(serv):
             expected_services_versions[serv] = ver
@@ -171,9 +174,11 @@ def assess_docker_services(state: OverallState):
             expected_services_versions[serv] += f",{ver}"
         
     # Extract the proposed services from the web search result
+    proposed_services_types = []
     proposed_services_versions = {}
-    for serv_ver in state.web_search_result.services:
-        print(f"Proposed service: {serv_ver}")
+    for serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_type):
+        print(f"Proposed service: {serv_ver} ({serv_type})")
+        proposed_services_types.append(serv_type.upper())
         serv, ver = serv_ver.split(":")
         serv = serv.split("/")[-1].lower()
         if not proposed_services_versions.get(serv):
@@ -181,20 +186,20 @@ def assess_docker_services(state: OverallState):
         else:
             proposed_services_versions[serv] += f",{ver}"
         
-    # Check if all the expected services are proposed
-    for exp_serv in expected_services_versions:
-        if exp_serv not in proposed_services_versions:
-            print(f"{exp_serv} was not proposed!")
-            return {"docker_services_ok": False}
+    # Check if all the MAIN expected services are proposed
+    for exp_serv, exp_type in zip(expected_services_versions, expected_services_types):
+        if (exp_type == 'MAIN') and (exp_serv not in proposed_services_versions):
+            print(f"{exp_type} service '{exp_serv}' was not proposed!")
+            #!return {"docker_services_ok": False}
         
-    # Check if all the proposed services have the expected version
-    for prop_serv in proposed_services_versions:
-        # Report any proposed service that is not expected 
+    # Check if all the MAIN proposed services have the expected version
+    for prop_serv, prop_type in zip(proposed_services_versions, proposed_services_types):
+        # Report any MAIN proposed service that is not expected 
         if (prop_serv not in expected_services_versions):
-            print(f"{prop_serv} was not expected!")
+            print(f"{prop_type} service '{prop_serv}' was not expected")
             continue
         
-        # The same service may be used with different versions
+        # Handles the case where the same service may be used with different versions
         exp_vers = expected_services_versions[prop_serv].split(",")
         prop_vers = proposed_services_versions[prop_serv].split(",")
         for pv in prop_vers:

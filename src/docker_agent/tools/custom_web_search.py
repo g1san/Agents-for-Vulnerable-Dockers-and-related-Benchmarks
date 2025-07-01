@@ -129,7 +129,6 @@ class ContextGenerator:
 
         return documents
 
-    #? How was 'max_chars' default value chosen?
     def summarize_web_page(self, doc, cve_id, character_limit: int = 1000, max_chars: int = 450000) -> str:
         # Log when the content is too long, to evaluate how many times it happens and what you are losing
         if len(doc) > max_chars:
@@ -205,8 +204,34 @@ class ContextGenerator:
             if self.verbose:
                 print(f"[LLM WEB SEARCH SUMMARY ERROR] {e}")
     
+    def get_cve_from_nist_api(self, cve_id):
+        """Retrieve CVE data from NIST's NVE Database using the API."""
+        url = f"https://services.nvd.nist.gov/rest/json/cves/2.0?cveId={cve_id}"
+        
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+    
+            vuln = data.get("vulnerabilities", [])[0]["cve"]
+            description = vuln["descriptions"][0]["value"]
+    
+            return (url, description)
+    
+        except Exception as e:
+            return f"Failed to retrieve CVE data from NIST: {str(e)}"
+            
+    
     def invoke(self, cve_id):
+        # Retrieve CVE data from the web
         results = self.get_web_search_results(cve_id)
+        
+        # Retrieve CVE information from NIST
+        nist_data = self.get_cve_from_nist_api(cve_id)
+        if isinstance(nist_data, tuple):
+            results.append(nist_data)
+        elif self.verbose:
+            print(f"[NIST API ERROR] {nist_data}")
 
         if self.verbose:
             print(f"Fetched {len(results)} documents")
