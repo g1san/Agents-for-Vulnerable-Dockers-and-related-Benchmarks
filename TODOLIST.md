@@ -7,10 +7,10 @@
     - Benchmark how many URLs does the LLM need to check for a given CVE to get the GT services
 - ***"assess_docker_services"***
     - (***DONE***) Improve it by having the LLM check if the **main service** version is a vulnerable one
-    - If assessment is OK, save the result locally in order to improve GT database
+    - (***DONE***) If GT for CVE does not exist, save the result locally in order to improve GT database
 - ***"save_code"***
-    - The whole node functionality needs to be assessed
-    - Implemented only partially, *keep coding*
+    - (***DONE***) The whole node functionality needs to be assessed
+    - (***DONE***) Implemented only partially, *keep coding*
 - ***"test_docker_code"***
     - Make it work with WSL
     - Generate commands needed to launch and dispose of Docker

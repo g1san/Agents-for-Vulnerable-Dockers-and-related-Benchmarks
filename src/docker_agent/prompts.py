@@ -19,7 +19,7 @@ The most important information is usually contained in the "Description" section
 GET_DOCKER_SERVICES_PROMPT = """The user will provide you with a summary of various web pages containing information about {cve_id}.
 Your main goal is to identify the services needed to create a Docker system vulnerable to {cve_id}'.
 The response output should be formatted as follows:
-    - Description: a short description of the CVE
+    - Description: a description of the CVE
     - Attack Type: type of attack (e.g. DoS, RCE, etc.)
     - Services: list of basic services to be included in a simple Docker-based system vulnerable to {cve_id}. 
 
@@ -33,7 +33,7 @@ NOTE: for each service the most following rules must be applied:
 
 OPENAI_WEB_SEARCH_PROMPT = """Search the web and summarize all the information available about {cve_id}.
 The response output should be formatted as follows:
-    - Description: a short description of the CVE
+    - Description: a description of the CVE
     - Attack Type: type of attack (e.g. DoS, RCE, etc.)
     - Services: list of basic services to be included in a simple Docker-based system vulnerable to {cve_id}. 
 
@@ -52,6 +52,10 @@ WEB_SEARCH_FORMAT_PROMPT = """Convert the following text in the provided structu
 CODING_PROMPT = """Starting from a "docker-compose.yml" file, create a Docker-based system vulnerable to {cve_id} using. 
 Write enough files to make the system work and to understand if it is exploitable.
 Describe the directory tree where the files will be stored and root it in the "{cve_id}" folder.
+When you save the file names indicate the relative path from the "{cve_id}" folder.
 The container must be immediately deployable using the "docker compose up" command.
-
-Here is the information you have available about the vulnerability: {web_search_results}"""
+Here is the information you have available about {cve_id}: 
+- CVE Description: {cve_desc}
+- Attack Type: {attack_type}
+- Services: {serv}
+- Service Description: {serv_desc}"""

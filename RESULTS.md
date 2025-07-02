@@ -80,5 +80,15 @@
     - service_description=['Jetty is the main service affected by the vulnerability, providing the web server environment where the issue occurs.', 'OpenJDK is required to run Jetty, as it provides the necessary Java runtime environment.', 'Debian Buster serves as the base operating system, providing a stable environment for running the other services.'],
 
 
+# 02/07/2025
+
+## OBTAINED WITH 'custom_no_tool'
+- **CVE-2017-7525**
+    - description='CVE-2017-7525 is a deserialization vulnerability in the Jackson Databind library, allowing remote code execution by exploiting the deserialization of untrusted data.,'
+    - attack_type='Remote Code Execution (RCE),'
+    - services=['openjdk:8-jdk', 'jackson-databind:2.8.8'],
+    - service_type=['AUX', 'MAIN'],
+    - service_description=['Java Development Kit needed to run Java applications.', 'Vulnerable version of Jackson Databind library.'],
+
 
 

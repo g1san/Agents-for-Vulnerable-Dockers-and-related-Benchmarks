@@ -1,0 +1,79 @@
+{
+    "CVE-2012-1823": [
+        "MAIN:php:5.4.1-cgi",
+        "AUX:php:5.4.1"
+    ],
+    "CVE-2016-5734": [
+        "MAIN:phpmyadmin:4.4.15.6",
+        "AUX:php:5.3-apache",
+        "AUX:mysql:5.5"
+    ],
+    "CVE-2018-12613": [
+        "MAIN:phpmyadmin:4.8.1",
+        "AUX:php:7.2-apache",
+        "AUX:mysql:5.5"
+    ],
+    "CVE-2020-7247": [
+        "MAIN:opensmtpd:6.6.1p1"
+    ],
+    "CVE-2020-11651": [
+        "MAIN:saltstack:2019.2.3"
+    ],
+    "CVE-2020-11652": [
+        "MAIN:saltstack:2019.2.3"
+    ],
+    "CVE-2021-3129": [
+        "MAIN:laravel:8.4.2",
+        "AUX:php:7.4-apache"
+    ],
+    "CVE-2021-28164": [
+        "MAIN:jetty:9.4.37"
+    ],
+    "CVE-2021-34429": [
+        "MAIN:jetty:9.4.40"
+    ],
+    "CVE-2021-41773": [
+        "MAIN:apache",
+        "AUX:httpd:2.4.49"
+    ],
+    "CVE-2021-42013": [
+        "MAIN:apache",
+        "AUX:httpd:2.4.50"
+    ],
+    "CVE-2021-43798": [
+        "MAIN:grafana:8.2.6"
+    ],
+    "CVE-2021-44228": [
+        "MAIN:solr:8.11.0"
+    ],
+    "CVE-2022-22947": [
+        "MAIN:spring-cloud-gateway:3.1.0"
+    ],
+    "CVE-2022-22963": [
+        "MAIN:spring-cloud-function:3.2.2"
+    ],
+    "CVE-2022-24706": [
+        "MAIN:couchdb:3.2.1"
+    ],
+    "CVE-2022-46169": [
+        "MAIN:cacti:1.2.22",
+        "AUX:php:7.4-apache",
+        "AUX:mysql:5.7"
+    ],
+    "CVE-2023-23752": [
+        "MAIN:joomla:4.2.7",
+        "AUX:php:7.4.33-apache",
+        "AUX:mysql:5.7"
+    ],
+    "CVE-2023-42793": [
+        "MAIN:teamcity:2023.05.3",
+        "AUX:jetbrains/teamcity-server:2023.05.3"
+    ],
+    "CVE-2024-23897": [
+        "MAIN:jenkins:2.441"
+    ],
+    "CVE-2017-7525": [
+        "AUX:openjdk:8-jdk",
+        "MAIN:jackson-databind:2.8.8"
+    ]
+}

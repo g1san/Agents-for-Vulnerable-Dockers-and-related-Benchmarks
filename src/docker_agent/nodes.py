@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+from pathlib import Path
 from typing import Literal
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage
@@ -20,7 +21,6 @@ from configuration import (
     CodeGenerationResult,
     WebSearchResult,
     langfuse_handler,
-    dockerServices,
 )
 
 # Initialize the LLM with OpenAI's GPT-4o model
@@ -155,9 +155,21 @@ def get_docker_services(state: OverallState):
 def assess_docker_services(state: OverallState):
     """Checks if the services needed to generate the vulnerable Docker code are correct against a GROUND TRUTH"""
     print("Checking the Docker services...")
-    # If the GROUND TRUTH does not exist for the given CVE ID, skip the check
+    filename = 'docker-services.json'
+    with open(filename, "r") as f:
+        dockerServices = json.load(f)
+        
+    # If the GROUND TRUTH does not exist for the given CVE ID, update the GT and skip the check
     if not dockerServices.get(state.cve_id.upper()):
-        print(f"There is no GT for {state.cve_id.upper()}!")
+        print(f"There is no GT for {state.cve_id.upper()}! Updating GT with the following services:")
+        services = []
+        for serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_type):
+            new_service = f"{serv_type.upper()}:{serv_ver.lower()}"
+            print(f"- {new_service}")
+            services.append(new_service)
+        dockerServices[state.cve_id.upper()] = services
+        with open(filename, "w") as f:
+            json.dump(dockerServices, f, indent=4)
         return {"docker_services_ok": True}
     
     # Extract the expected services and their versions from the GROUND TRUTH
@@ -177,7 +189,7 @@ def assess_docker_services(state: OverallState):
     proposed_services_types = []
     proposed_services_versions = {}
     for serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_type):
-        print(f"Proposed service: {serv_ver} ({serv_type})")
+        print(f"Proposed service: {serv_type}:{serv_ver}")
         proposed_services_types.append(serv_type.upper())
         serv, ver = serv_ver.split(":")
         serv = serv.split("/")[-1].lower()
@@ -196,7 +208,7 @@ def assess_docker_services(state: OverallState):
     for prop_serv, prop_type in zip(proposed_services_versions, proposed_services_types):
         # Report any MAIN proposed service that is not expected 
         if (prop_serv not in expected_services_versions):
-            print(f"{prop_type} service '{prop_serv}' was not expected")
+            print(f"{prop_type} service '{prop_serv}' was not expected!")
             continue
         
         # Handles the case where the same service may be used with different versions
@@ -204,7 +216,7 @@ def assess_docker_services(state: OverallState):
         prop_vers = proposed_services_versions[prop_serv].split(",")
         for pv in prop_vers:
             if pv not in exp_vers:
-                print(f"The proposed version ({pv}) of {prop_serv} is not an expected one")
+                print(f"The proposed version ({pv}) of {prop_serv} is not an expected one!")
     
     return {"docker_services_ok": True}
 
@@ -228,11 +240,13 @@ def generate_docker_code(state: OverallState):
         print("Generating the code...")
         code_gen_query = CODING_PROMPT.format(
             cve_id=state.cve_id,
-            web_search_results=state.web_search_result,
+            cve_desc=state.web_search_result.description,
+            attack_type=state.web_search_result.attack_type,
+            serv=state.web_search_result.services,
+            serv_desc=state.web_search_result.service_description,
         )
 
         # Invoking the LLM with the structured output
-        #! May need to pass message with web search result + query instead of query with web search result integrated
         generated_code = code_generation_llm.invoke(code_gen_query, config={"callbacks": [langfuse_handler]}) 
 
         # Format the LLM response
@@ -245,7 +259,7 @@ def generate_docker_code(state: OverallState):
             HumanMessage(content=code_gen_query),
             AIMessage(content=response),
         ]
-
+        
         # Return state updates
         return {
             "code": generated_code,
@@ -254,21 +268,37 @@ def generate_docker_code(state: OverallState):
 
 
 def save_code(state: OverallState):
-    """The agent saves the generated code in a local directory"""
+    """The agent saves the generated code in a local directory and generates a directory tree"""
     print("Saving code...")
 
-    #* TESTING DIRECTORY CREATION *# 
-    # NOTE: this is a WIP
-    main_directory_name = f"./Dockers/{state.cve_id.upper()}"
+    main_directory_path = Path(f"./../../dockers/{state.cve_id.upper()}")
+
     try:
-        os.mkdir(main_directory_name)
-        print(f"Directory '{main_directory_name}' created successfully.")
+        main_directory_path.mkdir(parents=True, exist_ok=False)
+        print(f"Directory '{main_directory_path}' created successfully.")
     except FileExistsError:
-        raise ValueError(f"Directory '{main_directory_name}' already exists.")
+        raise ValueError(f"Directory '{main_directory_path}' already exists.")
     except PermissionError:
-        raise ValueError(f"Permission denied: Unable to create '{main_directory_name}'.")
+        raise ValueError(f"Permission denied: Unable to create '{main_directory_path}'.")
     except Exception as e:
         raise ValueError(f"An error occurred: {e}")
+
+    # Save each file in the appropriate location
+    for file_rel_path, file_content in zip(state.code.file_name, state.code.file_code):
+        full_path = main_directory_path / file_rel_path
+        try:
+            full_path.parent.mkdir(parents=True, exist_ok=True)
+            
+        except FileExistsError:
+            raise ValueError(f"Directory '{full_path}' already exists.")
+        except PermissionError:
+            raise ValueError(f"Permission denied: Unable to create '{full_path}'.")
+        except Exception as e:
+            raise ValueError(f"An error occurred: {e}")
+        
+        with open(full_path, "w", encoding="utf-8") as f:
+            f.write(file_content)
+        print(f"Saved file: {full_path}")
 
     print("Code saved!")
     return {}
