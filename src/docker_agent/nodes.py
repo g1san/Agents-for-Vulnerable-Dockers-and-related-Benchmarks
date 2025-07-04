@@ -1,8 +1,10 @@
 import os
 import json
 import requests
+import subprocess
 from pathlib import Path
 from typing import Literal
+from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage
 
@@ -16,10 +18,12 @@ from prompts import (
     CODING_PROMPT, 
     CUSTOM_WEB_SEARCH_PROMPT,
     WEB_SEARCH_FORMAT_PROMPT,
+    TEST_CODE_PROMPT,
 )
 from configuration import (
     CodeGenerationResult,
     WebSearchResult,
+    TestCodeResult,
     langfuse_handler,
 )
 
@@ -38,17 +42,20 @@ docker_services_llm = llm_model.with_structured_output(WebSearchResult)
 # Set the LLM to return a structured output from code generation
 code_generation_llm = llm_model.with_structured_output(CodeGenerationResult)
 
+# Set the LLM to return a structured output from code testing
+test_code_llm = llm_model.with_structured_output(TestCodeResult)
+
 
 def get_cve_id(state: OverallState):
     """Checks if the CVE ID is correctly retrieved from the initialized state"""
-    print(f"The provided CVE ID is {state.cve_id}!")
-    return {}
+    print(f"The provided CVE ID is {state.cve_id.upper()}!")
+    return {"cve_id": state.cve_id.upper()}
 
 
 def assess_cve_id(state: OverallState):
     """The agent checks if the CVE ID exists in the MITRE CVE database"""
     print("Checking if the CVE ID exists...")
-    response = requests.get(f"https://cveawg.mitre.org/api/cve/{state.cve_id.upper()}")
+    response = requests.get(f"https://cveawg.mitre.org/api/cve/{state.cve_id}")
 
     if response.status_code == 200:
         print(f"{state.cve_id} exists!")
@@ -64,6 +71,11 @@ def assess_cve_id(state: OverallState):
 
 
 def route_cve(state: OverallState) -> Literal["Found", "Not Found"]:
+    """DEBUG: route the graph to the 'test_docker_code' node"""
+    if state.debug == "skip_to_test":
+        print("[DEBUG] Skipping 'route_cve'...")
+        return "Found"
+    
     """Terminate the graph or go to the next step"""
     print(f"Routing CVE (is_cve = {state.is_cve})")
     if state.is_cve:
@@ -73,6 +85,11 @@ def route_cve(state: OverallState) -> Literal["Found", "Not Found"]:
 
 
 def get_docker_services(state: OverallState):
+    """DEBUG: route the graph to the 'test_docker_code' node"""
+    if state.debug == "skip_to_test":
+        print("[DEBUG] Skipping 'get_docker_services'...")
+        return {}
+    
     """The agent performs a web search to gather relevant information 
         about the services needed to generate the vulnerable Docker code"""
     print("Searching the web...")
@@ -153,6 +170,11 @@ def get_docker_services(state: OverallState):
 
 
 def assess_docker_services(state: OverallState):
+    """DEBUG: route the graph to the 'test_docker_code' node"""
+    if state.debug == "skip_to_test":
+        print("[DEBUG] Skipping 'assess_docker_services'...")
+        return {"docker_services_ok": True}
+    
     """Checks if the services needed to generate the vulnerable Docker code are correct against a GROUND TRUTH"""
     print("Checking the Docker services...")
     filename = 'docker-services.json'
@@ -160,14 +182,14 @@ def assess_docker_services(state: OverallState):
         dockerServices = json.load(f)
         
     # If the GROUND TRUTH does not exist for the given CVE ID, update the GT and skip the check
-    if not dockerServices.get(state.cve_id.upper()):
-        print(f"There is no GT for {state.cve_id.upper()}! Updating GT with the following services:")
+    if not dockerServices.get(state.cve_id):
+        print(f"There is no GT for {state.cve_id}! Updating GT with the following services:")
         services = []
         for serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_type):
             new_service = f"{serv_type.upper()}:{serv_ver.lower()}"
             print(f"- {new_service}")
             services.append(new_service)
-        dockerServices[state.cve_id.upper()] = services
+        dockerServices[state.cve_id] = services
         with open(filename, "w") as f:
             json.dump(dockerServices, f, indent=4)
         return {"docker_services_ok": True}
@@ -175,7 +197,7 @@ def assess_docker_services(state: OverallState):
     # Extract the expected services and their versions from the GROUND TRUTH
     expected_services_types = []
     expected_services_versions = {}
-    for exp_serv_ver in dockerServices[state.cve_id.upper()]:
+    for exp_serv_ver in dockerServices[state.cve_id]:
         print(f"Expected service: {exp_serv_ver}")
         serv_type, serv, ver = exp_serv_ver.split(":")
         expected_services_types.append(serv_type.upper())
@@ -222,6 +244,11 @@ def assess_docker_services(state: OverallState):
 
 
 def route_docker_services(state: OverallState) -> Literal["Ok", "Not Ok"]:
+    """DEBUG: route the graph to the 'test_docker_code' node"""
+    if state.debug == "skip_to_test":
+        print("[DEBUG] Skipping 'route_docker_services'...")
+        return "Ok"
+    
     """Route to the code generator or terminate the graph"""
     print(f"Routing docker services (docker_services_ok = {state.docker_services_ok})")
     if state.docker_services_ok:
@@ -230,71 +257,59 @@ def route_docker_services(state: OverallState) -> Literal["Ok", "Not Ok"]:
         return "Not Ok"
 
 
+#TODO: add fix code functionality
 def generate_docker_code(state: OverallState):
+    """DEBUG: route the graph to the 'test_docker_code' node"""
+    if state.debug == "skip_to_test":
+        print("[DEBUG] Skipping 'generate_docker_code'...")
+        return {"debug": ""}    # Since the next node is 'test_docker_code'
+    
     """The agent generates/fixes the docker code to reproduce the CVE"""
-    if state.feedback != "":
-        print("Fixing the code...")
-        return {}
+    print("Generating the code...")
+    # Format the code generation query
+    code_gen_query = CODING_PROMPT.format(cve_id=state.cve_id)
+    # Update message list
+    messages = state.messages + [HumanMessage(content=code_gen_query)]
+    
+    # Invoking the LLM with the structured output
+    generated_code = code_generation_llm.invoke(messages, config={"callbacks": [langfuse_handler]}) 
+    
+    # Format the LLM response
+    response = f"Directory tree:\n\n{generated_code.directory_tree}\n\n"
+    for name, code in zip(generated_code.file_name, generated_code.file_code):
+        response += "-" * 10 + f" {name} " + "-" * 10 + f"\n{code}\n\n"
 
-    else:
-        print("Generating the code...")
-        code_gen_query = CODING_PROMPT.format(
-            cve_id=state.cve_id,
-            cve_desc=state.web_search_result.description,
-            attack_type=state.web_search_result.attack_type,
-            serv=state.web_search_result.services,
-            serv_desc=state.web_search_result.service_description,
-        )
-
-        # Invoking the LLM with the structured output
-        generated_code = code_generation_llm.invoke(code_gen_query, config={"callbacks": [langfuse_handler]}) 
-
-        # Format the LLM response
-        response = f"Directory tree:\n\n{generated_code.directory_tree}\n\n"
-        for name, code in zip(generated_code.file_name, generated_code.file_code):
-            response += "-" * 10 + f" {name} " + "-" * 10 + f"\n{code}\n\n"
-
-        # Update message list
-        messages = state.messages + [
-            HumanMessage(content=code_gen_query),
-            AIMessage(content=response),
-        ]
-        
-        # Return state updates
-        return {
-            "code": generated_code,
-            "messages": messages,
-        }
+    print("Code generated!")
+    # Return state updates
+    return {
+        "code": generated_code,
+        "messages": messages + [AIMessage(content=response)],
+    }
 
 
 def save_code(state: OverallState):
-    """The agent saves the generated code in a local directory and generates a directory tree"""
+    """The agent saves the tested code in a local directory structured as the directory tree"""
     print("Saving code...")
-
-    main_directory_path = Path(f"./../../dockers/{state.cve_id.upper()}")
-
-    try:
-        main_directory_path.mkdir(parents=True, exist_ok=False)
-        print(f"Directory '{main_directory_path}' created successfully.")
-    except FileExistsError:
-        raise ValueError(f"Directory '{main_directory_path}' already exists.")
-    except PermissionError:
-        raise ValueError(f"Permission denied: Unable to create '{main_directory_path}'.")
-    except Exception as e:
-        raise ValueError(f"An error occurred: {e}")
+    docker_dir_path = Path(f"./../../dockers/{state.cve_id}")
+    if not docker_dir_path.exists():
+        try:
+            docker_dir_path.mkdir(parents=True, exist_ok=False)
+            print(f"Directory '{docker_dir_path}' created successfully.")
+        except PermissionError:
+            raise ValueError(f"Permission denied: Unable to create '{docker_dir_path}'.")
+        except Exception as e:
+            raise ValueError(f"An error occurred: {e}")
 
     # Save each file in the appropriate location
     for file_rel_path, file_content in zip(state.code.file_name, state.code.file_code):
-        full_path = main_directory_path / file_rel_path
-        try:
-            full_path.parent.mkdir(parents=True, exist_ok=True)
-            
-        except FileExistsError:
-            raise ValueError(f"Directory '{full_path}' already exists.")
-        except PermissionError:
-            raise ValueError(f"Permission denied: Unable to create '{full_path}'.")
-        except Exception as e:
-            raise ValueError(f"An error occurred: {e}")
+        full_path = docker_dir_path / file_rel_path
+        if not full_path.exists():
+            try:
+                full_path.parent.mkdir(parents=True, exist_ok=True)
+            except PermissionError:
+                raise ValueError(f"Permission denied: Unable to create '{full_path}'.")
+            except Exception as e:
+                raise ValueError(f"An error occurred: {e}")
         
         with open(full_path, "w", encoding="utf-8") as f:
             f.write(file_content)
@@ -305,25 +320,71 @@ def save_code(state: OverallState):
 
 
 def test_docker_code(state: OverallState):
-    """The agent tests the docker to check if it work correctly"""
+    """The agent tests the docker to check if it work correctly"""    
     print("Testing code...")
+    # Create the directory to save logs (if it does not exist)
+    docker_dir_path = Path(f"./../../dockers/{state.cve_id}")
+    logs_dir_path = docker_dir_path / "logs"
+    if not logs_dir_path.exists():
+        try:
+            logs_dir_path.mkdir(parents=True, exist_ok=False)
+            print(f"Directory '{logs_dir_path}' created successfully.")
+        except PermissionError:
+            raise ValueError(f"Permission denied: Unable to create '{logs_dir_path}'.")
+        except Exception as e:
+            raise ValueError(f"An error occurred: {e}")
+        
+    # Get the current time-stamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # Create the log file in the 'logs' subdirectory
+    log_file = os.path.join(logs_dir_path, f"{state.cve_id}_log_{timestamp}.txt")
+
+    # Launch the docker and save the output in the log file
+    with open(log_file, "w") as log:
+        process = subprocess.Popen(
+            ["docker", "compose", "up"],
+            cwd=docker_dir_path,
+            stdout=log,
+            stderr=subprocess.STDOUT
+        )
+        process.communicate()
+
+    print(f"Test logs saved to: {log_file}")
+    # Extract the log content
+    with open(log_file, "r") as f:
+        log_content = f.read()
     
-    """
-    IDEAS: the agent should be a ReACT agent capable of interacting with a Linux OS in order to:
-        1. Navigate to the correct folder where the CVE's 'docker-compose.yml' is stored
-        2. Launch the Docker by generating the 'docker compose up' command (or similar)
-        3. Retrieve any possible error that can involve the Docker setup phase
-        4. Report back the error and write a feedback to explain the probable causes
-        5. If the Docker works correctly, terminate
-    """
-    
-    return {}
+    # Format the test code query
+    test_code_query = TEST_CODE_PROMPT.format(
+        cve_id=state.cve_id,
+        log_content=log_content,
+    )
+    # Update message list
+    messages = state.messages + [HumanMessage(content=test_code_query)]
+
+    # Invoke the LLM with the structured output to analyse the log content
+    test_code_results = test_code_llm.invoke(messages, config={"callbacks": [langfuse_handler]}) 
+
+    # Format the LLM response
+    if test_code_results.code_ok:
+        response = f"Test passed!\n\n"
+        print("Test passed!")
+    else:
+        response = f"Test failed!\n\n===== Error Analysis =====\n{test_code_results.error_analysis}\n\n===== Fix Suggestion =====\n{test_code_results.fix_suggestion}\n\n"
+        print("Test failed!")
+
+    # Return state updates
+    return {
+        "feedback": test_code_results,
+        "test_iteration": state.test_iteration + 1,
+        "messages": messages + [AIMessage(content=response)],
+    }
 
 
 def route_code(state: OverallState) -> Literal["Ok", "Reject + Feedback"]:
-    """Route back to the code generator or go to the next step"""
-    print(f"Routing code (code_ok = {state.code_ok})")
-    if state.code_ok:
+    """Route back to the code generator or terminate the graph"""
+    print(f"Routing code (code_ok = {state.feedback.code_ok}, test_iteration = {state.test_iteration})")
+    if state.feedback.code_ok or state.test_iteration >= 3:     #TODO: decide the maximum number of iterations
         return "Ok"
     else:
         return "Reject + Feedback"

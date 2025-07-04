@@ -21,8 +21,8 @@ workflow.add_node("assess_cve_id", nodes.assess_cve_id)
 workflow.add_node("get_docker_services", nodes.get_docker_services)
 workflow.add_node("assess_docker_services", nodes.assess_docker_services)
 workflow.add_node("generate_docker_code", nodes.generate_docker_code)
-workflow.add_node("save_code", nodes.save_code)
 workflow.add_node("test_docker_code", nodes.test_docker_code)
+workflow.add_node("save_code", nodes.save_code)
 
 # Add edges to the workflow
 workflow.add_edge(START, "get_cve_id")
@@ -40,7 +40,7 @@ workflow.add_conditional_edges(
     "assess_docker_services",
     nodes.route_docker_services,
     {
-        "Ok": "generate_docker_code",   # TODO: continue by checking code generation
+        "Ok": "generate_docker_code",
         "Not Ok": END,
     },
 )
@@ -51,7 +51,7 @@ workflow.add_conditional_edges(
     nodes.route_code,
     {
         "Ok": END,
-        "Reject + Feedback": "generate_docker_code",
+        "Reject + Feedback": "generate_docker_code", #TODO: evaluate if the fix should be applied in the 'generate_docker_code' or 'save_code' node
     },
 )
 

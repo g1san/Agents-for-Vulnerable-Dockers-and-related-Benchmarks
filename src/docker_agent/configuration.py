@@ -58,3 +58,14 @@ class CodeGenerationResult(BaseModel):
     file_code: list[str] = Field(description="Name and code of the various files needed to reproduce the CVE")
 
     directory_tree: str = Field(description="Directory tree where the files will be stored, rooted in the CVE-ID folder")
+
+
+class TestCodeResult(BaseModel):
+    """Pydantic object for test code result"""
+    
+    code_ok: bool = Field(description="Is the Docker system working correctly?")
+    
+    error_analysis: str = Field(description="If the Docker system is not working correctly, provide an analysis of the error")
+    
+    fix_suggestion: str = Field(description="If the Docker system is not working correctly, suggest a fix to the error")
+    

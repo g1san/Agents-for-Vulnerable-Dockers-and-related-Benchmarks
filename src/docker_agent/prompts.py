@@ -49,13 +49,21 @@ WEB_SEARCH_FORMAT_PROMPT = """Convert the following text in the provided structu
 {web_search_result}"""
 
 
-CODING_PROMPT = """Starting from a "docker-compose.yml" file, create a Docker-based system vulnerable to {cve_id} using. 
+CODING_PROMPT = """Starting from a "docker-compose.yml" file, create a Docker-based system vulnerable to {cve_id} using the information of the previous messages. 
 Write enough files to make the system work and to understand if it is exploitable.
 Describe the directory tree where the files will be stored and root it in the "{cve_id}" folder.
 When you save the file names indicate the relative path from the "{cve_id}" folder.
-The container must be immediately deployable using the "docker compose up" command.
-Here is the information you have available about {cve_id}: 
-- CVE Description: {cve_desc}
-- Attack Type: {attack_type}
-- Services: {serv}
-- Service Description: {serv_desc}"""
+The container must be immediately deployable using the "docker compose up" command."""
+# Here is the information you have available about {cve_id}: 
+# - CVE Description: {cve_desc}
+# - Attack Type: {attack_type}
+# - Services: {serv}
+# - Service Description: {serv_desc}"""
+
+
+TEST_CODE_PROMPT = """Analyse the output of the "docker compose up" command and check:
+- If the Docker system is working correctly, return 'True'.
+- Otherwise, if the Docker system is not working correctly, return 'False' and provide an explanation of the error. Then analyse the code and suggest a fix.
+REMEMBER: any suggested fix must keep the system vulnerable to {cve_id}.
+Here is the output to analyse:
+{log_content}"""

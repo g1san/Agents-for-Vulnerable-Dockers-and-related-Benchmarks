@@ -4,7 +4,7 @@ from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 
 # My modules
-from configuration import CodeGenerationResult, WebSearchResult
+from configuration import CodeGenerationResult, WebSearchResult, TestCodeResult
 
 
 class OverallState(BaseModel):
@@ -38,17 +38,22 @@ class OverallState(BaseModel):
         description="The generated file names and code and associated directory tree"
     )
 
-    code_ok: bool = Field(
-        default=True, 
-        description="Is the docker working?"
-    )  # TODO: switch default to False
-
-    feedback: str = Field(
-        default="",
-        description="Feedback from the user about the generated docker code"
+    feedback: TestCodeResult = Field(
+        default=TestCodeResult(code_ok=False, error_analysis="", fix_suggestion=""),
+        description="Feedback about the generated docker code"
+    )
+    
+    test_iteration: int = Field(
+        default=0, 
+        description="Number of iterations of the test code node"
     )
 
     messages: Annotated[list[AnyMessage], add_messages] = Field(
         default=[], 
         description="Conversation with LLM, tracked for analysis"
+    )
+    
+    debug: Optional[str] = Field(
+        default="", 
+        description="String to handle debug and skip nodes"
     )
