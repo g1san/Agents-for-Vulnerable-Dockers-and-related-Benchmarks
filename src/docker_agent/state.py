@@ -35,11 +35,11 @@ class OverallState(BaseModel):
 
     code: CodeGenerationResult = Field(
         default=CodeGenerationResult(file_name=[], file_code=[], directory_tree=""),
-        description="The generated file names and code and associated directory tree"
+        description="The generated file name, code and associated directory tree"
     )
 
     feedback: TestCodeResult = Field(
-        default=TestCodeResult(code_ok=False, error_analysis="", fix_suggestion=""),
+        default=TestCodeResult(code_ok=False, error="", fix="", fixed_code=CodeGenerationResult(file_name=[], file_code=[], directory_tree="")),
         description="Feedback about the generated docker code"
     )
     

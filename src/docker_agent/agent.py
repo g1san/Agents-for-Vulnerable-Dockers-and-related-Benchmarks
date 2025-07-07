@@ -16,7 +16,7 @@ def draw_graph():
         
     except Exception as e:
         print(f"Rendering failed with code {e}.\nHere's the Mermaid source:\n{compiled_workflow.get_graph().draw_mermaid()}")
-
+        
 # Test the workflow
 try:
     result = compiled_workflow.invoke(
@@ -28,7 +28,7 @@ try:
             "messages": [SystemMessage(content=SYSTEM_PROMPT)],
             "debug": ""#        skip_to_test
         },
-        config={"callbacks": [langfuse_handler]},
+        config={"callbacks": [langfuse_handler], "recursion_limit": 100},
     )
 
     # Review conversation history

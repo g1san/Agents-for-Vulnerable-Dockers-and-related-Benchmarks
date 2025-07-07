@@ -65,7 +65,9 @@ class TestCodeResult(BaseModel):
     
     code_ok: bool = Field(description="Is the Docker system working correctly?")
     
-    error_analysis: str = Field(description="If the Docker system is not working correctly, provide an analysis of the error")
+    error: str = Field(description="Description of the error presented by the 'docker compose up' command")
     
-    fix_suggestion: str = Field(description="If the Docker system is not working correctly, suggest a fix to the error")
+    fix: str = Field(description="Description of fix applied to the code to solve the error")
+    
+    fixed_code: CodeGenerationResult = Field(description="The fixed file names, code and associated directory tree")
     

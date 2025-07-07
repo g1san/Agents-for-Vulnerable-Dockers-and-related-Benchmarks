@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal
 from datetime import datetime
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 # My modules
 from state import OverallState
@@ -14,6 +14,7 @@ from tools.openai_tools import openai_web_search
 from tools.custom_web_search import web_search_func
 from tools.custom_tool_web_search import web_search, web_search_tool_func
 from prompts import (
+    SYSTEM_PROMPT,
     OPENAI_WEB_SEARCH_PROMPT, 
     CODING_PROMPT, 
     CUSTOM_WEB_SEARCH_PROMPT,
@@ -257,7 +258,6 @@ def route_docker_services(state: OverallState) -> Literal["Ok", "Not Ok"]:
         return "Not Ok"
 
 
-#TODO: add fix code functionality
 def generate_docker_code(state: OverallState):
     """DEBUG: route the graph to the 'test_docker_code' node"""
     if state.debug == "skip_to_test":
@@ -267,23 +267,40 @@ def generate_docker_code(state: OverallState):
     """The agent generates/fixes the docker code to reproduce the CVE"""
     print("Generating the code...")
     # Format the code generation query
-    code_gen_query = CODING_PROMPT.format(cve_id=state.cve_id)
-    # Update message list
-    messages = state.messages + [HumanMessage(content=code_gen_query)]
+    code_gen_query = CODING_PROMPT.format(
+        cve_id=state.cve_id,
+        desc=state.web_search_result.description,
+        att_type=state.web_search_result.attack_type,
+        serv=state.web_search_result.services,
+        serv_desc=state.web_search_result.service_description,
+    )    
+    #! DEBUG !#
+    # print(code_gen_query)
+    #! DEBUG !#
     
     # Invoking the LLM with the structured output
-    generated_code = code_generation_llm.invoke(messages, config={"callbacks": [langfuse_handler]}) 
+    generated_code = code_generation_llm.invoke(
+        [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=code_gen_query)], 
+        config={"callbacks": [langfuse_handler]}
+    )
     
     # Format the LLM response
     response = f"Directory tree:\n\n{generated_code.directory_tree}\n\n"
     for name, code in zip(generated_code.file_name, generated_code.file_code):
         response += "-" * 10 + f" {name} " + "-" * 10 + f"\n{code}\n\n"
+    
+    #! DEBUG !#
+    # print(response)
+    #! DEBUG !#
 
     print("Code generated!")
     # Return state updates
     return {
         "code": generated_code,
-        "messages": messages + [AIMessage(content=response)],
+        "messages": state.messages + [
+            HumanMessage(content=code_gen_query),
+            AIMessage(content=response),
+        ],
     }
 
 
@@ -319,12 +336,18 @@ def save_code(state: OverallState):
     return {}
 
 
+#TODO: to check if testing works use the docker-systems of the VDaaS repository
 def test_docker_code(state: OverallState):
     """The agent tests the docker to check if it work correctly"""    
     print("Testing code...")
-    # Create the directory to save logs (if it does not exist)
+    if state.test_iteration >= 10:     #TODO: decide the maximum number of iterations
+        print("Max Iterations Reached!")
+        return {"feedback": TestCodeResult(code_ok=True, error="", fix="", fixed_code=state.code)}
+    
     docker_dir_path = Path(f"./../../dockers/{state.cve_id}")
     logs_dir_path = docker_dir_path / "logs"
+    
+    # Create the directory to save logs (if it does not exist)
     if not logs_dir_path.exists():
         try:
             logs_dir_path.mkdir(parents=True, exist_ok=False)
@@ -354,37 +377,61 @@ def test_docker_code(state: OverallState):
     with open(log_file, "r") as f:
         log_content = f.read()
     
-    # Format the test code query
+    # Format the current code into a string
+    code = ""
+    for name, content in zip(state.code.file_name, state.code.file_code):
+        code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{content}\n\n"
+        
+    # Format the test code query #?HERE?
     test_code_query = TEST_CODE_PROMPT.format(
-        cve_id=state.cve_id,
+        dir_tree=state.code.directory_tree,
+        code=code,
         log_content=log_content,
+        cve_id=state.cve_id,
+        desc=state.web_search_result.description,
+        att_type=state.web_search_result.attack_type,
+        serv=state.web_search_result.services,
+        serv_desc=state.web_search_result.service_description,
     )
-    # Update message list
-    messages = state.messages + [HumanMessage(content=test_code_query)]
 
     # Invoke the LLM with the structured output to analyse the log content
-    test_code_results = test_code_llm.invoke(messages, config={"callbacks": [langfuse_handler]}) 
+    test_code_results = test_code_llm.invoke(
+        [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=test_code_query)],
+        config={"callbacks": [langfuse_handler]}
+    )
 
     # Format the LLM response
     if test_code_results.code_ok:
         response = f"Test passed!\n\n"
         print("Test passed!")
+        # Return state updates
+        return {
+            "feedback": test_code_results,
+            "test_iteration": state.test_iteration + 1,
+            "messages": state.messages + [
+                HumanMessage(content=test_code_query),
+                AIMessage(content=response)
+            ],
+        }
     else:
-        response = f"Test failed!\n\n===== Error Analysis =====\n{test_code_results.error_analysis}\n\n===== Fix Suggestion =====\n{test_code_results.fix_suggestion}\n\n"
+        response = f"Test failed!\n===== Error Description =====\n{test_code_results.error}\n\n===== Applied Fix ====={test_code_results.fix}"
         print("Test failed!")
+        # Return state updates
+        return {
+            "code": test_code_results.fixed_code,
+            "feedback": test_code_results,
+            "test_iteration": state.test_iteration + 1,
+            "messages": state.messages + [
+                HumanMessage(content=test_code_query),
+                AIMessage(content=response)
+            ],
+        }
 
-    # Return state updates
-    return {
-        "feedback": test_code_results,
-        "test_iteration": state.test_iteration + 1,
-        "messages": messages + [AIMessage(content=response)],
-    }
 
-
-def route_code(state: OverallState) -> Literal["Ok", "Reject + Feedback"]:
-    """Route back to the code generator or terminate the graph"""
-    print(f"Routing code (code_ok = {state.feedback.code_ok}, test_iteration = {state.test_iteration})")
-    if state.feedback.code_ok or state.test_iteration >= 3:     #TODO: decide the maximum number of iterations
-        return "Ok"
+def route_code(state: OverallState) -> Literal["Stop Testing", "Keep Testing"]:
+    """Route back to fix the code or terminate the graph"""
+    print(f"Routing test (code_ok = {state.feedback.code_ok}, test_iteration = {state.test_iteration})")
+    if state.feedback.code_ok:
+        return "Stop Testing"
     else:
-        return "Reject + Feedback"
+        return "Keep Testing"

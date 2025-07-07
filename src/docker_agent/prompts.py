@@ -19,30 +19,26 @@ The most important information is usually contained in the "Description" section
 GET_DOCKER_SERVICES_PROMPT = """The user will provide you with a summary of various web pages containing information about {cve_id}.
 Your main goal is to identify the services needed to create a Docker system vulnerable to {cve_id}'.
 The response output should be formatted as follows:
-    - Description: a description of the CVE
+    - Description: a description of the CVE and a precise list of the vulnerable versions of the affected services, consider only those versions reported by all sources or by the most reliable ones (e.g. MITRE and NIST).
     - Attack Type: type of attack (e.g. DoS, RCE, etc.)
     - Services: list of basic services to be included in a simple Docker-based system vulnerable to {cve_id}. 
 
 NOTE: for each service the most following rules must be applied:
     - A tag must be associated specifying if the service is 'MAIN' (i.e. vulnerable to {cve_id}) or 'AUX' (i.e. not vulnerable to {cve_id} but needed for the system to work).
-    - Recent and compatible version must be specified, do not be vague by citing just 'any compatible version'.
-    - The service version must keep the system vulnerable to {cve_id}.
-    - A Docker version of the service version must be available and cited in the following response.
-    - Each service must be specified as 'SERVICE-NAME:SERVICE-VERSION'."""
+    - Recent and compatible version must be specified as 'SERVICE-NAME:SERVICE-VERSION', do not be vague by citing just 'any compatible version'.
+    - The service version must be retrievable from 'docker.io/library' and it must keep the system vulnerable to {cve_id}."""
 
 
 OPENAI_WEB_SEARCH_PROMPT = """Search the web and summarize all the information available about {cve_id}.
 The response output should be formatted as follows:
-    - Description: a description of the CVE
+    - Description: a description of the CVE and a precise list of the vulnerable versions of the affected services, consider only those versions reported by all sources or by the most reliable ones (e.g. MITRE and NIST).
     - Attack Type: type of attack (e.g. DoS, RCE, etc.)
     - Services: list of basic services to be included in a simple Docker-based system vulnerable to {cve_id}. 
 
 NOTE: for each service the most following rules must be applied:
     - A tag must be associated specifying if the service is 'MAIN' (i.e. vulnerable to {cve_id}) or 'AUX' (i.e. not vulnerable to {cve_id} but needed for the system to work).
-    - Recent and compatible version must be specified, do not be vague by citing just 'any compatible version'.
-    - The service version must keep the system vulnerable to {cve_id}.
-    - A Docker version of the service version must be available and cited in the following response.
-    - Each service must be specified as 'SERVICE-NAME:SERVICE-VERSION'."""
+    - Recent and compatible version must be specified as 'SERVICE-NAME:SERVICE-VERSION', do not be vague by citing just 'any compatible version'.
+    - The service version must be retrievable from 'docker.io/library' and it must keep the system vulnerable to {cve_id}."""
         
         
 WEB_SEARCH_FORMAT_PROMPT = """Convert the following text in the provided structured output:
@@ -53,17 +49,32 @@ CODING_PROMPT = """Starting from a "docker-compose.yml" file, create a Docker-ba
 Write enough files to make the system work and to understand if it is exploitable.
 Describe the directory tree where the files will be stored and root it in the "{cve_id}" folder.
 When you save the file names indicate the relative path from the "{cve_id}" folder.
-The container must be immediately deployable using the "docker compose up" command."""
-# Here is the information you have available about {cve_id}: 
-# - CVE Description: {cve_desc}
-# - Attack Type: {attack_type}
-# - Services: {serv}
-# - Service Description: {serv_desc}"""
+The container must be immediately deployable using the "docker compose up" command.
+This is the information available about {cve_id}:
+- Description: {desc}
+- Attack Type: {att_type}
+- Services: {serv}
+- Service Description: {serv_desc}
+
+IMPORTANT: do not use service versions that are not proven to be vulnerable to {cve_id}."""
 
 
-TEST_CODE_PROMPT = """Analyse the output of the "docker compose up" command and check:
-- If the Docker system is working correctly, return 'True'.
-- Otherwise, if the Docker system is not working correctly, return 'False' and provide an explanation of the error. Then analyse the code and suggest a fix.
-REMEMBER: any suggested fix must keep the system vulnerable to {cve_id}.
-Here is the output to analyse:
-{log_content}"""
+TEST_CODE_PROMPT = """The following code has been executed on WSL2 with the 'docker compose up' command:
+Directory Tree:
+{dir_tree}
+
+Code:
+{code}
+
+This is the output of the "docker compose up" command:
+{log_content}
+
+- If it works correctly, just return 'code_ok=True'.
+- Else, if it presents an error, analyse it and fix the code while keeping the system vulnerable to {cve_id}.
+This is the information available about {cve_id}:
+- Description: {desc}
+- Attack Type: {att_type}
+- Services: {serv}
+- Service Description: {serv_desc}
+
+IMPORTANT: do not use service versions that are not proven to be vulnerable to {cve_id}."""
