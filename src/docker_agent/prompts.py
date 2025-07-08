@@ -50,13 +50,16 @@ Write enough files to make the system work and to understand if it is exploitabl
 Describe the directory tree where the files will be stored and root it in the "{cve_id}" folder.
 When you save the file names indicate the relative path from the "{cve_id}" folder.
 The container must be immediately deployable using the "docker compose up" command.
+The name of the Docker image must be {cve_id}.
 This is the information available about {cve_id}:
 - Description: {desc}
 - Attack Type: {att_type}
 - Services: {serv}
 - Service Description: {serv_desc}
 
-IMPORTANT: do not use service versions that are not proven to be vulnerable to {cve_id}."""
+LIST OF IMPORTANT THINGS TO REMEMBER:
+- Do not use service versions that are not proven to be vulnerable to {cve_id}.
+- The name of the Docker image must be {cve_id} with 'cve' in lowercase."""
 
 
 TEST_CODE_PROMPT = """The following code has been executed on WSL2 with the 'docker compose up' command:
@@ -77,4 +80,6 @@ This is the information available about {cve_id}:
 - Services: {serv}
 - Service Description: {serv_desc}
 
-IMPORTANT: do not use service versions that are not proven to be vulnerable to {cve_id}."""
+LIST OF IMPORTANT THINGS TO REMEMBER:
+- Do not use service versions that are not proven to be vulnerable to {cve_id}.
+- The name of the Docker image must be {cve_id} with 'cve' in lowercase."""

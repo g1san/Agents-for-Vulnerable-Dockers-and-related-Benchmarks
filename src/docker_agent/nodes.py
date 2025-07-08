@@ -365,7 +365,7 @@ def test_docker_code(state: OverallState):
     # Launch the docker and save the output in the log file
     with open(log_file, "w") as log:
         process = subprocess.Popen(
-            ["docker", "compose", "up"],
+            ["sudo", "docker", "compose", "up"],
             cwd=docker_dir_path,
             stdout=log,
             stderr=subprocess.STDOUT
@@ -381,6 +381,11 @@ def test_docker_code(state: OverallState):
     code = ""
     for name, content in zip(state.code.file_name, state.code.file_code):
         code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{content}\n\n"
+        
+    # Saving the Pydantic object that stores the code into a JSON file
+    code_file = os.path.join(logs_dir_path, f"{state.cve_id}_code.txt")
+    with open(code_file, "w") as log:
+        log.write(state.code.model_dump_json(indent=4))
         
     # Format the test code query #?HERE?
     test_code_query = TEST_CODE_PROMPT.format(
@@ -414,8 +419,26 @@ def test_docker_code(state: OverallState):
             ],
         }
     else:
-        response = f"Test failed!\n===== Error Description =====\n{test_code_results.error}\n\n===== Applied Fix ====={test_code_results.fix}"
-        print("Test failed!")
+        response = f"Test failed!\n===== Error Description =====\n{test_code_results.error}\n===== Applied Fix =====\n{test_code_results.fix}"
+        # print("Test failed!")
+        #!DEBUG!#
+        print(response)
+        #!DEBUG!#
+        
+        # Ensure Docker is stopped and containers and volumes are removed
+        subprocess.run(
+            ["sudo", "docker", "compose", "down", "--volumes"],
+            cwd=docker_dir_path,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        
+        # Ensure that the Docker image is removed in order to apply fixes
+        subprocess.run(
+            ["sudo", "docker", "rmi", "-f", state.cve_id.lower()],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
         # Return state updates
         return {
             "code": test_code_results.fixed_code,

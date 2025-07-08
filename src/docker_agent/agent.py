@@ -21,7 +21,7 @@ def draw_graph():
 try:
     result = compiled_workflow.invoke(
         input={
-            "cve_id": "CVE-2021-28164",#    CVE-2021-28164    CVE-2022-46169    CVE-2024-23897  #NOTE: to test GT update use CVE-2017-7525
+            "cve_id": "CVE-2022-46169",#    CVE-2021-28164    CVE-2022-46169    CVE-2024-23897  #NOTE: to test GT update use CVE-2017-7525
             "web_search_tool": "custom_no_tool",#   custom  custom_no_tool  openai  skip        #NOTE: if 'skip' is used, initialize "web_search_result" with valid data
             #"web_search_result": WebSearchResult(description="", attack_type="", services=[], service_type=[], service_description=[]),
             #"code": CodeGenerationResult(file_name=[], file_code=[], directory_tree=""),
