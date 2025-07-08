@@ -22,8 +22,15 @@ try:
     result = compiled_workflow.invoke(
         input={
             "cve_id": "CVE-2022-46169",#    CVE-2021-28164    CVE-2022-46169    CVE-2024-23897  #NOTE: to test GT update use CVE-2017-7525
-            "web_search_tool": "custom_no_tool",#   custom  custom_no_tool  openai  skip        #NOTE: if 'skip' is used, initialize "web_search_result" with valid data
+            "web_search_tool": "skip",#   custom  custom_no_tool  openai  skip        #NOTE: if 'skip' is used, initialize "web_search_result" with valid data
             #"web_search_result": WebSearchResult(description="", attack_type="", services=[], service_type=[], service_description=[]),
+            "web_search_result": WebSearchResult(
+                description="CVE-2022-46169 is a critical command injection vulnerability in Cacti, affecting versions up to 1.2.22. It allows unauthenticated remote code execution (RCE) by exploiting an authentication bypass and command injection in the `remote_agent.php` file. The vulnerability is due to improper sanitization of query arguments, allowing attackers to execute arbitrary commands on the server. The issue is patched in versions 1.2.23 and 1.3.0.", 
+                attack_type="Remote Code Execution (RCE)", 
+                services=['cacti:1.2.22', 'mysql:5.7', 'php:7.4-apache'], 
+                service_type=['MAIN', 'AUX', 'AUX'], 
+                service_description=['Cacti is the main service vulnerable to CVE-2022-46169, allowing RCE through command injection.', 'MySQL is required as the database service for Cacti to store monitoring data.', 'PHP with Apache is needed to serve the Cacti application and process PHP scripts.'],
+            ),
             #"code": CodeGenerationResult(file_name=[], file_code=[], directory_tree=""),
             "messages": [SystemMessage(content=SYSTEM_PROMPT)],
             "debug": ""#        skip_to_test

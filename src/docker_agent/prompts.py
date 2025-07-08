@@ -58,8 +58,7 @@ This is the information available about {cve_id}:
 - Service Description: {serv_desc}
 
 LIST OF IMPORTANT THINGS TO REMEMBER:
-- Do not use service versions that are not proven to be vulnerable to {cve_id}.
-- The name of the Docker image must be {cve_id} with 'cve' in lowercase."""
+- Do not use service versions that are not proven to be vulnerable to {cve_id}."""
 
 
 TEST_CODE_PROMPT = """The following code has been executed on WSL2 with the 'docker compose up' command:
@@ -82,4 +81,4 @@ This is the information available about {cve_id}:
 
 LIST OF IMPORTANT THINGS TO REMEMBER:
 - Do not use service versions that are not proven to be vulnerable to {cve_id}.
-- The name of the Docker image must be {cve_id} with 'cve' in lowercase."""
+- Ignore any graceful shutdown events, as they are intentionally started by the user."""

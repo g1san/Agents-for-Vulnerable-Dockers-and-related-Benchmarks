@@ -387,7 +387,7 @@ def test_docker_code(state: OverallState):
     with open(code_file, "w") as log:
         log.write(state.code.model_dump_json(indent=4))
         
-    # Format the test code query #?HERE?
+    # Format the test code query
     test_code_query = TEST_CODE_PROMPT.format(
         dir_tree=state.code.directory_tree,
         code=code,
@@ -422,7 +422,7 @@ def test_docker_code(state: OverallState):
         response = f"Test failed!\n===== Error Description =====\n{test_code_results.error}\n===== Applied Fix =====\n{test_code_results.fix}"
         # print("Test failed!")
         #!DEBUG!#
-        print(response)
+        print(f"{response}\n")
         #!DEBUG!#
         
         # Ensure Docker is stopped and containers and volumes are removed
@@ -435,7 +435,7 @@ def test_docker_code(state: OverallState):
         
         # Ensure that the Docker image is removed in order to apply fixes
         subprocess.run(
-            ["sudo", "docker", "rmi", "-f", state.cve_id.lower()],
+            ["sudo", "docker", "rmi", "-f"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )

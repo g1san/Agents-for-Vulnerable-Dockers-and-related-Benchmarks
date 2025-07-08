@@ -26,6 +26,7 @@
 - ***IMPORTANT***
     - Solve the problems related to the fact that non-vulnerable service version are reported as vulnerable (e.g. CVE-2021-28164)
     - Launching the docker of CVE-2024-23897 requires root privileges to perform certain commands, might want to check security
+    - Manually forcing the Docker to stop (e.g. CVE-2022-46169) is seen as a potential issue by LLM which tries to solve the problem, even though the containers seem to work fine, might be related to having multiple active containers 
 
 
 **NOTE**: it is not ok to call GT the contents of docker-services.json, since once the thesis project will evolve we will start from an empty file
