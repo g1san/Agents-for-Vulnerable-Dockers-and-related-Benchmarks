@@ -21,28 +21,33 @@ def draw_graph():
 try:
     result = compiled_workflow.invoke(
         input={
-            "cve_id": "CVE-2022-46169",#    CVE-2021-28164    CVE-2022-46169    CVE-2024-23897  #NOTE: to test GT update use CVE-2017-7525
+            "cve_id": "CVE-2021-28164",#    CVE-2021-28164    CVE-2022-46169    CVE-2024-23897  #NOTE: to test GT update use CVE-2017-7525
             "web_search_tool": "skip",#   custom  custom_no_tool  openai  skip        #NOTE: if 'skip' is used, initialize "web_search_result" with valid data
             #"web_search_result": WebSearchResult(description="", attack_type="", services=[], service_type=[], service_description=[]),
             "web_search_result": WebSearchResult(
-                description="CVE-2022-46169 is a critical command injection vulnerability in Cacti, affecting versions up to 1.2.22. It allows unauthenticated remote code execution (RCE) by exploiting an authentication bypass and command injection in the `remote_agent.php` file. The vulnerability is due to improper sanitization of query arguments, allowing attackers to execute arbitrary commands on the server. The issue is patched in versions 1.2.23 and 1.3.0.", 
-                attack_type="Remote Code Execution (RCE)", 
-                services=['cacti:1.2.22', 'mysql:5.7', 'php:7.4-apache'], 
-                service_type=['MAIN', 'AUX', 'AUX'], 
-                service_description=['Cacti is the main service vulnerable to CVE-2022-46169, allowing RCE through command injection.', 'MySQL is required as the database service for Cacti to store monitoring data.', 'PHP with Apache is needed to serve the Cacti application and process PHP scripts.'],
+                description='CVE-2021-28164 is a vulnerability in Eclipse Jetty, affecting versions 9.4.37.v20210219 to 9.4.42, 10.0.1 to 10.0.5, and 11.0.1 to 11.0.5. The vulnerability arises from improper handling of URIs containing encoded segments like %2e or %2e%2e, allowing unauthorized access to protected resources within the WEB-INF directory, such as the web.xml file. This can lead to information disclosure and potential further exploitation.',
+                attack_type='Information Disclosure',
+                services=['jetty:9.4.37', 'openjdk:8-jdk'],
+                service_type=['MAIN', 'AUX'],
+                service_description=['Jetty is the main service vulnerable to CVE-2021-28164, allowing unauthorized access to sensitive files through improperly handled URIs.', 'OpenJDK is required to run Jetty, as it is a Java-based web server.'],
+            ),
+            'code': CodeGenerationResult(
+                file_name=['docker-compose.yml', 'Dockerfile', 'webapps/WEB-INF/web.xml', 'webapps/index.html'],
+                file_code=['version: \'3.8\'\nservices:\n  jetty:\n    build: .\n    ports:\n      - "8080:8080"\n    volumes:\n      - ./webapps:/var/lib/jetty/webapps\n', 'FROM jetty:9.4.38-jre8\n\nCOPY ./webapps /var/lib/jetty/webapps\n', '<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"\n         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee \n         http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"\n         version="3.1">\n\n    <servlet>\n        <servlet-name>default</servlet-name>\n        <servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>\n    </servlet>\n\n    <servlet-mapping>\n        <servlet-name>default</servlet-name>\n        <url-pattern>/</url-pattern>\n    </servlet-mapping>\n\n</web-app>\n', '<html>\n<head>\n    <title>Jetty Vulnerable App</title>\n</head>\n<body>\n    <h1>Welcome to the Jetty Vulnerable Application</h1>\n    <p>This application is vulnerable to CVE-2021-28164.</p>\n</body>\n</html>\n'],
+                directory_tree='CVE-2021-28164/\n├── docker-compose.yml\n├── Dockerfile\n└── webapps\n    ├── WEB-INF\n    │   └── web.xml\n    └── index.html\n',
             ),
             #"code": CodeGenerationResult(file_name=[], file_code=[], directory_tree=""),
             "messages": [SystemMessage(content=SYSTEM_PROMPT)],
-            "debug": ""#        skip_to_test
+            "debug": "skip_to_test"#        (DEFAULT="")    skip_to_test
         },
         config={"callbacks": [langfuse_handler], "recursion_limit": 100},
     )
 
     # Review conversation history
-    print()
-    for message in result["messages"]:
-        print("=" * 20 + f" {message.type.upper()} " + "=" * 20)
-        print(f"{message.content}\n")
+    # print()
+    # for message in result["messages"]:
+    #     print("=" * 20 + f" {message.type.upper()} " + "=" * 20)
+    #     print(f"{message.content}\n")
 
 except Exception as e:
     print(f"Workflow invocation failed: {e}.")

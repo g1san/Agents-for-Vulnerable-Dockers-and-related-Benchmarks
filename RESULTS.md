@@ -91,4 +91,24 @@
     - service_description=['Java Development Kit needed to run Java applications.', 'Vulnerable version of Jackson Databind library.'],
 
 
+# 09/07/2025
 
+## OBTAINED WITH 'custom_no_tool'
+
+### **CVE-2022-46169**
+"web_search_result": WebSearchResult(
+                description="CVE-2022-46169 is a critical command injection vulnerability in Cacti, affecting versions up to 1.2.22. It allows unauthenticated remote code execution (RCE) by exploiting an authentication bypass and command injection in the `remote_agent.php` file. The vulnerability is due to improper sanitization of query arguments, allowing attackers to execute arbitrary commands on the server. The issue is patched in versions 1.2.23 and 1.3.0.", 
+                attack_type="Remote Code Execution (RCE)", 
+                services=['cacti:1.2.22', 'mysql:5.7', 'php:7.4-apache'], 
+                service_type=['MAIN', 'AUX', 'AUX'], 
+                service_description=['Cacti is the main service vulnerable to CVE-2022-46169, allowing RCE through command injection.', 'MySQL is required as the database service for Cacti to store monitoring data.', 'PHP with Apache is needed to serve the Cacti application and process PHP scripts.'],
+            ),
+
+### **CVE-2021-46169**
+"web_search_result": WebSearchResult(
+                description='CVE-2021-28164 is a vulnerability in Eclipse Jetty, affecting versions 9.4.37.v20210219 to 9.4.42, 10.0.1 to 10.0.5, and 11.0.1 to 11.0.5. The vulnerability arises from improper handling of URIs containing encoded segments like %2e or %2e%2e, allowing unauthorized access to protected resources within the WEB-INF directory, such as the web.xml file. This can lead to information disclosure and potential further exploitation.' 
+                attack_type='Information Disclosure' 
+                services=['jetty:9.4.42.v20210604', 'openjdk:8-jdk'] 
+                service_type=['MAIN', 'AUX'] 
+                service_description=['Jetty is the main service vulnerable to CVE-2021-28164, allowing unauthorized access to sensitive files through improperly handled URIs.', 'OpenJDK is required to run Jetty, as it is a Java-based web server.']
+            ),

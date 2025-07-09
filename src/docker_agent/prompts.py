@@ -50,7 +50,6 @@ Write enough files to make the system work and to understand if it is exploitabl
 Describe the directory tree where the files will be stored and root it in the "{cve_id}" folder.
 When you save the file names indicate the relative path from the "{cve_id}" folder.
 The container must be immediately deployable using the "docker compose up" command.
-The name of the Docker image must be {cve_id}.
 This is the information available about {cve_id}:
 - Description: {desc}
 - Attack Type: {att_type}
@@ -81,4 +80,6 @@ This is the information available about {cve_id}:
 
 LIST OF IMPORTANT THINGS TO REMEMBER:
 - Do not use service versions that are not proven to be vulnerable to {cve_id}.
+- If the system presents an error the proposed fix must include all files, both the updated ones and the unchanged ones.
+- The file names must indicate the relative path from the "{cve_id}" folder
 - Ignore any graceful shutdown events, as they are intentionally started by the user."""

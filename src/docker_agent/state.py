@@ -53,6 +53,11 @@ class OverallState(BaseModel):
         description="Conversation with LLM, tracked for analysis"
     )
     
+    final_report: str = Field(
+        default="",
+        description="String that summarizes the workflow which will be ave in the 'final_report.txt' file"
+    )
+    
     debug: Optional[str] = Field(
         default="", 
         description="String to handle debug and skip nodes"

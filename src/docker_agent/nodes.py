@@ -60,7 +60,10 @@ def assess_cve_id(state: OverallState):
 
     if response.status_code == 200:
         print(f"{state.cve_id} exists!")
-        return {"is_cve": True}
+        return {
+            "is_cve": True,
+            "final_report": state.final_report + "="*10 + f" {state.cve_id} Final Report "  + "="*10 + "\n" + "="*10 + f" Initial Parameters " + "="*10 + f"\n'cve_id': {state.cve_id}\n'web_search_tool': {state.web_search_tool}\n'web_search_result': {state.web_search_result}\n'code': {state.code}\n'messages': {state.messages}\n'debug': {state.debug}\n\n",
+        }
 
     elif response.status_code == 404:
         print(f"The record for {state.cve_id} does not exist.")
@@ -165,6 +168,7 @@ def get_docker_services(state: OverallState):
 
     # Return state updates
     return {
+        "final_report": state.final_report + "="*10 + f" Web Search Result " + "="*10 + f"\n{formatted_response}\n\n",
         "web_search_result": formatted_response,
         "messages": messages + [AIMessage(content=response)],
     }
@@ -184,11 +188,11 @@ def assess_docker_services(state: OverallState):
         
     # If the GROUND TRUTH does not exist for the given CVE ID, update the GT and skip the check
     if not dockerServices.get(state.cve_id):
-        print(f"There is no GT for {state.cve_id}! Updating GT with the following services:")
+        print(f"\tThere is no GT for {state.cve_id}! Updating GT with the following services:")
         services = []
         for serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_type):
             new_service = f"{serv_type.upper()}:{serv_ver.lower()}"
-            print(f"- {new_service}")
+            print(f"\t- {new_service}")
             services.append(new_service)
         dockerServices[state.cve_id] = services
         with open(filename, "w") as f:
@@ -199,7 +203,7 @@ def assess_docker_services(state: OverallState):
     expected_services_types = []
     expected_services_versions = {}
     for exp_serv_ver in dockerServices[state.cve_id]:
-        print(f"Expected service: {exp_serv_ver}")
+        print(f"\tExpected service: {exp_serv_ver}")
         serv_type, serv, ver = exp_serv_ver.split(":")
         expected_services_types.append(serv_type.upper())
         serv = serv.lower()
@@ -212,7 +216,7 @@ def assess_docker_services(state: OverallState):
     proposed_services_types = []
     proposed_services_versions = {}
     for serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_type):
-        print(f"Proposed service: {serv_type}:{serv_ver}")
+        print(f"\tProposed service: {serv_type}:{serv_ver}")
         proposed_services_types.append(serv_type.upper())
         serv, ver = serv_ver.split(":")
         serv = serv.split("/")[-1].lower()
@@ -224,14 +228,14 @@ def assess_docker_services(state: OverallState):
     # Check if all the MAIN expected services are proposed
     for exp_serv, exp_type in zip(expected_services_versions, expected_services_types):
         if (exp_type == 'MAIN') and (exp_serv not in proposed_services_versions):
-            print(f"{exp_type} service '{exp_serv}' was not proposed!")
+            print(f"\t{exp_type} service '{exp_serv}' was not proposed!")
             #!return {"docker_services_ok": False}
         
     # Check if all the MAIN proposed services have the expected version
     for prop_serv, prop_type in zip(proposed_services_versions, proposed_services_types):
         # Report any MAIN proposed service that is not expected 
         if (prop_serv not in expected_services_versions):
-            print(f"{prop_type} service '{prop_serv}' was not expected!")
+            print(f"\t{prop_type} service '{prop_serv}' was not expected!")
             continue
         
         # Handles the case where the same service may be used with different versions
@@ -239,7 +243,7 @@ def assess_docker_services(state: OverallState):
         prop_vers = proposed_services_versions[prop_serv].split(",")
         for pv in prop_vers:
             if pv not in exp_vers:
-                print(f"The proposed version ({pv}) of {prop_serv} is not an expected one!")
+                print(f"\tThe proposed version ({pv}) of {prop_serv} is not an expected one!")
     
     return {"docker_services_ok": True}
 
@@ -262,7 +266,7 @@ def generate_docker_code(state: OverallState):
     """DEBUG: route the graph to the 'test_docker_code' node"""
     if state.debug == "skip_to_test":
         print("[DEBUG] Skipping 'generate_docker_code'...")
-        return {"debug": ""}    # Since the next node is 'test_docker_code'
+        return {}
     
     """The agent generates/fixes the docker code to reproduce the CVE"""
     print("Generating the code...")
@@ -285,7 +289,7 @@ def generate_docker_code(state: OverallState):
     )
     
     # Format the LLM response
-    response = f"Directory tree:\n\n{generated_code.directory_tree}\n\n"
+    response = f"Directory tree:\n{generated_code.directory_tree}\n\n"
     for name, code in zip(generated_code.file_name, generated_code.file_code):
         response += "-" * 10 + f" {name} " + "-" * 10 + f"\n{code}\n\n"
     
@@ -296,6 +300,7 @@ def generate_docker_code(state: OverallState):
     print("Code generated!")
     # Return state updates
     return {
+        "final_report": state.final_report + "="*10 + f" Generated Code (First Version) " + "="*10 + f"\n{response}\n\n",
         "code": generated_code,
         "messages": state.messages + [
             HumanMessage(content=code_gen_query),
@@ -305,13 +310,18 @@ def generate_docker_code(state: OverallState):
 
 
 def save_code(state: OverallState):
+    """DEBUG: route the graph to the 'test_docker_code' node"""
+    if state.debug == "skip_to_test":
+        print("[DEBUG] Skipping 'save_code'...")
+        return {"debug": ""}    # Since the next node is 'test_docker_code'
+    
     """The agent saves the tested code in a local directory structured as the directory tree"""
     print("Saving code...")
     docker_dir_path = Path(f"./../../dockers/{state.cve_id}")
     if not docker_dir_path.exists():
         try:
             docker_dir_path.mkdir(parents=True, exist_ok=False)
-            print(f"Directory '{docker_dir_path}' created successfully.")
+            print(f"\tDirectory '{docker_dir_path}' created successfully.")
         except PermissionError:
             raise ValueError(f"Permission denied: Unable to create '{docker_dir_path}'.")
         except Exception as e:
@@ -330,7 +340,7 @@ def save_code(state: OverallState):
         
         with open(full_path, "w", encoding="utf-8") as f:
             f.write(file_content)
-        print(f"Saved file: {full_path}")
+        print(f"\tSaved file: {full_path}")
 
     print("Code saved!")
     return {}
@@ -341,7 +351,7 @@ def test_docker_code(state: OverallState):
     """The agent tests the docker to check if it work correctly"""    
     print("Testing code...")
     if state.test_iteration >= 10:     #TODO: decide the maximum number of iterations
-        print("Max Iterations Reached!")
+        print("\tMax Iterations Reached!")
         return {"feedback": TestCodeResult(code_ok=True, error="", fix="", fixed_code=state.code)}
     
     docker_dir_path = Path(f"./../../dockers/{state.cve_id}")
@@ -351,7 +361,7 @@ def test_docker_code(state: OverallState):
     if not logs_dir_path.exists():
         try:
             logs_dir_path.mkdir(parents=True, exist_ok=False)
-            print(f"Directory '{logs_dir_path}' created successfully.")
+            print(f"\tDirectory '{logs_dir_path}' created successfully.")
         except PermissionError:
             raise ValueError(f"Permission denied: Unable to create '{logs_dir_path}'.")
         except Exception as e:
@@ -372,7 +382,7 @@ def test_docker_code(state: OverallState):
         )
         process.communicate()
 
-    print(f"Test logs saved to: {log_file}")
+    print(f"\tTest logs saved to: {log_file}")
     # Extract the log content
     with open(log_file, "r") as f:
         log_content = f.read()
@@ -383,9 +393,10 @@ def test_docker_code(state: OverallState):
         code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{content}\n\n"
         
     # Saving the Pydantic object that stores the code into a JSON file
+    formatted_code = f"'code': CodeGenerationResult(\nfile_name={state.code.file_name},\nfile_code={state.code.file_code},\ndirectory_tree='{state.code.directory_tree}',\n),"
     code_file = os.path.join(logs_dir_path, f"{state.cve_id}_code.txt")
     with open(code_file, "w") as log:
-        log.write(state.code.model_dump_json(indent=4))
+        log.write(formatted_code)
         
     # Format the test code query
     test_code_query = TEST_CODE_PROMPT.format(
@@ -409,8 +420,21 @@ def test_docker_code(state: OverallState):
     if test_code_results.code_ok:
         response = f"Test passed!\n\n"
         print("Test passed!")
+        
+        # Format the working code into a string
+        formatted_code = f"Directory tree:\n{state.code.directory_tree}\n\n"
+        for name, code in zip(state.code.file_name, state.code.file_code):
+            formatted_code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{code}\n\n"
+            
+        # Saving the final report
+        final_report = state.final_report + "="*10 + f" Test Passed! Generated Code (Final Version) " + "="*10 + f"\n{formatted_code}",
+        final_report_file = os.path.join(logs_dir_path, f"{state.cve_id}_final_report.txt")        
+        with open(final_report_file, "w") as log:
+            log.write(final_report[0])
+        
         # Return state updates
         return {
+            "final_report": final_report[0],
             "feedback": test_code_results,
             "test_iteration": state.test_iteration + 1,
             "messages": state.messages + [
@@ -419,11 +443,8 @@ def test_docker_code(state: OverallState):
             ],
         }
     else:
-        response = f"Test failed!\n===== Error Description =====\n{test_code_results.error}\n===== Applied Fix =====\n{test_code_results.fix}"
-        # print("Test failed!")
-        #!DEBUG!#
-        print(f"{response}\n")
-        #!DEBUG!#
+        response = "="*10 + f" Test Failed! (iteration={state.test_iteration}) " + "="*10 + f"\n----- Error Description -----\n{test_code_results.error}\n----- Applied Fix -----\n{test_code_results.fix}\n\n"
+        print("Test failed!")
         
         # Ensure Docker is stopped and containers and volumes are removed
         subprocess.run(
@@ -439,8 +460,10 @@ def test_docker_code(state: OverallState):
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
+        
         # Return state updates
         return {
+            "final_report": state.final_report + response,
             "code": test_code_results.fixed_code,
             "feedback": test_code_results,
             "test_iteration": state.test_iteration + 1,
