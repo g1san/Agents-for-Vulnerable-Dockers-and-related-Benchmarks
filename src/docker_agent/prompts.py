@@ -82,4 +82,4 @@ LIST OF IMPORTANT THINGS TO REMEMBER:
 - Do not use service versions that are not proven to be vulnerable to {cve_id}.
 - If the system presents an error the proposed fix must include all files, both the updated ones and the unchanged ones.
 - The file names must indicate the relative path from the "{cve_id}" folder
-- Ignore any graceful shutdown events, as they are intentionally started by the user."""
+- Ignore any graceful shutdown events (e.g. caused by SIGWINCH), as they are intentionally started by the user."""
