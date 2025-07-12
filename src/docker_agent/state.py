@@ -28,9 +28,9 @@ class OverallState(BaseModel):
         description="The result of the web search"
     )
     
-    docker_services_ok: bool = Field(
+    services_ok: bool = Field(
         default=False, 
-        description="Are the Docker services needed to reproduce the CVE the expected ones?"
+        description="Are the services needed to reproduce the CVE the expected ones?"
     )
 
     code: CodeGenerationResult = Field(

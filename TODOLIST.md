@@ -3,7 +3,7 @@
     - (***DONE***) Improve it by making the LLM associate a specific tag to the **main service**, i.e., the service that is vulnerable to the CVE.
     - (***DONE***) Add **auxiliary** tag to services added just to make the main service work or to make the docker work
     - (***DONE***) Add manual retrieval of CVE data from NIST website for _custom_web_search_ because of error 502
-    - Add manual retrieval of CVE data from Exploit DB (website or local repository)
+    - Add manual retrieval of CVE data from Exploit DB (local repository needs to be available)
     - Check if order of URL provided by Google API is the same every time
     - Benchmark how many URLs does the LLM need to check for a given CVE to get the GT services, do it just for one CVE, it is a useful result for the thesis
 - ***"assess_docker_services"***
@@ -30,3 +30,12 @@
 
 
 **NOTE**: it is not ok to call GT the contents of docker-services.json, since once the thesis project will evolve we will start from an empty file
+
+
+# WHAT-TO-DO AFTER 10/07/2025 MEETING
+- Benchmark with accuracy, precision, recall, f1-score, input/output tokens and costs the results of the 3 web search modes (use 100 CVEs, extract them from VDaaS), actually need to check if query of 'custom' mode is =CVE-ID, then there is no need to perform benchmark with 'custom_no_tool'
+- Expand logging
+- (***DONE***) Change names to ***"get_docker_services"*** and ***"assess_docker_services"***
+- Use LLM to check if generated code has the correct versions provided by the web search by expanding the **CodeGenerationResult**
+- Implement MCP for Docker Desktop in another branch
+- Implement MAVEN for vulnerability assessment

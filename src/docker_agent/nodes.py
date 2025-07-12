@@ -38,7 +38,7 @@ llm_openai_web_search_tool = llm_model.bind_tools([openai_web_search])
 llm_custom_web_search_tool = llm_model.bind_tools([web_search])
 
 # Set the LLM to return a structured output from web search
-docker_services_llm = llm_model.with_structured_output(WebSearchResult)
+web_search_llm = llm_model.with_structured_output(WebSearchResult)
 
 # Set the LLM to return a structured output from code generation
 code_generation_llm = llm_model.with_structured_output(CodeGenerationResult)
@@ -88,10 +88,10 @@ def route_cve(state: OverallState) -> Literal["Found", "Not Found"]:
         return "Not Found"
 
 
-def get_docker_services(state: OverallState):
+def get_services(state: OverallState):
     """DEBUG: route the graph to the 'test_docker_code' node"""
     if state.debug == "skip_to_test":
-        print("[DEBUG] Skipping 'get_docker_services'...")
+        print("[DEBUG] Skipping 'get_services'...")
         return {}
     
     """The agent performs a web search to gather relevant information 
@@ -149,7 +149,7 @@ def get_docker_services(state: OverallState):
         # Extract the source-less response
         response_sourceless = web_search_result.content[0]["text"]
         # Invoke the LLM to format the web search result into a WebSearchResult Pydantic class
-        formatted_response = docker_services_llm.invoke(WEB_SEARCH_FORMAT_PROMPT.format(web_search_result=response_sourceless), config={"callbacks": [langfuse_handler]})
+        formatted_response = web_search_llm.invoke(WEB_SEARCH_FORMAT_PROMPT.format(web_search_result=response_sourceless), config={"callbacks": [langfuse_handler]})
         
         # Add the sources to the response
         response = response_sourceless + "\n\nSources:"
@@ -174,35 +174,35 @@ def get_docker_services(state: OverallState):
     }
 
 
-def assess_docker_services(state: OverallState):
+def assess_services(state: OverallState):
     """DEBUG: route the graph to the 'test_docker_code' node"""
     if state.debug == "skip_to_test":
-        print("[DEBUG] Skipping 'assess_docker_services'...")
-        return {"docker_services_ok": True}
+        print("[DEBUG] Skipping 'assess_services'...")
+        return {"services_ok": True}
     
-    """Checks if the services needed to generate the vulnerable Docker code are correct against a GROUND TRUTH"""
+    """Checks if the services needed to generate the vulnerable Docker code are correct by using the ones of Vulhub as GT"""
     print("Checking the Docker services...")
-    filename = 'docker-services.json'
+    filename = 'services.json'
     with open(filename, "r") as f:
-        dockerServices = json.load(f)
+        jsonServices = json.load(f)
         
     # If the GROUND TRUTH does not exist for the given CVE ID, update the GT and skip the check
-    if not dockerServices.get(state.cve_id):
+    if not jsonServices.get(state.cve_id):
         print(f"\tThere is no GT for {state.cve_id}! Updating GT with the following services:")
         services = []
         for serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_type):
             new_service = f"{serv_type.upper()}:{serv_ver.lower()}"
             print(f"\t- {new_service}")
             services.append(new_service)
-        dockerServices[state.cve_id] = services
+        jsonServices[state.cve_id] = services
         with open(filename, "w") as f:
-            json.dump(dockerServices, f, indent=4)
-        return {"docker_services_ok": True}
+            json.dump(jsonServices, f, indent=4)
+        return {"services_ok": True}
     
     # Extract the expected services and their versions from the GROUND TRUTH
     expected_services_types = []
     expected_services_versions = {}
-    for exp_serv_ver in dockerServices[state.cve_id]:
+    for exp_serv_ver in jsonServices[state.cve_id]:
         print(f"\tExpected service: {exp_serv_ver}")
         serv_type, serv, ver = exp_serv_ver.split(":")
         expected_services_types.append(serv_type.upper())
@@ -229,7 +229,7 @@ def assess_docker_services(state: OverallState):
     for exp_serv, exp_type in zip(expected_services_versions, expected_services_types):
         if (exp_type == 'MAIN') and (exp_serv not in proposed_services_versions):
             print(f"\t{exp_type} service '{exp_serv}' was not proposed!")
-            #!return {"docker_services_ok": False}
+            #!return {"services_ok": False}
         
     # Check if all the MAIN proposed services have the expected version
     for prop_serv, prop_type in zip(proposed_services_versions, proposed_services_types):
@@ -245,18 +245,18 @@ def assess_docker_services(state: OverallState):
             if pv not in exp_vers:
                 print(f"\tThe proposed version ({pv}) of {prop_serv} is not an expected one!")
     
-    return {"docker_services_ok": True}
+    return {"services_ok": True}
 
 
-def route_docker_services(state: OverallState) -> Literal["Ok", "Not Ok"]:
+def route_services(state: OverallState) -> Literal["Ok", "Not Ok"]:
     """DEBUG: route the graph to the 'test_docker_code' node"""
     if state.debug == "skip_to_test":
-        print("[DEBUG] Skipping 'route_docker_services'...")
+        print("[DEBUG] Skipping 'route_services'...")
         return "Ok"
     
     """Route to the code generator or terminate the graph"""
-    print(f"Routing docker services (docker_services_ok = {state.docker_services_ok})")
-    if state.docker_services_ok:
+    print(f"Routing services (services_ok = {state.services_ok})")
+    if state.services_ok:
         return "Ok"
     else:
         return "Not Ok"
