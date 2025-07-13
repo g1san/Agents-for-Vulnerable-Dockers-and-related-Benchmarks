@@ -75,7 +75,7 @@ def assess_cve_id(state: OverallState):
 
 
 def route_cve(state: OverallState) -> Literal["Found", "Not Found"]:
-    """DEBUG: route the graph to the 'test_docker_code' node"""
+    """DEBUG: route the graph to the 'test_code' node"""
     if state.debug == "skip_to_test":
         print("[DEBUG] Skipping 'route_cve'...")
         return "Found"
@@ -89,13 +89,12 @@ def route_cve(state: OverallState) -> Literal["Found", "Not Found"]:
 
 
 def get_services(state: OverallState):
-    """DEBUG: route the graph to the 'test_docker_code' node"""
+    """DEBUG: route the graph to the 'test_code' node"""
     if state.debug == "skip_to_test":
         print("[DEBUG] Skipping 'get_services'...")
         return {}
     
-    """The agent performs a web search to gather relevant information 
-        about the services needed to generate the vulnerable Docker code"""
+    """The agent performs a web search to gather relevant information about the services needed to generate the vulnerable Docker code"""
     print("Searching the web...")
     
     messages = state.messages
@@ -175,7 +174,7 @@ def get_services(state: OverallState):
 
 
 def assess_services(state: OverallState):
-    """DEBUG: route the graph to the 'test_docker_code' node"""
+    """DEBUG: route the graph to the 'test_code' node"""
     if state.debug == "skip_to_test":
         print("[DEBUG] Skipping 'assess_services'...")
         return {"services_ok": True}
@@ -249,23 +248,23 @@ def assess_services(state: OverallState):
 
 
 def route_services(state: OverallState) -> Literal["Ok", "Not Ok"]:
-    """DEBUG: route the graph to the 'test_docker_code' node"""
+    """DEBUG: route the graph to the 'test_code' node"""
     if state.debug == "skip_to_test":
         print("[DEBUG] Skipping 'route_services'...")
         return "Ok"
     
     """Route to the code generator or terminate the graph"""
     print(f"Routing services (services_ok = {state.services_ok})")
-    if state.services_ok:
+    if (state.services_ok) and (state.debug != "benchmark_web_search"):
         return "Ok"
     else:
         return "Not Ok"
 
 
-def generate_docker_code(state: OverallState):
-    """DEBUG: route the graph to the 'test_docker_code' node"""
+def generate_code(state: OverallState):
+    """DEBUG: route the graph to the 'test_code' node"""
     if state.debug == "skip_to_test":
-        print("[DEBUG] Skipping 'generate_docker_code'...")
+        print("[DEBUG] Skipping 'generate_code'...")
         return {}
     
     """The agent generates/fixes the docker code to reproduce the CVE"""
@@ -310,10 +309,10 @@ def generate_docker_code(state: OverallState):
 
 
 def save_code(state: OverallState):
-    """DEBUG: route the graph to the 'test_docker_code' node"""
+    """DEBUG: route the graph to the 'test_code' node"""
     if state.debug == "skip_to_test":
         print("[DEBUG] Skipping 'save_code'...")
-        return {"debug": ""}    # Since the next node is 'test_docker_code'
+        return {"debug": ""}    # Since the next node is 'test_code'
     
     """The agent saves the tested code in a local directory structured as the directory tree"""
     print("Saving code...")
@@ -346,8 +345,7 @@ def save_code(state: OverallState):
     return {}
 
 
-#TODO: to check if testing works use the docker-systems of the VDaaS repository
-def test_docker_code(state: OverallState):
+def test_code(state: OverallState):
     """The agent tests the docker to check if it work correctly"""    
     print("Testing code...")
     if state.test_iteration >= 10:     #TODO: decide the maximum number of iterations

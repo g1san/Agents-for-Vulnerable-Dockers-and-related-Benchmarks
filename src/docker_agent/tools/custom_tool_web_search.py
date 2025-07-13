@@ -270,12 +270,12 @@ class WebSearchArgs(BaseModel):
     cve_id: str = Field(..., description="Identifier of the CVE in the form CVE-YYYY-XXXX")
 
 
-def web_search_tool_func(query: str, cve_id: str):
+def web_search_tool_func(query: str, cve_id: str, verbose: bool = True):
     inCount = 0
     outCount = 0
     
     try:
-        rag_model = ContextGenerator(n_documents=10, verbose=True)
+        rag_model = ContextGenerator(n_documents=10, verbose=verbose)
         (response, inCount, outCount) = rag_model.invoke(query, cve_id)
     except Exception as e:
         response = f"An error occurred during the web search: {str(e)}"
