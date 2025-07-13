@@ -60,6 +60,17 @@ def assess_cve_id(state: OverallState):
 
     if response.status_code == 200:
         print(f"{state.cve_id} exists!")
+        
+        docker_dir_path = Path(f"./../../dockers/{state.cve_id}")
+        if not docker_dir_path.exists():
+            try:
+                docker_dir_path.mkdir(parents=True, exist_ok=False)
+                print(f"\tDirectory '{docker_dir_path}' created successfully.")
+            except PermissionError:
+                raise ValueError(f"Permission denied: Unable to create '{docker_dir_path}'.")
+            except Exception as e:
+                raise ValueError(f"An error occurred: {e}")
+        
         return {
             "is_cve": True,
             "final_report": state.final_report + "="*10 + f" {state.cve_id} Final Report "  + "="*10 + "\n" + "="*10 + f" Initial Parameters " + "="*10 + f"\n'cve_id': {state.cve_id}\n'web_search_tool': {state.web_search_tool}\n'web_search_result': {state.web_search_result}\n'code': {state.code}\n'messages': {state.messages}\n'debug': {state.debug}\n\n",
@@ -97,6 +108,21 @@ def get_services(state: OverallState):
     """The agent performs a web search to gather relevant information about the services needed to generate the vulnerable Docker code"""
     print("Searching the web...")
     
+    docker_dir_path = Path(f"./../../dockers/{state.cve_id}")
+    logs_dir_path = docker_dir_path / "logs"
+    
+    # Create the directory to save logs (if it does not exist)
+    if not logs_dir_path.exists():
+        try:
+            logs_dir_path.mkdir(parents=True, exist_ok=False)
+            print(f"\tDirectory '{logs_dir_path}' created successfully.")
+        except PermissionError:
+            raise ValueError(f"Permission denied: Unable to create '{logs_dir_path}'.")
+        except Exception as e:
+            raise ValueError(f"An error occurred: {e}")
+        
+    web_search_file = os.path.join(logs_dir_path, f"{state.cve_id}_web_search_{state.web_search_tool}.json")
+    
     messages = state.messages
 
     # Invoking the LLM with the custom web search tool
@@ -113,7 +139,7 @@ def get_services(state: OverallState):
         query, cve_id = tool_call_args['query'], tool_call_args['cve_id']
         print(f"The LLM invoked the 'web search' tool with parameters: query={query}, cve_id={cve_id}\n")
         # Invoke the tool 'web_search_tool_func' to perform the web search. NOTE: here 'formatted_response' is already formatted as WebSearchResult Pydantic class
-        formatted_response, in_token, out_token = web_search_tool_func(query, cve_id)
+        formatted_response, in_token, out_token = web_search_tool_func(query=query, cve_id=cve_id, verbose=False)
         
         # Build 'response' which can be added to messages
         response = f"CVE description: {formatted_response.description}\nAttack Type: {formatted_response.attack_type}\nService list:"
@@ -121,7 +147,20 @@ def get_services(state: OverallState):
             response += f"\n[{service}] {description}"
             
         # Print additional information about token usage
-        print(f"TOKEN USAGE INFO: this custom web search used {in_token} input tokens and {out_token} output tokens\n")
+        print(f"\tTOKEN USAGE INFO: this web search used {in_token} input tokens and {out_token} output tokens")
+        
+        web_search_dict = {
+            'cve_desc': formatted_response.description,
+            'attack_type': formatted_response.attack_type,
+            'service_list': formatted_response.services,
+            'service_type': formatted_response.service_type,
+            'service_desc': formatted_response.service_description,
+            'input_tokens': in_token,
+            'output_tokens': out_token,
+        }
+        with open(web_search_file, 'w') as fp:
+            json.dump(web_search_dict, fp, indent=4)
+        print(f"\tWeb search result saved to: {web_search_file}")
     
     # Uses the web search function directly, instead of its tool counterpart
     elif state.web_search_tool == "custom_no_tool":
@@ -134,7 +173,20 @@ def get_services(state: OverallState):
             response += f"\n[{service}] {description}"
             
         # Print additional information about token usage
-        print(f"TOKEN USAGE INFO: this custom web search used {in_token} input tokens and {out_token} output tokens\n")
+        print(f"\tTOKEN USAGE INFO: this web search used {in_token} input tokens and {out_token} output tokens")
+        
+        web_search_dict = {
+            "cve_desc": formatted_response.description,
+            "attack_type": formatted_response.attack_type,
+            "service_list": formatted_response.services,
+            "service_type": formatted_response.service_type,
+            "service_desc": formatted_response.service_description,
+            "input_tokens": in_token,
+            "output_tokens": out_token,
+        }
+        with open(web_search_file, 'w') as fp:
+            json.dump(web_search_dict, fp, indent=4)
+        print(f"\tWeb search result saved to: {web_search_file}")
     
     # Invoking the LLM with OpenAI's predefined web search tool  
     elif state.web_search_tool == "openai":
@@ -143,8 +195,9 @@ def get_services(state: OverallState):
         # Update message list
         messages += [HumanMessage(content=web_query)]
         
-        # Invoke the LLM to perform the web search
+        # Invoke the LLM to perform the web search and extract the token usage
         web_search_result = llm_openai_web_search_tool.invoke(messages, config={"callbacks": [langfuse_handler]})
+        in_token, out_token = web_search_result.usage_metadata['input_tokens'], web_search_result.usage_metadata['output_tokens']
         # Extract the source-less response
         response_sourceless = web_search_result.content[0]["text"]
         # Invoke the LLM to format the web search result into a WebSearchResult Pydantic class
@@ -157,6 +210,22 @@ def get_services(state: OverallState):
             source_set.add(f"{source['title']} ({source['url']})")
         for i, source in enumerate(source_set):
             response += f"\n{i + 1}) {source}"
+            
+        # Print additional information about token usage
+        print(f"\tTOKEN USAGE INFO: this web search used {in_token} input tokens and {out_token} output tokens")
+        
+        web_search_dict = {
+            "cve_desc": formatted_response.description,
+            "attack_type": formatted_response.attack_type,
+            "service_list": formatted_response.services,
+            "service_type": formatted_response.service_type,
+            "service_desc": formatted_response.service_description,
+            "input_tokens": in_token,
+            "output_tokens": out_token,
+        }
+        with open(web_search_file, 'w') as fp:
+            json.dump(web_search_dict, fp, indent=4)
+        print(f"\tWeb search result saved to: {web_search_file}")
     
     # Skips the web search phase
     elif state.web_search_tool == "skip":
@@ -365,10 +434,8 @@ def test_code(state: OverallState):
         except Exception as e:
             raise ValueError(f"An error occurred: {e}")
         
-    # Get the current time-stamp
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     # Create the log file in the 'logs' subdirectory
-    log_file = os.path.join(logs_dir_path, f"{state.cve_id}_log_{timestamp}.txt")
+    log_file = os.path.join(logs_dir_path, f"{state.cve_id}_log{state.test_iteration}.txt")
 
     # Launch the docker and save the output in the log file
     with open(log_file, "w") as log:

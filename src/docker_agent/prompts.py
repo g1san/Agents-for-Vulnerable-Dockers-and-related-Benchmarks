@@ -21,7 +21,8 @@ Your main goal is to identify the services needed to create a Docker system vuln
 The response output should be formatted as follows:
     - Description: a description of the CVE and a precise list of the vulnerable versions of the affected services, consider only those versions reported by all sources or by the most reliable ones (e.g. MITRE and NIST).
     - Attack Type: type of attack (e.g. DoS, RCE, etc.)
-    - Services: list of basic services to be included in a simple Docker-based system vulnerable to {cve_id}. 
+    - Services: list of basic services to be included in a simple Docker-based system vulnerable to {cve_id}.
+It is important for you to list just the minimum set of services needed to create the Docker-based system. 
 
 NOTE: for each service the most following rules must be applied:
     - A tag must be associated specifying if the service is 'MAIN' (i.e. vulnerable to {cve_id}) or 'AUX' (i.e. not vulnerable to {cve_id} but needed for the system to work).
@@ -33,7 +34,8 @@ OPENAI_WEB_SEARCH_PROMPT = """Search the web and summarize all the information a
 The response output should be formatted as follows:
     - Description: a description of the CVE and a precise list of the vulnerable versions of the affected services, consider only those versions reported by all sources or by the most reliable ones (e.g. MITRE and NIST).
     - Attack Type: type of attack (e.g. DoS, RCE, etc.)
-    - Services: list of basic services to be included in a simple Docker-based system vulnerable to {cve_id}. 
+    - Services: list of basic services to be included in a simple Docker-based system vulnerable to {cve_id}.
+It is important for you to list just the minimum set of services needed to create the Docker-based system. 
 
 NOTE: for each service the most following rules must be applied:
     - A tag must be associated specifying if the service is 'MAIN' (i.e. vulnerable to {cve_id}) or 'AUX' (i.e. not vulnerable to {cve_id} but needed for the system to work).

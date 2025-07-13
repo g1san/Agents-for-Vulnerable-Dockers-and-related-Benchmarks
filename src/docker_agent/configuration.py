@@ -1,15 +1,23 @@
 """Define the Langfuse handler, the agent's graph state and the various LLM configurations and bindings"""
 
 import os
-from langfuse.callback import CallbackHandler
+from langfuse import Langfuse, get_client
+from langfuse.langchain import CallbackHandler
 from pydantic import BaseModel, Field
-
-# Initialize Langfuse CallbackHandler for LangGraph/Langchain (tracing)
-langfuse_handler = CallbackHandler(
+ 
+# Initialize Langfuse client with constructor arguments
+Langfuse(
     public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
     secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
     host=os.getenv("LANGFUSE_HOST"),
 )
+ 
+# Get the configured client instance
+langfuse = get_client()
+ 
+# Initialize Langfuse CallbackHandler for LangGraph/Langchain (tracing)
+langfuse_handler = CallbackHandler()
+
 
 # Define the list of expected services for each replicable CVE, works as a GROUND TRUTH
 # dockerServices = {

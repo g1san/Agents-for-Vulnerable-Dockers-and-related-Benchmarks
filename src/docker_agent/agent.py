@@ -16,7 +16,7 @@ def draw_graph():
         
     except Exception as e:
         print(f"Rendering failed with code {e}.\nHere's the Mermaid source:\n{compiled_workflow.get_graph().draw_mermaid()}")
-draw_graph()
+
     
 def benchmark_web_search(web_search_mode: str):
     import json
@@ -36,25 +36,36 @@ def benchmark_web_search(web_search_mode: str):
                 },
                 config={"callbacks": [langfuse_handler], "recursion_limit": 100},
             )
+            #TODO: extract from web search file the values needed to compute stats
+            
 
         except Exception as e:
             print(f"Workflow invocation failed: {e}.")
 
 
-try:
-    result = compiled_workflow.invoke(
-        input={
-            "cve_id": "CVE-2021-28164",#    CVE-2021-28164    CVE-2022-46169    CVE-2024-23897  #NOTE: to test GT update use CVE-2017-7525
-            "web_search_tool": "custom",#   custom  custom_no_tool  openai  skip        #NOTE: if 'skip' is used, initialize "web_search_result" with valid data
-            #"web_search_result": WebSearchResult(description="", attack_type="", services=[], service_type=[], service_description=[]),
-            #"code": CodeGenerationResult(file_name=[], file_code=[], directory_tree=""),
-            "messages": [SystemMessage(content=SYSTEM_PROMPT)],
-            "debug": ""#        (DEFAULT="")    skip_to_test
-        },
-        config={"callbacks": [langfuse_handler], "recursion_limit": 100},
-    )
-    
-except Exception as e:
-    print(f"Workflow invocation failed: {e}.")
+def test_workflow():
+    try:
+        result = compiled_workflow.invoke(
+            input={
+                "cve_id": "CVE-2021-28164",#    CVE-2021-28164    CVE-2022-46169    CVE-2024-23897  #NOTE: to test GT update use CVE-2017-7525
+                "web_search_tool": "openai",#   custom  custom_no_tool  openai  skip        #NOTE: if 'skip' is used, initialize "web_search_result" with valid data
+                #"web_search_result": WebSearchResult(description="", attack_type="", services=[], service_type=[], service_description=[]),
+                #"code": CodeGenerationResult(file_name=[], file_code=[], directory_tree=""),
+                "messages": [SystemMessage(content=SYSTEM_PROMPT)],
+                "debug": "benchmark_web_search"#        (DEFAULT="")    skip_to_test    benchmark_web_search
+            },
+            config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+        )
 
-    
+    except Exception as e:
+        print(f"Workflow invocation failed: {e}.")
+        
+        
+def run_agent():
+    # draw_graph()
+    # test_workflow()
+    # benchmark_web_search("custom")
+    # benchmark_web_search("openai")
+    return
+
+run_agent()    
