@@ -4,7 +4,7 @@ from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 
 # My modules
-from configuration import CodeGenerationResult, WebSearchResult, TestCodeResult
+from configuration import CodeGenerationResult, WebSearchResult, TestCodeResult, Milestones
 
 
 class OverallState(BaseModel):
@@ -13,24 +13,14 @@ class OverallState(BaseModel):
         description="The ID of the CVE"
     )
 
-    is_cve: bool = Field(
-        default=False, 
-        description="Does the ID exists in the MITRE CVE database?"
-    )
-
     web_search_tool: str = Field(
         default="custom", 
         description="The name of the web search tool"
     )
 
     web_search_result: WebSearchResult = Field(
-        default=WebSearchResult(description="", attack_type="", services=[], service_type=[], service_description=[]), 
+        default=WebSearchResult(desc="", attack_type="", services=[], service_vers=[], service_type=[], service_desc=[]), 
         description="The result of the web search"
-    )
-    
-    services_ok: bool = Field(
-        default=False, 
-        description="Are the services needed to reproduce the CVE the expected ones?"
     )
 
     code: CodeGenerationResult = Field(
@@ -56,6 +46,11 @@ class OverallState(BaseModel):
     final_report: str = Field(
         default="",
         description="String that summarizes the workflow which will be ave in the 'final_report.txt' file"
+    )
+    
+    milestones: Milestones = Field(
+        default=Milestones(),
+        description="Milestones of the workflow, used to to track its progress"
     )
     
     debug: Optional[str] = Field(

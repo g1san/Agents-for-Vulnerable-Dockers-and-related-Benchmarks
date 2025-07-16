@@ -76,8 +76,8 @@
 
 
     "CVE-2017-7525": [
-        "AUX:openjdk:8-jdk",
-        "MAIN:jackson-databind:2.8.8"
+        "MAIN:jackson-databind:2.8.8",
+        "AUX:openjdk:8-jdk"
     ],
 
 

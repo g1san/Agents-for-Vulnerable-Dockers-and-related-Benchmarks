@@ -260,12 +260,12 @@ class ContextGenerator:
         return (formatted_response, input_token_count, output_token_count)
     
 
-def web_search_func(cve_id: str):
+def web_search_func(cve_id: str, verbose: bool = True):
     inCount = 0
     outCount = 0
     
     try:
-        rag_model = ContextGenerator(n_documents=10, verbose=True)
+        rag_model = ContextGenerator(n_documents=10, verbose=verbose)
         (formatted_response, inCount, outCount) = rag_model.invoke(cve_id)
     except Exception as e:
         formatted_response = f"An error occurred during the web search: {str(e)}"

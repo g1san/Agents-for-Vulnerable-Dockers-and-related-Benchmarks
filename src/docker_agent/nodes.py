@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 from typing import Literal
 from datetime import datetime
+from packaging import version
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
@@ -48,6 +49,9 @@ test_code_llm = llm_model.with_structured_output(TestCodeResult)
 
 
 def get_cve_id(state: OverallState):
+    if state.debug == "benchmark_web_search":
+        print("[BENCHMARK] Web search benchmark starting!")
+    
     """Checks if the CVE ID is correctly retrieved from the initialized state"""
     print(f"The provided CVE ID is {state.cve_id.upper()}!")
     return {"cve_id": state.cve_id.upper()}
@@ -70,19 +74,22 @@ def assess_cve_id(state: OverallState):
                 raise ValueError(f"Permission denied: Unable to create '{docker_dir_path}'.")
             except Exception as e:
                 raise ValueError(f"An error occurred: {e}")
+            
+        updated_milestones = state.milestones
+        updated_milestones.cve_id_exists = True
         
         return {
-            "is_cve": True,
+            "milestones": updated_milestones,
             "final_report": state.final_report + "="*10 + f" {state.cve_id} Final Report "  + "="*10 + "\n" + "="*10 + f" Initial Parameters " + "="*10 + f"\n'cve_id': {state.cve_id}\n'web_search_tool': {state.web_search_tool}\n'web_search_result': {state.web_search_result}\n'code': {state.code}\n'messages': {state.messages}\n'debug': {state.debug}\n\n",
         }
 
     elif response.status_code == 404:
         print(f"The record for {state.cve_id} does not exist.")
-        return {"is_cve": False}
+        return {}
 
     else:
         print(f"Failed to fetch CVE: {response.status_code}")
-        return {"is_cve": False}
+        return {}
 
 
 def route_cve(state: OverallState) -> Literal["Found", "Not Found"]:
@@ -92,17 +99,25 @@ def route_cve(state: OverallState) -> Literal["Found", "Not Found"]:
         return "Found"
     
     """Terminate the graph or go to the next step"""
-    print(f"Routing CVE (is_cve = {state.is_cve})")
-    if state.is_cve:
+    print(f"Routing CVE (cve_id_exists = {state.milestones.cve_id_exists})")
+    if state.milestones.cve_id_exists:
         return "Found"
     else:
         return "Not Found"
 
 
+def is_version_in_range(pred_ver: str, start: str, end: str) -> bool:
+    try:
+        return version.parse(start) <= version.parse(pred_ver) <= version.parse(end)
+    except:
+        return False
+    
+
 def get_services(state: OverallState):
     """DEBUG: route the graph to the 'test_code' node"""
-    if state.debug == "skip_to_test":
-        print("[DEBUG] Skipping 'get_services'...")
+    if state.debug == "skip_to_test" or state.web_search_tool == "skip":
+        if state.debug == "skip_to_test":
+            print("[DEBUG] Skipping 'get_services'...")
         return {}
     
     """The agent performs a web search to gather relevant information about the services needed to generate the vulnerable Docker code"""
@@ -122,14 +137,11 @@ def get_services(state: OverallState):
             raise ValueError(f"An error occurred: {e}")
         
     web_search_file = os.path.join(logs_dir_path, f"{state.cve_id}_web_search_{state.web_search_tool}.json")
-    
     messages = state.messages
 
-    # Invoking the LLM with the custom web search tool
+    # Invoking the LLM with the chosen web search mode 
     if state.web_search_tool == "custom":
-        # Format the web search query
         web_query = CUSTOM_WEB_SEARCH_PROMPT.format(cve_id=state.cve_id)
-        # Update message list
         messages += [HumanMessage(content=web_query)]
         
         # Invoke the LLM to generate the custom tool arguments
@@ -137,73 +149,35 @@ def get_services(state: OverallState):
         # Extract the tool arguments from the LLM call
         tool_call_args = json.loads(tool_call.additional_kwargs['tool_calls'][0]['function']['arguments'])
         query, cve_id = tool_call_args['query'], tool_call_args['cve_id']
-        print(f"The LLM invoked the 'web search' tool with parameters: query={query}, cve_id={cve_id}\n")
-        # Invoke the tool 'web_search_tool_func' to perform the web search. NOTE: here 'formatted_response' is already formatted as WebSearchResult Pydantic class
+        print(f"\tThe LLM invoked the 'web search' tool with parameters: query={query}, cve_id={cve_id}\n")
+        #NOTE: 'web_search_tool_func' internally formats the response into a WebSearchResult Pydantic class
         formatted_response, in_token, out_token = web_search_tool_func(query=query, cve_id=cve_id, verbose=False)
-        
-        # Build 'response' which can be added to messages
-        response = f"CVE description: {formatted_response.description}\nAttack Type: {formatted_response.attack_type}\nService list:"
-        for service, description in zip(formatted_response.services, formatted_response.service_description):
-            response += f"\n[{service}] {description}"
-            
-        # Print additional information about token usage
-        print(f"\tTOKEN USAGE INFO: this web search used {in_token} input tokens and {out_token} output tokens")
-        
-        web_search_dict = {
-            'cve_desc': formatted_response.description,
-            'attack_type': formatted_response.attack_type,
-            'service_list': formatted_response.services,
-            'service_type': formatted_response.service_type,
-            'service_desc': formatted_response.service_description,
-            'input_tokens': in_token,
-            'output_tokens': out_token,
-        }
-        with open(web_search_file, 'w') as fp:
-            json.dump(web_search_dict, fp, indent=4)
-        print(f"\tWeb search result saved to: {web_search_file}")
     
-    # Uses the web search function directly, instead of its tool counterpart
     elif state.web_search_tool == "custom_no_tool":
-        # Invoke the 'web_search_func' to perform the web search. NOTE: here 'formatted_response' is already formatted as WebSearchResult Pydantic class
-        formatted_response, in_token, out_token = web_search_func(state.cve_id)
-        
-        # Build 'response' which can be added to messages
-        response = f"CVE description: {formatted_response.description}\nAttack Type: {formatted_response.attack_type}\nService list:"
-        for service, description in zip(formatted_response.services, formatted_response.service_description):
-            response += f"\n[{service}] {description}"
-            
-        # Print additional information about token usage
-        print(f"\tTOKEN USAGE INFO: this web search used {in_token} input tokens and {out_token} output tokens")
-        
-        web_search_dict = {
-            "cve_desc": formatted_response.description,
-            "attack_type": formatted_response.attack_type,
-            "service_list": formatted_response.services,
-            "service_type": formatted_response.service_type,
-            "service_desc": formatted_response.service_description,
-            "input_tokens": in_token,
-            "output_tokens": out_token,
-        }
-        with open(web_search_file, 'w') as fp:
-            json.dump(web_search_dict, fp, indent=4)
-        print(f"\tWeb search result saved to: {web_search_file}")
+        #NOTE: 'web_search_func' internally formats the response into a WebSearchResult Pydantic class
+        formatted_response, in_token, out_token = web_search_func(state.cve_id, verbose=False)
     
-    # Invoking the LLM with OpenAI's predefined web search tool  
     elif state.web_search_tool == "openai":
-        # Format the web search query
         web_query = OPENAI_WEB_SEARCH_PROMPT.format(cve_id=state.cve_id)
-        # Update message list
         messages += [HumanMessage(content=web_query)]
         
         # Invoke the LLM to perform the web search and extract the token usage
         web_search_result = llm_openai_web_search_tool.invoke(messages, config={"callbacks": [langfuse_handler]})
         in_token, out_token = web_search_result.usage_metadata['input_tokens'], web_search_result.usage_metadata['output_tokens']
-        # Extract the source-less response
         response_sourceless = web_search_result.content[0]["text"]
-        # Invoke the LLM to format the web search result into a WebSearchResult Pydantic class
         formatted_response = web_search_llm.invoke(WEB_SEARCH_FORMAT_PROMPT.format(web_search_result=response_sourceless), config={"callbacks": [langfuse_handler]})
         
-        # Add the sources to the response
+    else:
+        raise ValueError("Invalid web search tool specified. Use 'custom', 'custom_no_tool', 'openai' or 'skip'.")
+    
+    
+    # Building response to be added to messages 
+    if state.web_search_tool == "custom" or state.web_search_tool == "custom_no_tool":
+        response = f"CVE description: {formatted_response.desc}\nAttack Type: {formatted_response.attack_type}\nService list:"
+        for service, description in zip(formatted_response.services, formatted_response.service_desc):
+            response += f"\n[{service}] {description}"
+            
+    elif state.web_search_tool == "openai":
         response = response_sourceless + "\n\nSources:"
         source_set = set()
         for source in web_search_result.content[0]["annotations"]:
@@ -211,30 +185,18 @@ def get_services(state: OverallState):
         for i, source in enumerate(source_set):
             response += f"\n{i + 1}) {source}"
             
-        # Print additional information about token usage
-        print(f"\tTOKEN USAGE INFO: this web search used {in_token} input tokens and {out_token} output tokens")
-        
-        web_search_dict = {
-            "cve_desc": formatted_response.description,
-            "attack_type": formatted_response.attack_type,
-            "service_list": formatted_response.services,
-            "service_type": formatted_response.service_type,
-            "service_desc": formatted_response.service_description,
-            "input_tokens": in_token,
-            "output_tokens": out_token,
-        }
-        with open(web_search_file, 'w') as fp:
-            json.dump(web_search_dict, fp, indent=4)
-        print(f"\tWeb search result saved to: {web_search_file}")
+            
+    if state.debug == "benchmark_web_search":
+        print(f"\t[TOKEN USAGE INFO] This web search used {in_token} input tokens and {out_token} output tokens")
     
-    # Skips the web search phase
-    elif state.web_search_tool == "skip":
-        return {}
-        
-    else:
-        raise ValueError("Invalid web search tool specified. Use 'custom', 'custom_no_tool', 'openai' or 'skip'.")
+    # Saving web search log
+    web_search_dict = dict(formatted_response)
+    web_search_dict["input_tokens"] = in_token
+    web_search_dict["output_tokens"] = out_token
+    with open(web_search_file, 'w') as fp:
+        json.dump(web_search_dict, fp, indent=4)
+    print(f"\tWeb search result saved to: {web_search_file}")
 
-    # Return state updates
     return {
         "final_report": state.final_report + "="*10 + f" Web Search Result " + "="*10 + f"\n{formatted_response}\n\n",
         "web_search_result": formatted_response,
@@ -246,74 +208,99 @@ def assess_services(state: OverallState):
     """DEBUG: route the graph to the 'test_code' node"""
     if state.debug == "skip_to_test":
         print("[DEBUG] Skipping 'assess_services'...")
-        return {"services_ok": True}
+        updated_milestones = state.milestones
+        updated_milestones.main_service_identified = True
+        updated_milestones.main_service_version = True
+        return {"milestones": updated_milestones}
     
     """Checks if the services needed to generate the vulnerable Docker code are correct by using the ones of Vulhub as GT"""
     print("Checking the Docker services...")
     filename = 'services.json'
     with open(filename, "r") as f:
         jsonServices = json.load(f)
+    
+    # If the services of CVE do not exist in 'services.json', update 'services.json' and skip the check
+    if not jsonServices.get(state.cve_id) and state.debug != "benchmark_web_search":
+        print(f"\t{state.cve_id} is not in 'services.json'! Updating 'services.json' with the following services:")
         
-    # If the GROUND TRUTH does not exist for the given CVE ID, update the GT and skip the check
-    if not jsonServices.get(state.cve_id):
-        print(f"\tThere is no GT for {state.cve_id}! Updating GT with the following services:")
+        #TODO: handle the ranges properly
         services = []
         for serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_type):
             new_service = f"{serv_type.upper()}:{serv_ver.lower()}"
             print(f"\t- {new_service}")
             services.append(new_service)
+            
         jsonServices[state.cve_id] = services
         with open(filename, "w") as f:
             json.dump(jsonServices, f, indent=4)
-        return {"services_ok": True}
+            
+        updated_milestones = state.milestones
+        updated_milestones.main_service_identified = True
+        updated_milestones.main_service_version = True
+        return {"milestones": updated_milestones}
     
-    # Extract the expected services and their versions from the GROUND TRUTH
-    expected_services_types = []
-    expected_services_versions = {}
-    for exp_serv_ver in jsonServices[state.cve_id]:
-        print(f"\tExpected service: {exp_serv_ver}")
-        serv_type, serv, ver = exp_serv_ver.split(":")
-        expected_services_types.append(serv_type.upper())
-        serv = serv.lower()
-        if not expected_services_versions.get(serv):
-            expected_services_versions[serv] = ver
-        else:
-            expected_services_versions[serv] += f",{ver}"
-        
-    # Extract the proposed services from the web search result
-    proposed_services_types = []
-    proposed_services_versions = {}
-    for serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_type):
-        print(f"\tProposed service: {serv_type}:{serv_ver}")
-        proposed_services_types.append(serv_type.upper())
-        serv, ver = serv_ver.split(":")
-        serv = serv.split("/")[-1].lower()
-        if not proposed_services_versions.get(serv):
-            proposed_services_versions[serv] = ver
-        else:
-            proposed_services_versions[serv] += f",{ver}"
-        
-    # Check if all the MAIN expected services are proposed
-    for exp_serv, exp_type in zip(expected_services_versions, expected_services_types):
-        if (exp_type == 'MAIN') and (exp_serv not in proposed_services_versions):
-            print(f"\t{exp_type} service '{exp_serv}' was not proposed!")
-            #!return {"services_ok": False}
-        
-    # Check if all the MAIN proposed services have the expected version
-    for prop_serv, prop_type in zip(proposed_services_versions, proposed_services_types):
-        # Report any MAIN proposed service that is not expected 
-        if (prop_serv not in expected_services_versions):
-            print(f"\t{prop_type} service '{prop_serv}' was not expected!")
-            continue
-        
-        # Handles the case where the same service may be used with different versions
-        exp_vers = expected_services_versions[prop_serv].split(",")
-        prop_vers = proposed_services_versions[prop_serv].split(",")
-        for pv in prop_vers:
-            if pv not in exp_vers:
-                print(f"\tThe proposed version ({pv}) of {prop_serv} is not an expected one!")
+
+    updated_milestones = state.milestones
+    # Assumes that the first service associated to the CVE is the main one and that only one service is tagged as 'MAIN'
+    exp_main_serv, exp_main_ver = jsonServices.get(state.cve_id)[0].split(":")[1], jsonServices.get(state.cve_id)[0].split(":")[2]
+    prop_main_serv, prop_main_ver_min, prop_main_ver_max = state.web_search_result.services[0], state.web_search_result.service_vers[0].split("|")
+    print(f"\tExpected --> {exp_main_serv}:{exp_main_ver}\tProposed --> {exp_main_ver}:[{prop_main_ver_min}, {prop_main_ver_max}]")
     
-    return {"services_ok": True}
+    if exp_main_serv.lower() == prop_main_serv.lower(): 
+        updated_milestones.main_service_identified = True
+
+    if is_version_in_range(exp_main_ver, prop_main_ver_min, prop_main_ver_max):
+        updated_milestones.main_service_version = True
+    
+    #TODO: review checks for 'AUX' services
+    # # Extract the expected services and their versions from 'services.json'
+    # expected_services_types = []
+    # expected_services_versions = {}
+    # for exp_serv_ver in jsonServices[state.cve_id]:
+    #     print(f"\tExpected service: {exp_serv_ver}")
+    #     serv_type, serv, ver = exp_serv_ver.split(":")
+    #     expected_services_types.append(serv_type.upper())
+    #     serv = serv.lower()
+    #     if not expected_services_versions.get(serv):
+    #         expected_services_versions[serv] = ver
+    #     else:
+    #         expected_services_versions[serv] += f",{ver}"
+    #     
+    # # Extract the proposed services from the web search result
+    # proposed_services_types = []
+    # proposed_services_versions = {}
+    # for serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_type):
+    #     print(f"\tProposed service: {serv_type}:{serv_ver}")
+    #     proposed_services_types.append(serv_type.upper())
+    #     serv, ver = serv_ver.split(":")
+    #     serv = serv.split("/")[-1].lower()
+    #     if not proposed_services_versions.get(serv):
+    #         proposed_services_versions[serv] = ver
+    #     else:
+    #         proposed_services_versions[serv] += f",{ver}"
+    #     
+    # # Check if all the MAIN expected services are proposed
+    # #? Ask how to handle cases such as: 'jetty' != 'eclipse-jetty'
+    # for exp_serv, exp_type in zip(expected_services_versions, expected_services_types):
+    #     if (exp_type == 'MAIN') and (exp_serv not in proposed_services_versions):
+    #         print(f"\t{exp_type} service '{exp_serv}' was not proposed!")
+    #         return {}
+    #     
+    # # Check if all the MAIN proposed services have the expected version
+    # for prop_serv, prop_type in zip(proposed_services_versions, proposed_services_types):
+    #     if (prop_serv not in expected_services_versions):
+    #         print(f"\t{prop_type} service '{prop_serv}' was not expected!")
+    #         continue
+    #     
+    #     # Handles the case where the same service may be used with different versions
+    #     exp_vers = expected_services_versions[prop_serv].split(",")
+    #     prop_vers = proposed_services_versions[prop_serv].split(",")
+    #     for pv in prop_vers:
+    #         if pv not in exp_vers:
+    #             print(f"\tThe proposed version ({pv}) of {prop_serv} is not an expected one!")
+    #TODO: review checks for 'AUX' services
+    
+    return {"milestones": updated_milestones}
 
 
 def route_services(state: OverallState) -> Literal["Ok", "Not Ok"]:
@@ -323,10 +310,12 @@ def route_services(state: OverallState) -> Literal["Ok", "Not Ok"]:
         return "Ok"
     
     """Route to the code generator or terminate the graph"""
-    print(f"Routing services (services_ok = {state.services_ok})")
-    if (state.services_ok) and (state.debug != "benchmark_web_search"):
+    print(f"Routing services (main_service_identified = {state.milestones.main_service_identified}, main_service_version = {state.milestones.main_service_version})")
+    if state.milestones.main_service_identified and state.milestones.main_service_version and state.debug != "benchmark_web_search":
         return "Ok"
     else:
+        if state.debug == "benchmark_web_search":
+            print("[BENCHMARK] Web search benchmark terminated!")
         return "Not Ok"
 
 
@@ -341,14 +330,13 @@ def generate_code(state: OverallState):
     # Format the code generation query
     code_gen_query = CODING_PROMPT.format(
         cve_id=state.cve_id,
-        desc=state.web_search_result.description,
+        desc=state.web_search_result.desc,
         att_type=state.web_search_result.attack_type,
         serv=state.web_search_result.services,
-        serv_desc=state.web_search_result.service_description,
-    )    
-    #! DEBUG !#
-    # print(code_gen_query)
-    #! DEBUG !#
+        serv_vers=state.web_search_result.service_vers,
+        serv_type=state.web_search_result.service_type,
+        serv_desc=state.web_search_result.service_desc,
+    )
     
     # Invoking the LLM with the structured output
     generated_code = code_generation_llm.invoke(
@@ -360,10 +348,6 @@ def generate_code(state: OverallState):
     response = f"Directory tree:\n{generated_code.directory_tree}\n\n"
     for name, code in zip(generated_code.file_name, generated_code.file_code):
         response += "-" * 10 + f" {name} " + "-" * 10 + f"\n{code}\n\n"
-    
-    #! DEBUG !#
-    # print(response)
-    #! DEBUG !#
 
     print("Code generated!")
     # Return state updates
@@ -469,10 +453,12 @@ def test_code(state: OverallState):
         code=code,
         log_content=log_content,
         cve_id=state.cve_id,
-        desc=state.web_search_result.description,
+        desc=state.web_search_result.desc,
         att_type=state.web_search_result.attack_type,
         serv=state.web_search_result.services,
-        serv_desc=state.web_search_result.service_description,
+        serv_vers=state.web_search_result.service_vers,
+        serv_type=state.web_search_result.service_type,
+        serv_desc=state.web_search_result.service_desc,
     )
 
     # Invoke the LLM with the structured output to analyse the log content

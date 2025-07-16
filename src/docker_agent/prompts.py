@@ -19,28 +19,34 @@ The most important information is usually contained in the "Description" section
 GET_DOCKER_SERVICES_PROMPT = """The user will provide you with a summary of various web pages containing information about {cve_id}.
 Your main goal is to identify the services needed to create a Docker system vulnerable to {cve_id}'.
 The response output should be formatted as follows:
-    - Description: a description of the CVE and a precise list of the vulnerable versions of the affected services, consider only those versions reported by all sources or by the most reliable ones (e.g. MITRE and NIST).
+    - Description: a description of the CVE and a precise list of the vulnerable versions of the affected services, consider only those versions reported by the most reliable ones such as MITRE and NIST.
     - Attack Type: type of attack (e.g. DoS, RCE, etc.)
-    - Services: list of basic services to be included in a simple Docker-based system vulnerable to {cve_id}.
-It is important for you to list just the minimum set of services needed to create the Docker-based system. 
+    - Services: minimum set of services needed to create the Docker-based system vulnerable to {cve_id}.
 
-NOTE: for each service the most following rules must be applied:
-    - A tag must be associated specifying if the service is 'MAIN' (i.e. vulnerable to {cve_id}) or 'AUX' (i.e. not vulnerable to {cve_id} but needed for the system to work).
-    - Recent and compatible version must be specified as 'SERVICE-NAME:SERVICE-VERSION', do not be vague by citing just 'any compatible version'.
-    - The service version must be retrievable from 'docker.io/library' and it must keep the system vulnerable to {cve_id}."""
+For each service the most following rules must be applied:
+    - One of these tags must be associated to each service:
+        - 'MAIN' if the service is the one vulnerable to {cve_id}, these services must be listed first.
+        - 'AUX' if the service is needed just to make the system work, these services must be listed after the 'MAIN' ones.
+    - Service version must be specified, do not be vague by citing just 'any compatible version' and do not include tags or service names:
+        - Service version must be retrievable from 'docker.io/library' and it must keep the system vulnerable to {cve_id}.
+        - For 'MAIN' services, if more versions are vulnerable, include the range of vulnerable versions using the format "OLDEST-VERSION|NEWEST-VERSION".
+        - For 'AUX' services choose a version compatible with the range of versions of the 'MAIN' service, no need to use a range."""
 
 
 OPENAI_WEB_SEARCH_PROMPT = """Search the web and summarize all the information available about {cve_id}.
 The response output should be formatted as follows:
-    - Description: a description of the CVE and a precise list of the vulnerable versions of the affected services, consider only those versions reported by all sources or by the most reliable ones (e.g. MITRE and NIST).
+    - Description: a description of the CVE and a precise list of the vulnerable versions of the affected services, consider only those versions reported by the most reliable ones such as MITRE and NIST.
     - Attack Type: type of attack (e.g. DoS, RCE, etc.)
-    - Services: list of basic services to be included in a simple Docker-based system vulnerable to {cve_id}.
-It is important for you to list just the minimum set of services needed to create the Docker-based system. 
+    - Services: minimum set of services needed to create the Docker-based system vulnerable to {cve_id}.
 
-NOTE: for each service the most following rules must be applied:
-    - A tag must be associated specifying if the service is 'MAIN' (i.e. vulnerable to {cve_id}) or 'AUX' (i.e. not vulnerable to {cve_id} but needed for the system to work).
-    - Recent and compatible version must be specified as 'SERVICE-NAME:SERVICE-VERSION', do not be vague by citing just 'any compatible version'.
-    - The service version must be retrievable from 'docker.io/library' and it must keep the system vulnerable to {cve_id}."""
+For each service the most following rules must be applied:
+    - One of these tags must be associated to each service:
+        - 'MAIN' if the service is the one vulnerable to {cve_id}, these services must be listed first.
+        - 'AUX' if the service is needed just to make the system work, these services must be listed after the 'MAIN' ones.
+    - Service version must be specified, do not be vague by citing just 'any compatible version' and do not include tags or service names:
+        - Service version must be retrievable from 'docker.io/library' and it must keep the system vulnerable to {cve_id}.
+        - For 'MAIN' services, if more versions are vulnerable, include the range of vulnerable versions using the format "OLDEST-VERSION|NEWEST-VERSION".
+        - For 'AUX' services choose a version compatible with the range of versions of the 'MAIN' service, no need to use a range."""
         
         
 WEB_SEARCH_FORMAT_PROMPT = """Convert the following text in the provided structured output:
@@ -56,6 +62,8 @@ This is the information available about {cve_id}:
 - Description: {desc}
 - Attack Type: {att_type}
 - Services: {serv}
+- Service Version: {serv_vers}
+- Service Type: {serv_type}
 - Service Description: {serv_desc}
 
 LIST OF IMPORTANT THINGS TO REMEMBER:
@@ -78,6 +86,8 @@ This is the information available about {cve_id}:
 - Description: {desc}
 - Attack Type: {att_type}
 - Services: {serv}
+- Service Version: {serv_vers}
+- Service Type: {serv_type}
 - Service Description: {serv_desc}
 
 LIST OF IMPORTANT THINGS TO REMEMBER:

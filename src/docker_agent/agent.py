@@ -48,8 +48,8 @@ def test_workflow():
         result = compiled_workflow.invoke(
             input={
                 "cve_id": "CVE-2021-28164",#    CVE-2021-28164    CVE-2022-46169    CVE-2024-23897  #NOTE: to test GT update use CVE-2017-7525
-                "web_search_tool": "openai",#   custom  custom_no_tool  openai  skip        #NOTE: if 'skip' is used, initialize "web_search_result" with valid data
-                #"web_search_result": WebSearchResult(description="", attack_type="", services=[], service_type=[], service_description=[]),
+                "web_search_tool": "custom_no_tool",#   custom  custom_no_tool  openai  skip        #NOTE: if 'skip' is used, initialize "web_search_result" with valid data
+                #"web_search_result": WebSearchResult(desc="", attack_type="", services=[], service_vers=[], service_type=[], service_desc=[]),
                 #"code": CodeGenerationResult(file_name=[], file_code=[], directory_tree=""),
                 "messages": [SystemMessage(content=SYSTEM_PROMPT)],
                 "debug": "benchmark_web_search"#        (DEFAULT="")    skip_to_test    benchmark_web_search
@@ -63,9 +63,9 @@ def test_workflow():
         
 def run_agent():
     # draw_graph()
-    # test_workflow()
+    test_workflow()
     # benchmark_web_search("custom")
     # benchmark_web_search("openai")
     return
 
-run_agent()    
+run_agent()
