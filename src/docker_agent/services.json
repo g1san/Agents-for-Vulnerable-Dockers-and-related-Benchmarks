@@ -70,7 +70,7 @@
         "AUX:jetbrains/teamcity-server:2023.05.3"
     ],
     "CVE-2024-23897": [
-        "MAIN:jenkins:2.441"
+        "MAIN:jenkins/jenkins:2.441"
     ],
 
 

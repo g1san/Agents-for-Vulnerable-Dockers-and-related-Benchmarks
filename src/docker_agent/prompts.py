@@ -24,12 +24,13 @@ The response output should be formatted as follows:
     - Services: minimum set of services needed to create the Docker-based system vulnerable to {cve_id}.
 
 For each service the most following rules must be applied:
+    - Service names must be the ones used in Docker Hub, do not use aliases.
     - One of these tags must be associated to each service:
         - 'MAIN' if the service is the one vulnerable to {cve_id}, these services must be listed first.
         - 'AUX' if the service is needed just to make the system work, these services must be listed after the 'MAIN' ones.
     - Service version must be specified, do not be vague by citing just 'any compatible version' and do not include tags or service names:
-        - Service version must be retrievable from 'docker.io/library' and it must keep the system vulnerable to {cve_id}.
-        - For 'MAIN' services, if more versions are vulnerable, include the range of vulnerable versions using the format "OLDEST-VERSION|NEWEST-VERSION".
+        - Service version must be retrievable from 'docker.io/library' and compliant with PEP 440, if not avoid specifying what is not PEP 440 compliant.
+        - For 'MAIN' services, if more versions are vulnerable, include the range of vulnerable versions using the format "OLDEST-VERSION---NEWEST-VERSION".
         - For 'AUX' services choose a version compatible with the range of versions of the 'MAIN' service, no need to use a range."""
 
 
@@ -40,12 +41,13 @@ The response output should be formatted as follows:
     - Services: minimum set of services needed to create the Docker-based system vulnerable to {cve_id}.
 
 For each service the most following rules must be applied:
+    - Service names must be the ones used in Docker Hub, do not use aliases.
     - One of these tags must be associated to each service:
         - 'MAIN' if the service is the one vulnerable to {cve_id}, these services must be listed first.
         - 'AUX' if the service is needed just to make the system work, these services must be listed after the 'MAIN' ones.
     - Service version must be specified, do not be vague by citing just 'any compatible version' and do not include tags or service names:
-        - Service version must be retrievable from 'docker.io/library' and it must keep the system vulnerable to {cve_id}.
-        - For 'MAIN' services, if more versions are vulnerable, include the range of vulnerable versions using the format "OLDEST-VERSION|NEWEST-VERSION".
+        - Service version must be retrievable from 'docker.io/library' and compliant with PEP 440, if not avoid specifying what is not PEP 440 compliant.
+        - For 'MAIN' services, if more versions are vulnerable, include the range of vulnerable versions using the format "OLDEST-VERSION---NEWEST-VERSION".
         - For 'AUX' services choose a version compatible with the range of versions of the 'MAIN' service, no need to use a range."""
         
         

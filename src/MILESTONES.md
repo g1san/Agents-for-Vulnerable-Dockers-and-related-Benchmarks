@@ -3,6 +3,7 @@
 2. **Web Search Milestones**:
     - Was the 'MAIN' service correctly identified?
     - Does the 'MAIN' service version range contain the _expected version_?
+    - Does the web search return all the necessary 'AUX' services?
 3. **Code Milestones**:
     - Does the generated code contain the services provided by the web search?
     - Does the generated code use a vulnerable version of the 'MAIN' service?

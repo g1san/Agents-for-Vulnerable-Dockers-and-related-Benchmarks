@@ -185,7 +185,6 @@ def get_services(state: OverallState):
         for i, source in enumerate(source_set):
             response += f"\n{i + 1}) {source}"
             
-            
     if state.debug == "benchmark_web_search":
         print(f"\t[TOKEN USAGE INFO] This web search used {in_token} input tokens and {out_token} output tokens")
     
@@ -193,6 +192,8 @@ def get_services(state: OverallState):
     web_search_dict = dict(formatted_response)
     web_search_dict["input_tokens"] = in_token
     web_search_dict["output_tokens"] = out_token
+    if state.web_search_tool == "custom":
+        web_search_dict["query"] = query
     with open(web_search_file, 'w') as fp:
         json.dump(web_search_dict, fp, indent=4)
     print(f"\tWeb search result saved to: {web_search_file}")
@@ -243,14 +244,24 @@ def assess_services(state: OverallState):
     updated_milestones = state.milestones
     # Assumes that the first service associated to the CVE is the main one and that only one service is tagged as 'MAIN'
     exp_main_serv, exp_main_ver = jsonServices.get(state.cve_id)[0].split(":")[1], jsonServices.get(state.cve_id)[0].split(":")[2]
-    prop_main_serv, prop_main_ver_min, prop_main_ver_max = state.web_search_result.services[0], state.web_search_result.service_vers[0].split("|")
-    print(f"\tExpected --> {exp_main_serv}:{exp_main_ver}\tProposed --> {exp_main_ver}:[{prop_main_ver_min}, {prop_main_ver_max}]")
-    
+    prop_main_serv, prop_main_ver = state.web_search_result.services[0], state.web_search_result.service_vers[0].split("---")
     if exp_main_serv.lower() == prop_main_serv.lower(): 
         updated_milestones.main_service_identified = True
 
-    if is_version_in_range(exp_main_ver, prop_main_ver_min, prop_main_ver_max):
-        updated_milestones.main_service_version = True
+    if len(prop_main_ver) > 1:
+        prop_main_ver_min, prop_main_ver_max = prop_main_ver[0], prop_main_ver[1]
+        print(f"\tExpected --> {exp_main_serv}:{exp_main_ver}\tProposed --> {prop_main_serv}:[{prop_main_ver_min}, {prop_main_ver_max}]")
+        if is_version_in_range(exp_main_ver, prop_main_ver_min, prop_main_ver_max):
+            updated_milestones.main_service_version = True
+            
+    elif len(prop_main_ver) == 1:
+        prop_main_ver = prop_main_ver[0]
+        print(f"\tExpected --> {exp_main_serv}:{exp_main_ver}\tProposed --> {prop_main_serv}:{prop_main_ver}")
+        if exp_main_ver.lower() == prop_main_ver.lower():
+            updated_milestones.main_service_version = True
+    
+    else:
+        raise ValueError(f"An error occurred while extracting the versions of the proposed MAIN service")
     
     #TODO: review checks for 'AUX' services
     # # Extract the expected services and their versions from 'services.json'

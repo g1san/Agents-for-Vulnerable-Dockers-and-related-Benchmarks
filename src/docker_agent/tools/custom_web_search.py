@@ -47,13 +47,13 @@ class ContextGenerator:
             response = requests.get(url, timeout=10)
             if response.status_code != 200:
                 if self.verbose:
-                    print(f"[SKIP] {url} - Response code: {response.status_code}")
+                    print(f"\t[SKIP] {url} - Response code: {response.status_code}")
                 return None
             
             content_type = response.headers.get("Content-Type", "")
             if not content_type.startswith("text/html"):
                 if self.verbose:
-                    print(f"[SKIP] {url} - Content-Type not valid: {content_type}")
+                    print(f"\t[SKIP] {url} - Content-Type not valid: {content_type}")
                 return None
 
             # Parses the HTML using Python's built-in "html.parser" engine
@@ -77,12 +77,12 @@ class ContextGenerator:
 
         except Exception as e:
             if self.verbose:
-                print(f"[ERROR] Failed to fetch {url}: {e}")
+                print(f"\t[ERROR] Failed to fetch {url}: {e}")
             return None
 
     def get_web_search_results(self, cve_id):
         """Use the Google Custom Search JSON API to retrieve data from the web."""
-        print("Searching with Google API...")
+        print("\tSearching with Google API...")
         documents = []
         query = f"{cve_id}"
 
@@ -106,7 +106,7 @@ class ContextGenerator:
         # Catch the exception
         except Exception as e:
             if self.verbose:
-                print(f"[GOOGLE SEARCH ERROR] {e}")
+                print(f"\t[GOOGLE SEARCH ERROR] {e}")
             return []
 
         items = results.get("items", [])
@@ -116,7 +116,7 @@ class ContextGenerator:
             if not url:
                 continue
 
-            print(f"Processing content from {url}")
+            print(f"\tProcessing content from {url}")
 
             # Extracting data from the URL
             doc = self.extract_and_clean_content(url)
@@ -141,7 +141,7 @@ class ContextGenerator:
 
             except Exception as log_error:
                 if self.verbose:
-                    print(f"[LOGGING ERROR] {log_error}")
+                    print(f"\t[LOGGING ERROR] {log_error}")
 
         try:
             # Create message history for the LLM
@@ -157,7 +157,7 @@ class ContextGenerator:
             # Invoke the LLM to summarize the web page content
             response = llm_model.invoke(messages, config={"callbacks": [langfuse_handler]})
             if self.verbose:
-                print(f"Summary: {response.content.strip()}")
+                print(f"\tSummary: {response.content.strip()}")
                 
             # Count input and output tokens
             input_token_count = response.response_metadata.get("token_usage", {}).get("prompt_tokens", 0)
@@ -166,7 +166,7 @@ class ContextGenerator:
 
         except Exception as e:
             if self.verbose:
-                print(f"[LLM WEB PAGE SUMMARY ERROR] {e}")
+                print(f"\t[LLM WEB PAGE SUMMARY ERROR] {e}")
             return (None, 0, 0)
 
     def summarize_web_search(self, urls, summaries, cve_id, max_chars: int = 450000):
@@ -177,7 +177,7 @@ class ContextGenerator:
                 conc_sum += f"Source: {url}\n{summary}\n\n"
                 
             if self.verbose:
-                print(f"\n\nSUMMARY CONCATENATION\n{conc_sum}")
+                print(f"\n\n\tSUMMARY CONCATENATION\n\t{conc_sum}")
                 
             # Create message history for the LLM
             messages = [
@@ -196,13 +196,13 @@ class ContextGenerator:
             formatted_response = docker_services_llm.invoke(messages, config={"callbacks": [langfuse_handler]})
             
             if self.verbose:
-                print(f"\n\nFORMATTED WEB SEARCH RESPONSE\n{formatted_response}")
+                print(f"\n\n\tFORMATTED WEB SEARCH RESPONSE\n\t{formatted_response}")
             
             return formatted_response
 
         except Exception as e:
             if self.verbose:
-                print(f"[LLM WEB SEARCH SUMMARY ERROR] {e}")
+                print(f"\t[LLM WEB SEARCH SUMMARY ERROR] {e}")
     
     def get_cve_from_nist_api(self, cve_id):
         """Retrieve CVE data from NIST's NVE Database using the API."""
@@ -231,10 +231,10 @@ class ContextGenerator:
         if isinstance(nist_data, tuple):
             results.append(nist_data)
         elif self.verbose:
-            print(f"[NIST API ERROR] {nist_data}")
+            print(f"\t[NIST API ERROR] {nist_data}")
 
         if self.verbose:
-            print(f"Fetched {len(results)} documents")
+            print(f"\tFetched {len(results)} documents")
 
         if not results:
             return "No documents retrieved from web search."

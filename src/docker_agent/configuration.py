@@ -26,7 +26,7 @@ class WebSearchResult(BaseModel):
 
     attack_type: str = Field(description="Type of attack (e.g. DoS, RCE, etc.)")
 
-    services: list[str] = Field(description="List of services to be included in a Docker-based system vulnerable to the given CVE-ID")
+    services: list[str] = Field(description="List of services names to be included in a Docker-based system vulnerable to the given CVE-ID, must not include versions or tags")
     
     service_type: list[str] = Field(description="List containing the type associated to the service ('MAIN' or 'AUX')")
     
