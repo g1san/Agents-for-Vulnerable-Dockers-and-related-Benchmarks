@@ -16,17 +16,19 @@ from tools.custom_web_search import web_search_func
 from tools.custom_tool_web_search import web_search, web_search_tool_func
 from prompts import (
     SYSTEM_PROMPT,
-    OPENAI_WEB_SEARCH_PROMPT, 
-    CODING_PROMPT, 
-    CUSTOM_WEB_SEARCH_PROMPT,
     WEB_SEARCH_FORMAT_PROMPT,
+    CUSTOM_WEB_SEARCH_PROMPT,
+    OPENAI_WEB_SEARCH_PROMPT,
+    MAIN_SERV_VERS_ASSESSMENT_PROMPT, 
+    CODING_PROMPT, 
     TEST_CODE_PROMPT,
 )
 from configuration import (
-    CodeGenerationResult,
-    WebSearchResult,
-    TestCodeResult,
     langfuse_handler,
+    WebSearchResult,
+    MAINServiceVersionAssessment,
+    CodeGenerationResult,
+    TestCodeResult,
 )
 
 # Initialize the LLM with OpenAI's GPT-4o model
@@ -40,6 +42,9 @@ llm_custom_web_search_tool = llm_model.bind_tools([web_search])
 
 # Set the LLM to return a structured output from web search
 web_search_llm = llm_model.with_structured_output(WebSearchResult)
+
+# Set up LLM-as-a-judge for MAIN service version assessment
+ver_ass_llm = llm_model.with_structured_output(MAINServiceVersionAssessment)
 
 # Set the LLM to return a structured output from code generation
 code_generation_llm = llm_model.with_structured_output(CodeGenerationResult)
@@ -104,13 +109,6 @@ def route_cve(state: OverallState) -> Literal["Found", "Not Found"]:
         return "Found"
     else:
         return "Not Found"
-
-
-def is_version_in_range(pred_ver: str, start: str, end: str) -> bool:
-    try:
-        return version.parse(start) <= version.parse(pred_ver) <= version.parse(end)
-    except:
-        return False
     
 
 def get_services(state: OverallState):
@@ -205,6 +203,27 @@ def get_services(state: OverallState):
     }
 
 
+def is_version_in_range(serv: str, pred_ver: str, start: str, end: str) -> bool:
+    try:
+        return version.parse(start) <= version.parse(pred_ver) <= version.parse(end)
+    except:
+        print("\tUsing LLM-as-a-judge to assess MAIN service version...")
+        # Format the version assessment query
+        ver_ass_query = MAIN_SERV_VERS_ASSESSMENT_PROMPT.format(
+            range="[start, end]",
+            vers=pred_ver,
+            service=serv,
+        )
+
+        # Invoking the LLM with the structured output
+        response = ver_ass_llm.invoke(
+            [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=ver_ass_query)], 
+            config={"callbacks": [langfuse_handler]}
+        )
+        print(f"\tResult: main_service_version={response.main_service_version}")
+        return response.main_service_version
+    
+
 def assess_services(state: OverallState):
     """DEBUG: route the graph to the 'test_code' node"""
     if state.debug == "skip_to_test":
@@ -223,11 +242,9 @@ def assess_services(state: OverallState):
     # If the services of CVE do not exist in 'services.json', update 'services.json' and skip the check
     if not jsonServices.get(state.cve_id) and state.debug != "benchmark_web_search":
         print(f"\t{state.cve_id} is not in 'services.json'! Updating 'services.json' with the following services:")
-        
-        #TODO: handle the ranges properly
         services = []
-        for serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_type):
-            new_service = f"{serv_type.upper()}:{serv_ver.lower()}"
+        for serv, serv_type, serv_ver in zip(state.web_search_result.services, state.web_search_result.service_type, state.web_search_result.service_vers):
+            new_service = f"{serv_type.upper()}:{serv.split("/")[-1].lower()}:{serv_ver.split("---")[0]}"
             print(f"\t- {new_service}")
             services.append(new_service)
             
@@ -240,76 +257,49 @@ def assess_services(state: OverallState):
         updated_milestones.main_service_version = True
         return {"milestones": updated_milestones}
     
-
+    # Else, proceed with the check
     updated_milestones = state.milestones
-    # Assumes that the first service associated to the CVE is the main one and that only one service is tagged as 'MAIN'
-    exp_main_serv, exp_main_ver = jsonServices.get(state.cve_id)[0].split(":")[1], jsonServices.get(state.cve_id)[0].split(":")[2]
-    prop_main_serv, prop_main_ver = state.web_search_result.services[0], state.web_search_result.service_vers[0].split("---")
+
+    expected_services = jsonServices.get(state.cve_id)
+    expected_aux_roles = set()
+    for temp in expected_services:
+        exp_type, exp_serv, exp_ver = temp.split(":")
+        if exp_type.upper() == "MAIN":
+            exp_main_serv, exp_main_ver = exp_serv.split("/")[-1], exp_ver
+        if exp_type.upper() != "AUX":
+            expected_aux_roles.add(exp_type.upper())
+            
+    # Check if the MAIN service is identified correctly
+    for serv, serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_vers, state.web_search_result.service_type):
+        if serv_type.upper() == "MAIN":
+            prop_main_serv, prop_main_ver = serv.split("/")[-1], serv_ver.split("---")
+        
     if exp_main_serv.lower() == prop_main_serv.lower(): 
         updated_milestones.main_service_identified = True
 
+    # If the LLM returned a range of vulnerable versions...
     if len(prop_main_ver) > 1:
         prop_main_ver_min, prop_main_ver_max = prop_main_ver[0], prop_main_ver[1]
-        print(f"\tExpected --> {exp_main_serv}:{exp_main_ver}\tProposed --> {prop_main_serv}:[{prop_main_ver_min}, {prop_main_ver_max}]")
-        if is_version_in_range(exp_main_ver, prop_main_ver_min, prop_main_ver_max):
+        print(f"\tExpected MAIN --> {exp_main_serv}:{exp_main_ver}\tProposed MAIN --> {prop_main_serv}:[{prop_main_ver_min}, {prop_main_ver_max}]")
+        if is_version_in_range(exp_main_serv, exp_main_ver, prop_main_ver_min, prop_main_ver_max):
             updated_milestones.main_service_version = True
-            
+    
+    # Else, if the LLM returned a specific vulnerable version...
     elif len(prop_main_ver) == 1:
         prop_main_ver = prop_main_ver[0]
-        print(f"\tExpected --> {exp_main_serv}:{exp_main_ver}\tProposed --> {prop_main_serv}:{prop_main_ver}")
+        print(f"\tExpected MAIN --> {exp_main_serv}:{exp_main_ver}\tProposed MAIN --> {prop_main_serv}:{prop_main_ver}")
         if exp_main_ver.lower() == prop_main_ver.lower():
             updated_milestones.main_service_version = True
     
     else:
         raise ValueError(f"An error occurred while extracting the versions of the proposed MAIN service")
     
-    #TODO: review checks for 'AUX' services
-    # # Extract the expected services and their versions from 'services.json'
-    # expected_services_types = []
-    # expected_services_versions = {}
-    # for exp_serv_ver in jsonServices[state.cve_id]:
-    #     print(f"\tExpected service: {exp_serv_ver}")
-    #     serv_type, serv, ver = exp_serv_ver.split(":")
-    #     expected_services_types.append(serv_type.upper())
-    #     serv = serv.lower()
-    #     if not expected_services_versions.get(serv):
-    #         expected_services_versions[serv] = ver
-    #     else:
-    #         expected_services_versions[serv] += f",{ver}"
-    #     
-    # # Extract the proposed services from the web search result
-    # proposed_services_types = []
-    # proposed_services_versions = {}
-    # for serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_type):
-    #     print(f"\tProposed service: {serv_type}:{serv_ver}")
-    #     proposed_services_types.append(serv_type.upper())
-    #     serv, ver = serv_ver.split(":")
-    #     serv = serv.split("/")[-1].lower()
-    #     if not proposed_services_versions.get(serv):
-    #         proposed_services_versions[serv] = ver
-    #     else:
-    #         proposed_services_versions[serv] += f",{ver}"
-    #     
-    # # Check if all the MAIN expected services are proposed
-    # #? Ask how to handle cases such as: 'jetty' != 'eclipse-jetty'
-    # for exp_serv, exp_type in zip(expected_services_versions, expected_services_types):
-    #     if (exp_type == 'MAIN') and (exp_serv not in proposed_services_versions):
-    #         print(f"\t{exp_type} service '{exp_serv}' was not proposed!")
-    #         return {}
-    #     
-    # # Check if all the MAIN proposed services have the expected version
-    # for prop_serv, prop_type in zip(proposed_services_versions, proposed_services_types):
-    #     if (prop_serv not in expected_services_versions):
-    #         print(f"\t{prop_type} service '{prop_serv}' was not expected!")
-    #         continue
-    #     
-    #     # Handles the case where the same service may be used with different versions
-    #     exp_vers = expected_services_versions[prop_serv].split(",")
-    #     prop_vers = proposed_services_versions[prop_serv].split(",")
-    #     for pv in prop_vers:
-    #         if pv not in exp_vers:
-    #             print(f"\tThe proposed version ({pv}) of {prop_serv} is not an expected one!")
-    #TODO: review checks for 'AUX' services
+    # Check if at least one 'AUX' service was proposed for each role
+    proposed_aux_roles = set(state.web_search_result.service_type)
+    for role in expected_aux_roles:
+        if role not in proposed_aux_roles:
+            print(f"\t{role} service not proposed!")
+            updated_milestones.aux_roles_ok = False
     
     return {"milestones": updated_milestones}
 
@@ -321,8 +311,8 @@ def route_services(state: OverallState) -> Literal["Ok", "Not Ok"]:
         return "Ok"
     
     """Route to the code generator or terminate the graph"""
-    print(f"Routing services (main_service_identified = {state.milestones.main_service_identified}, main_service_version = {state.milestones.main_service_version})")
-    if state.milestones.main_service_identified and state.milestones.main_service_version and state.debug != "benchmark_web_search":
+    print(f"Routing services (main_service_identified={state.milestones.main_service_identified}, main_service_version={state.milestones.main_service_version}, aux_roles_ok={state.milestones.aux_roles_ok})")
+    if state.milestones.main_service_identified and state.milestones.main_service_version and state.milestones.aux_roles_ok and state.debug != "benchmark_web_search":
         return "Ok"
     else:
         if state.debug == "benchmark_web_search":

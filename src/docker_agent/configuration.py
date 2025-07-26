@@ -35,6 +35,12 @@ class WebSearchResult(BaseModel):
     service_desc: list[str] = Field(description="List of descriptions for each service, each explaining briefly why the service is necessary in the Docker")
 
 
+class MAINServiceVersionAssessment(BaseModel):
+    """Pydantic object for MAIN service version assessment"""
+    
+    main_service_version: bool = Field("Does the 'MAIN' service version range contain the expected version?")
+
+
 class CodeGenerationResult(BaseModel):
     """Pydantic object for code generation result"""
 
@@ -65,6 +71,7 @@ class Milestones(BaseModel):
     # Web Search Milestones
     main_service_identified: bool = Field(default=False, description="Was the 'MAIN' service correctly identified?")
     main_service_version: bool = Field(default=False, description="Does the 'MAIN' service version range contain the expected version?")
+    aux_roles_ok: bool = Field(default=True, description="Are all the necessary 'AUX' services proposed?")
     # Code Milestones
     services_implemented_in_code: bool = Field(default=False, description="Does the generated code contain the services provided by the web search?")
     main_service_uses_vulnerable_version: bool = Field(default=False, description="Does the generated code use a vulnerable version of the 'MAIN' service?")

@@ -1,17 +1,17 @@
 {
     "CVE-2012-1823": [
         "MAIN:php:5.4.1-cgi",
-        "AUX:php:5.4.1"
+        "AUX-WEB:php:5.4.1"
     ],
     "CVE-2016-5734": [
         "MAIN:phpmyadmin:4.4.15.6",
-        "AUX:php:5.3-apache",
-        "AUX:mysql:5.5"
+        "AUX-WEB:php:5.3-apache",
+        "AUX-DB:mysql:5.5"
     ],
     "CVE-2018-12613": [
         "MAIN:phpmyadmin:4.8.1",
-        "AUX:php:7.2-apache",
-        "AUX:mysql:5.5"
+        "AUX-WEB:php:7.2-apache",
+        "AUX-DB:mysql:5.5"
     ],
     "CVE-2020-7247": [
         "MAIN:opensmtpd:6.6.1p1"
@@ -24,7 +24,7 @@
     ],
     "CVE-2021-3129": [
         "MAIN:laravel:8.4.2",
-        "AUX:php:7.4-apache"
+        "AUX-WEB:php:7.4-apache"
     ],
     "CVE-2021-28164": [
         "MAIN:jetty:9.4.37"
@@ -33,12 +33,10 @@
         "MAIN:jetty:9.4.40"
     ],
     "CVE-2021-41773": [
-        "MAIN:apache",
-        "AUX:httpd:2.4.49"
+        "MAIN:httpd:2.4.49"
     ],
     "CVE-2021-42013": [
-        "MAIN:apache",
-        "AUX:httpd:2.4.50"
+        "MAIN:httpd:2.4.50"
     ],
     "CVE-2021-43798": [
         "MAIN:grafana:8.2.6"
@@ -57,13 +55,13 @@
     ],
     "CVE-2022-46169": [
         "MAIN:cacti:1.2.22",
-        "AUX:php:7.4-apache",
-        "AUX:mysql:5.7"
+        "AUX-WEB:php:7.4-apache",
+        "AUX-DB:mysql:5.7"
     ],
     "CVE-2023-23752": [
         "MAIN:joomla:4.2.7",
-        "AUX:php:7.4.33-apache",
-        "AUX:mysql:5.7"
+        "AUX-WEB:php:7.4.33-apache",
+        "AUX-DB:mysql:5.7"
     ],
     "CVE-2023-42793": [
         "MAIN:teamcity:2023.05.3",
@@ -80,8 +78,8 @@
         "AUX:openjdk:8-jdk"
     ],
 
-
-
+    
+    
     "CVE-2015-5254": [
         "MAIN:activemq:5.11.1"
     ],
@@ -102,34 +100,34 @@
     ],
     "CVE-2020-11978": [
         "MAIN:airflow:1.10.10",
-        "AUX:postgres:13-alpine",
-        "AUX:redis:5-alpine"
+        "AUX-DB:postgres:13-alpine",
+        "AUX-CACHE:redis:5-alpine"
     ],
     "CVE-2020-11981": [
         "MAIN:airflow:1.10.10",
-        "AUX:postgres:13-alpine",
-        "AUX:redis:5-alpine"
+        "AUX-DB:postgres:13-alpine",
+        "AUX-CACHE:redis:5-alpine"
     ],
     "CVE-2020-17526": [
         "MAIN:airflow:1.10.10",
-        "AUX:postgres:13-alpine",
-        "AUX:redis:5-alpine"
+        "AUX-DB:postgres:13-alpine",
+        "AUX-CACHE:redis:5-alpine"
     ],
     "CVE-2024-7314": [
         "MAIN:aj-report:1.4.0",
-        "AUX:mysql:5.7"
+        "AUX-DB:mysql:5.7"
     ],
     "CVE-2021-25646": [
         "MAIN:apache-druid:0.20.0"
     ],
     "CVE-2020-13945": [
         "MAIN:apisix:2.11.0",
-        "AUX:bitnami/etcd:3.4.15"
+        "AUX-CACHE:bitnami/etcd:3.4.15"
     ],
     "CVE-2021-45232": [
         "MAIN:apisix:2.9",
         "AUX:apisix-dashboard:2.9.0",
-        "AUX:bitnami/etcd:3.4.15"
+        "AUX-CACHE:bitnami/etcd:3.4.15"
     ],
     "CVE-2018-8715": [
         "MAIN:appweb:7.0.1"
@@ -142,15 +140,15 @@
     ],
     "CVE-2016-5385": [
         "MAIN:nginx:1",
-        "AUX:php:httpoxy"
+        "AUX-WEB:php:httpoxy"
     ],
     "CVE-2019-9053": [
         "MAIN:cmsms:2.2.9.1",
-        "AUX:mysql:5.7"
+        "AUX-DB:mysql:5.7"
     ],
     "CVE-2021-26120": [
         "MAIN:cmsms:2.2.9.1",
-        "AUX:mysql:5.7"
+        "AUX-DB:mysql:5.7"
     ],
     "CVE-2010-2861": [
         "MAIN:coldfusion:8.0.1"
@@ -166,23 +164,23 @@
     ],
     "CVE-2019-3396": [
         "MAIN:confluence:6.10.2",
-        "AUX:postgres:10.7-alpine"
+        "AUX-DB:postgres:10.7-alpine"
     ],
     "CVE-2021-26084": [
         "MAIN:confluence:7.4.10",
-        "AUX:postgres:12.8-alpine"
+        "AUX-DB:postgres:12.8-alpine"
     ],
     "CVE-2022-26134": [
         "MAIN:confluence:7.13.6",
-        "AUX:postgres:12.8-alpine"
+        "AUX-DB:postgres:12.8-alpine"
     ],
     "CVE-2023-22515": [
         "MAIN:confluence:8.5.1",
-        "AUX:postgres:15.4-alpine"
+        "AUX-DB:postgres:15.4-alpine"
     ],
     "CVE-2023-22527": [
         "MAIN:confluence:8.5.3",
-        "AUX:postgres:15.4-alpine"
+        "AUX-DB:postgres:15.4-alpine"
     ],
     "CVE-2017-12635": [
         "MAIN:couchdb:2.1.0",
@@ -193,30 +191,30 @@
     ],
     "CVE-2017-12794": [
         "MAIN:django:1.11.4",
-        "AUX:postgres:9.6-alpine"
+        "AUX-DB:postgres:9.6-alpine"
     ],
     "CVE-2018-14574": [
         "MAIN:django:2.0.7"
     ],
     "CVE-2019-14234": [
         "MAIN:django:2.2.3",
-        "AUX:postgres:9.6-alpine"
+        "AUX-DB:postgres:9.6-alpine"
     ],
     "CVE-2020-9402": [
         "MAIN:django:3.0.3",
-        "AUX:oracle:12c-ee"
+        "AUX-DB:oracle:12c-ee"
     ],
     "CVE-2021-35042": [
         "MAIN:django:3.2.4",
-        "AUX:mysql:5.7"
+        "AUX-DB:mysql:5.7"
     ],
     "CVE-2022-34265": [
         "MAIN:django:4.0.5",
-        "AUX:postgres:13-alpine"
+        "AUX-DB:postgres:13-alpine"
     ],
     "CVE-2014-3704": [
         "MAIN:drupal:7.31",
-        "AUX:mysql:5.5"
+        "AUX-DB:mysql:5.5"
     ],
     "CVE-2017-6920": [
         "MAIN:drupal:8.3.0"
@@ -235,11 +233,11 @@
     ],
     "CVE-2019-17564": [
         "MAIN:dubbo:2.7.3",
-        "AUX:zookeeper:3.7.0"
+        "AUX-CACHE:zookeeper:3.7.0"
     ],
     "CVE-2021-41460": [
         "MAIN:ecshop:4.0.6",
-        "AUX:mysql:5.5"
+        "AUX-DB:mysql:5.5"
     ],
     "CVE-2014-3120": [
         "MAIN:elasticsearch:1.1.1"
@@ -255,7 +253,7 @@
     ],
     "CVE-2018-15685": [
         "MAIN:electron:wine",
-        "AUX:nginx:1"
+        "AUX-WEB:nginx:1"
     ],
     "CVE-2021-32682": [
         "MAIN:elfinder:2.1.58"
@@ -292,7 +290,7 @@
     ],
     "CVE-2023-25157": [
         "MAIN:geoserver:2.22.1",
-        "AUX:postgis:14-3.3-alpine"
+        "AUX-DB:postgis:14-3.3-alpine"
     ],
     "CVE-2024-36401": [
         "MAIN:geoserver:2.23.2"
@@ -314,13 +312,13 @@
     ],
     "CVE-2016-9086": [
         "MAIN:gitlab:8.13.1",
-        "AUX:redis:4.0.14-alpine",
-        "AUX:postgres:11.9-alpine"
+        "AUX-CACHE:redis:4.0.14-alpine",
+        "AUX-DB:postgres:11.9-alpine"
     ],
     "CVE-2021-22205": [
         "MAIN:gitlab:13.10.1",
-        "AUX:redis:5.0.9-alpine",
-        "AUX:postgres:12-alpine"
+        "AUX-CACHE:redis:5.0.9-alpine",
+        "AUX-DB:postgres:12-alpine"
     ],
     "CVE-2018-1000533": [
         "MAIN:gitlist:0.6.0"
@@ -366,7 +364,7 @@
     ],
     "CVE-2021-40438": [
         "MAIN:httpd:2.4.43",
-        "AUX:tomcat:8.5.19"
+        "AUX-WEB:tomcat:8.5.19"
     ],
     "CVE-2024-27348": [
         "MAIN:hugegraph:1.2.0"
