@@ -25,7 +25,7 @@ def benchmark_web_search(web_search_mode: str):
         with open(filename, "r") as f:
             jsonServices = json.load(f)
             
-        milestone_file = f'./../../dockers/{web_search_mode}-milestones.json'
+        milestone_file = f'./../web_search_logs/{web_search_mode}-milestones.json'
         cve_list = list(jsonServices.keys())
         milestones = {}
         for cve in cve_list[:20]: # Limit to first 20 CVEs for benchmarking
@@ -55,11 +55,11 @@ def benchmark_web_search_from_logs(web_search_mode: str):
         with open(filename, "r") as f:
             jsonServices = json.load(f)
             
-        milestone_file = f'./../../dockers/{web_search_mode}-milestones.json'
+        milestone_file = f'./../web_search_logs/{web_search_mode}-milestones.json'
         cve_list = list(jsonServices.keys())
         milestones = {}
         for cve in cve_list[:20]: # Limit to first 20 CVEs for benchmarking
-            with open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
+            with open(f'./../web_search_logs/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
                 web_search_data = json.load(f)
             
             result = compiled_workflow.invoke(
