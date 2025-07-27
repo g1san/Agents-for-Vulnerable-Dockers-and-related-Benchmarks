@@ -25,7 +25,7 @@ def benchmark_web_search(web_search_mode: str):
         with open(filename, "r") as f:
             jsonServices = json.load(f)
             
-        milestone_file = f'./../web_search_logs/{web_search_mode}-milestones.json'
+        milestone_file = f'./../web_search_benchmark_logs/{web_search_mode}-milestones.json'
         cve_list = list(jsonServices.keys())
         milestones = {}
         for cve in cve_list[:20]: # Limit to first 20 CVEs for benchmarking
@@ -55,11 +55,11 @@ def benchmark_web_search_from_logs(web_search_mode: str):
         with open(filename, "r") as f:
             jsonServices = json.load(f)
             
-        milestone_file = f'./../web_search_logs/{web_search_mode}-milestones.json'
+        milestone_file = f'./../web_search_benchmark_logs/{web_search_mode}-milestones.json'
         cve_list = list(jsonServices.keys())
         milestones = {}
         for cve in cve_list[:20]: # Limit to first 20 CVEs for benchmarking
-            with open(f'./../web_search_logs/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
+            with open(f'./../web_search_benchmark_logs/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
                 web_search_data = json.load(f)
             
             result = compiled_workflow.invoke(
@@ -105,11 +105,62 @@ def test_workflow():
         )
     except Exception as e:
         print(f"Workflow invocation failed: {e}.")
+
+
+def extract_stats():
+    import pandas as pd
+    import numpy as np
+    import json
+
+    # CVE identifiers
+    with open('services.json', "r") as f:
+        jsonServices = json.load(f)  
+    cve_list = list(jsonServices.keys())[:20]
+
+    # Custom data from JSON milestone file
+    with open(f'./../web_search_benchmark_logs/custom-milestones.json', 'r') as f:
+        custom_milestones = json.load(f)
+ 
+    custom_data = []
+    milestones = list(next(iter(custom_milestones.values())).keys())
+
+    for m in milestones:
+        row = ['Yes' if custom_milestones[cve][m] else 'No' for cve in custom_milestones]
+        custom_data.append(row)
+    
+    # OpenAI data from JSON milestone file
+    with open(f'./../web_search_benchmark_logs/openai-milestones.json', 'r') as f:
+        openai_milestones = json.load(f)
+ 
+    openai_data = []
+    milestones = list(next(iter(openai_milestones.values())).keys())
+
+    for m in milestones:
+        row = ['Yes' if openai_milestones[cve][m] else 'No' for cve in openai_milestones]
+        openai_data.append(row)
+
+    # Construct MultiIndex columns
+    arrays = [[cve for cve in cve_list for _ in (0, 1)], ['custom', 'openai'] * len(cve_list)]
+    tuples = list(zip(*arrays))
+    column = pd.MultiIndex.from_tuples(tuples, names=["CVE", "Web Search Mode"])
+
+    # Combine both datasets
+    data = []
+    for row_custom, row_openai in zip(custom_data, openai_data):
+        combined = [val for pair in zip(row_custom, row_openai) for val in pair]
+        data.append(combined)
+
+    # Create DataFrame
+    df = pd.DataFrame(data, columns=column, index=milestones)
+    df.to_excel(f'./../web_search_benchmark_logs/benchmark-milestones.xlsx')
+    return df
         
 
 # draw_graph()
 # result = test_workflow()
 # milestones = benchmark_web_search("custom")
 # milestones = benchmark_web_search_from_logs("custom")
-milestones = benchmark_web_search("openai")
+# milestones = benchmark_web_search("openai")
 # milestones = benchmark_web_search_from_logs("openai")
+df = extract_stats()
+df
