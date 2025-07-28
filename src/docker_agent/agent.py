@@ -109,58 +109,81 @@ def test_workflow():
 
 def extract_stats():
     import pandas as pd
-    import numpy as np
     import json
 
     # CVE identifiers
     with open('services.json', "r") as f:
         jsonServices = json.load(f)  
     cve_list = list(jsonServices.keys())[:20]
-
-    # Custom data from JSON milestone file
-    with open(f'./../web_search_benchmark_logs/custom-milestones.json', 'r') as f:
-        custom_milestones = json.load(f)
- 
-    custom_data = []
-    milestones = list(next(iter(custom_milestones.values())).keys())
-
-    for m in milestones:
-        row = ['Yes' if custom_milestones[cve][m] else 'No' for cve in custom_milestones]
-        custom_data.append(row)
     
-    # OpenAI data from JSON milestone file
-    with open(f'./../web_search_benchmark_logs/openai-milestones.json', 'r') as f:
-        openai_milestones = json.load(f)
- 
-    openai_data = []
-    milestones = list(next(iter(openai_milestones.values())).keys())
+    web_search_modes = ['custom_no_tool', 'custom', 'openai']
+    data = {}
+    for mode in web_search_modes:
+        data[mode] = []
+        with open(f'./../web_search_benchmark_logs/{mode}-milestones.json', 'r') as f:
+            mode_milestones = json.load(f)
+    
+        milestones = list(next(iter(mode_milestones.values())).keys())
 
-    for m in milestones:
-        row = ['Yes' if openai_milestones[cve][m] else 'No' for cve in openai_milestones]
-        openai_data.append(row)
+        for m in milestones:
+            milestone_data = ['Yes' if mode_milestones[cve][m] else 'No' for cve in mode_milestones]
+            data[mode].append(milestone_data)
+        
+        query_values = []
+        input_token_values = []
+        output_token_values = []
+        cost_values = []
+        for cve in cve_list:
+            with open(f'./../web_search_benchmark_logs/{cve}/logs/{cve}_web_search_{mode}.json', 'r') as f:
+                web_search_data = json.load(f)
+                
+            # Query value
+            if mode == 'custom_no_tool':
+                query_values.append(cve)
+            elif mode == 'custom':
+                query_values.append(web_search_data['query'])
+            elif mode == 'openai':
+                query_values.append("")
+             
+            input_token_values.append(web_search_data['input_tokens'])  # Input token value
+            output_token_values.append(web_search_data['output_tokens'])  # Output token value
+            
+            # Web search cost in dollars
+            input_token_cost = 2.50 / 1000000               # GPT-4o single input token cost
+            output_token_cost = 10.00 / 1000000             # GPT-4o single output token cost
+            web_search_openai_tool_cost = 25.00 / 1000      # OpenAI web search tool cost for a single call
+            if mode == 'custom_no_tool' or mode == 'custom':
+                cost = (web_search_data['input_tokens'] * input_token_cost) + (web_search_data['output_tokens'] * output_token_cost)
+                cost_values.append(f"${cost:.4f}")
+            elif mode == 'openai':
+                cost = web_search_openai_tool_cost + (web_search_data['output_tokens'] * output_token_cost)
+                cost_values.append(f"${(cost):.4f}")
+        
+        data[mode].append(query_values)
+        data[mode].append(input_token_values)
+        data[mode].append(output_token_values)
+        data[mode].append(cost_values)
 
     # Construct MultiIndex columns
-    arrays = [[cve for cve in cve_list for _ in (0, 1)], ['custom', 'openai'] * len(cve_list)]
+    arrays = [[cve for cve in cve_list for _ in (0, 1, 2)], ['custom_no_tool', 'custom', 'openai'] * len(cve_list)]
     tuples = list(zip(*arrays))
     column = pd.MultiIndex.from_tuples(tuples, names=["CVE", "Web Search Mode"])
 
-    # Combine both datasets
-    data = []
-    for row_custom, row_openai in zip(custom_data, openai_data):
-        combined = [val for pair in zip(row_custom, row_openai) for val in pair]
-        data.append(combined)
+    # Combine datasets
+    combined_data = []
+    for row_custom_no_tool, row_custom, row_openai in zip(data['custom_no_tool'], data['custom'], data['openai']):
+        combined = [val for pair in zip(row_custom_no_tool, row_custom, row_openai) for val in pair]
+        combined_data.append(combined)
 
     # Create DataFrame
-    df = pd.DataFrame(data, columns=column, index=milestones)
+    df = pd.DataFrame(combined_data, columns=column, index=milestones + ['Query', 'Input Tokens', 'Output Tokens', 'Cost'])
     df.to_excel(f'./../web_search_benchmark_logs/benchmark-milestones.xlsx')
     return df
         
 
 # draw_graph()
 # result = test_workflow()
-# milestones = benchmark_web_search("custom")
-# milestones = benchmark_web_search_from_logs("custom")
 # milestones = benchmark_web_search("openai")
-# milestones = benchmark_web_search_from_logs("openai")
+# milestones = benchmark_web_search_from_logs("custom_no_tool")
 df = extract_stats()
 df
