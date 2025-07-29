@@ -18,4 +18,4 @@
     - Manually forcing the Docker to stop (e.g. CVE-2022-46169) is seen as a potential issue by LLM which tries to solve the problem, even though the containers seem to work fine, might be related to having multiple active containers 
 - **Implement LLM-as-a-judge**: invoke LLM to check if generated code has the correct versions provided by the web search, may require expanding the **CodeGenerationResult**
 - Evaluate if change milestone to _float_ instead of _bool_
-- **Benchmark** with accuracy, precision, recall, f1-score, input/output tokens and costs the results of the 3 web search modes (use 100 CVEs, extract them from VDaaS), actually need to check if query of 'custom' mode is =CVE-ID, then there is no need to perform benchmark with 'custom_no_tool'
+- **Benchmark** with accuracy, precision, recall, f1-score, input/output tokens and costs the results of the 3 web search modes (use 100 CVEs, extract them from VDaaS)

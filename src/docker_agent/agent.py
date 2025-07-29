@@ -107,7 +107,7 @@ def test_workflow():
         print(f"Workflow invocation failed: {e}.")
 
 
-def extract_stats():
+def generate_excel():
     import pandas as pd
     import json
 
@@ -116,8 +116,8 @@ def extract_stats():
         jsonServices = json.load(f)  
     cve_list = list(jsonServices.keys())[:20]
     
-    web_search_modes = ['custom_no_tool', 'custom', 'openai']
     data = {}
+    web_search_modes = ['custom_no_tool', 'custom', 'openai']
     for mode in web_search_modes:
         data[mode] = []
         with open(f'./../web_search_benchmark_logs/{mode}-milestones.json', 'r') as f:
@@ -130,6 +130,7 @@ def extract_stats():
             data[mode].append(milestone_data)
         
         query_values = []
+        number_of_services = []
         input_token_values = []
         output_token_values = []
         cost_values = []
@@ -144,9 +145,10 @@ def extract_stats():
                 query_values.append(web_search_data['query'])
             elif mode == 'openai':
                 query_values.append("")
-             
-            input_token_values.append(web_search_data['input_tokens'])  # Input token value
-            output_token_values.append(web_search_data['output_tokens'])  # Output token value
+                
+            number_of_services.append(len(set(web_search_data['services'])))    # Number of services
+            input_token_values.append(web_search_data['input_tokens'])          # Input token value
+            output_token_values.append(web_search_data['output_tokens'])        # Output token value
             
             # Web search cost in dollars
             input_token_cost = 2.50 / 1000000               # GPT-4o single input token cost
@@ -154,12 +156,13 @@ def extract_stats():
             web_search_openai_tool_cost = 25.00 / 1000      # OpenAI web search tool cost for a single call
             if mode == 'custom_no_tool' or mode == 'custom':
                 cost = (web_search_data['input_tokens'] * input_token_cost) + (web_search_data['output_tokens'] * output_token_cost)
-                cost_values.append(f"${cost:.4f}")
+                cost_values.append(round(cost, 5))
             elif mode == 'openai':
                 cost = web_search_openai_tool_cost + (web_search_data['output_tokens'] * output_token_cost)
-                cost_values.append(f"${(cost):.4f}")
+                cost_values.append(round(cost, 5))
         
         data[mode].append(query_values)
+        data[mode].append(number_of_services)
         data[mode].append(input_token_values)
         data[mode].append(output_token_values)
         data[mode].append(cost_values)
@@ -176,14 +179,32 @@ def extract_stats():
         combined_data.append(combined)
 
     # Create DataFrame
-    df = pd.DataFrame(combined_data, columns=column, index=milestones + ['Query', 'Input Tokens', 'Output Tokens', 'Cost'])
+    df = pd.DataFrame(combined_data, columns=column, index=milestones + ['Query', 'Number of Services', 'Input Tokens', 'Output Tokens', 'Cost'])
     df.to_excel(f'./../web_search_benchmark_logs/benchmark-milestones.xlsx')
     return df
-        
+
+
+def extract_stats():
+    import json
+    
+    data = {}
+    web_search_modes = ['custom_no_tool', 'custom', 'openai']
+    for mode in web_search_modes:
+        data[mode] = {}
+        with open(f'./../web_search_benchmark_logs/{mode}-milestones.json', 'r') as f:
+            mode_milestones = json.load(f)
+            
+        milestones = list(next(iter(mode_milestones.values())).keys())
+
+        for m in milestones:
+            data[mode][m] = [1 if mode_milestones[cve][m] else 0 for cve in mode_milestones].count(1)
+         
+    return data   
+            
 
 # draw_graph()
 # result = test_workflow()
 # milestones = benchmark_web_search("openai")
 # milestones = benchmark_web_search_from_logs("custom_no_tool")
-df = extract_stats()
-df
+df = generate_excel()
+# df = extract_stats()

@@ -14,13 +14,13 @@
         "AUX-DB:mysql:5.5"
     ],
     "CVE-2020-7247": [
-        "MAIN:opensmtpd:6.6.1p1"
+        "MAIN:opensmtpd:6.6.1"
     ],
     "CVE-2020-11651": [
-        "MAIN:saltstack:2019.2.3"
+        "MAIN:saltstack/salt:2019.2.3"
     ],
     "CVE-2020-11652": [
-        "MAIN:saltstack:2019.2.3"
+        "MAIN:saltstack/salt:2019.2.3"
     ],
     "CVE-2021-3129": [
         "MAIN:laravel:8.4.2",
@@ -42,7 +42,7 @@
         "MAIN:grafana:8.2.6"
     ],
     "CVE-2021-44228": [
-        "MAIN:solr:8.11.0"
+        "MAIN:log4j:2.0-beta9"
     ],
     "CVE-2022-22947": [
         "MAIN:spring-cloud-gateway:3.1.0"
@@ -64,8 +64,7 @@
         "AUX-DB:mysql:5.7"
     ],
     "CVE-2023-42793": [
-        "MAIN:teamcity:2023.05.3",
-        "AUX:jetbrains/teamcity-server:2023.05.3"
+        "MAIN:jetbrains/teamcity-server:2023.05.3"
     ],
     "CVE-2024-23897": [
         "MAIN:jenkins/jenkins:2.441"
