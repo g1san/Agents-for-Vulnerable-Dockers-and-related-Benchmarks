@@ -23,3 +23,4 @@
 - Keep going with the benchmarks using the web search results, before that correct them to account for the BENCHMARK-ANALYSIS.md
 - For those CVEs that fail a specific milestone try a making MAX=3 attempts, or try to add a web search to assert if the 'MAIN' service requires some specific 'AUX' services to work.
 - Evaluate the use of MCP for future proofing
+- Store the results also in **_csv_** format
