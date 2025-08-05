@@ -17,10 +17,10 @@ from configuration import langfuse_handler, WebSearchResult
 
 
 class ContextGenerator:
-    def __init__(self, n_documents=10, text_len_threshold=50, verbose=False):
+    def __init__(self, n_documents, verbose):
         self.verbose = verbose
         self.n_documents = n_documents
-        self.text_len_threshold = text_len_threshold
+        self.text_len_threshold = 50
 
         # Retrieve the Google CSE key and ID from environment variables
         self.google_api_key = os.getenv("GOOGLE_API_KEY")
@@ -116,11 +116,10 @@ class ContextGenerator:
             if not url:
                 continue
 
-            print(f"\tProcessing content from {url}")
-
             # Extracting data from the URL
             doc = self.extract_and_clean_content(url)
             if doc:
+                print(f"\tContent processed from {url}")
                 documents.append((url, doc))
 
             # If enough data has been collected, break the loop
@@ -233,8 +232,7 @@ class ContextGenerator:
         elif self.verbose:
             print(f"\t[NIST API ERROR] {nist_data}")
 
-        if self.verbose:
-            print(f"\tFetched {len(results)} documents")
+        print(f"\tFetched {len(results)} documents")
 
         if not results:
             return "No documents retrieved from web search."
@@ -260,12 +258,12 @@ class ContextGenerator:
         return (formatted_response, input_token_count, output_token_count)
     
 
-def web_search_func(cve_id: str, verbose: bool = True):
+def web_search_func(cve_id: str, n_documents: int = 10, verbose: bool = True):
     inCount = 0
     outCount = 0
     
     try:
-        rag_model = ContextGenerator(n_documents=10, verbose=verbose)
+        rag_model = ContextGenerator(n_documents=n_documents, verbose=verbose)
         (formatted_response, inCount, outCount) = rag_model.invoke(cve_id)
     except Exception as e:
         formatted_response = f"An error occurred during the web search: {str(e)}"

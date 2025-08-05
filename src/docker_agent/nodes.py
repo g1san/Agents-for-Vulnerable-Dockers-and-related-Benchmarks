@@ -149,11 +149,11 @@ def get_services(state: OverallState):
         query, cve_id = tool_call_args['query'], tool_call_args['cve_id']
         print(f"\tThe LLM invoked the 'web search' tool with parameters: query={query}, cve_id={cve_id}\n")
         #NOTE: 'web_search_tool_func' internally formats the response into a WebSearchResult Pydantic class
-        formatted_response, in_token, out_token = web_search_tool_func(query=query, cve_id=cve_id, verbose=False)
+        formatted_response, in_token, out_token = web_search_tool_func(query=query, cve_id=cve_id, n_documents=5, verbose=False)
     
     elif state.web_search_tool == "custom_no_tool":
         #NOTE: 'web_search_func' internally formats the response into a WebSearchResult Pydantic class
-        formatted_response, in_token, out_token = web_search_func(state.cve_id, verbose=False)
+        formatted_response, in_token, out_token = web_search_func(state.cve_id, n_documents=5, verbose=False)
     
     elif state.web_search_tool == "openai":
         web_query = OPENAI_WEB_SEARCH_PROMPT.format(cve_id=state.cve_id)
@@ -238,13 +238,15 @@ def assess_services(state: OverallState):
     filename = 'services.json'
     with open(filename, "r") as f:
         jsonServices = json.load(f)
+        
+    updated_milestones = state.milestones
     
     # If the services of CVE do not exist in 'services.json', update 'services.json' and skip the check
     if not jsonServices.get(state.cve_id) and state.debug != "benchmark_web_search":
         print(f"\t{state.cve_id} is not in 'services.json'! Updating 'services.json' with the following services:")
         services = []
         for serv, serv_type, serv_ver in zip(state.web_search_result.services, state.web_search_result.service_type, state.web_search_result.service_vers):
-            new_service = f"{serv_type.upper()}:{serv.split("/")[-1].lower()}:{serv_ver.split("---")[0]}"
+            new_service = f"{serv_type.upper()}:{serv.lower()}:{serv_ver.split(",")[0].split("---")[0]}"
             print(f"\t- {new_service}")
             services.append(new_service)
             
@@ -252,47 +254,46 @@ def assess_services(state: OverallState):
         with open(filename, "w") as f:
             json.dump(jsonServices, f, indent=4)
             
-        updated_milestones = state.milestones
         updated_milestones.main_service_identified = True
         updated_milestones.main_service_version = True
         return {"milestones": updated_milestones}
     
     # Else, proceed with the check
-    updated_milestones = state.milestones
-
     expected_services = jsonServices.get(state.cve_id)
     expected_aux_roles = set()
     for temp in expected_services:
         exp_type, exp_serv, exp_ver = temp.split(":")
         if exp_type.upper() == "MAIN":
-            exp_main_serv, exp_main_ver = exp_serv.split("/")[-1], exp_ver
+            exp_main_serv, exp_main_ver = exp_serv, exp_ver
         if exp_type.upper() != "AUX":
             expected_aux_roles.add(exp_type.upper())
             
     # Check if the MAIN service is identified correctly
     for serv, serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_vers, state.web_search_result.service_type):
         if serv_type.upper() == "MAIN":
-            prop_main_serv, prop_main_ver = serv.split("/")[-1], serv_ver.split("---")
+            print(f"\tExpected MAIN --> {exp_main_serv}:{exp_main_ver}\tProposed MAIN --> {serv}:[{serv_ver}]")
+            prop_main_serv, prop_main_ver = serv, serv_ver.split(",")
         
     if exp_main_serv.lower() == prop_main_serv.lower(): 
         updated_milestones.main_service_identified = True
 
-    # If the LLM returned a range of vulnerable versions...
-    if len(prop_main_ver) > 1:
-        prop_main_ver_min, prop_main_ver_max = prop_main_ver[0], prop_main_ver[1]
-        print(f"\tExpected MAIN --> {exp_main_serv}:{exp_main_ver}\tProposed MAIN --> {prop_main_serv}:[{prop_main_ver_min}, {prop_main_ver_max}]")
-        if is_version_in_range(exp_main_serv, exp_main_ver, prop_main_ver_min, prop_main_ver_max):
-            updated_milestones.main_service_version = True
+    for ver in prop_main_ver:
+        ver = ver.split("---")
+        # If the LLM returned a range of vulnerable versions...
+        if len(ver) > 1:
+            ver_min, ver_max = ver[0], ver[1]
+            if is_version_in_range(exp_main_serv, exp_main_ver, ver_min, ver_max):
+                updated_milestones.main_service_version = True
+                break
+
+        # Else, if the LLM returned a specific vulnerable version...
+        elif len(ver) == 1:
+            if exp_main_ver.lower() == ver[0].lower():
+                updated_milestones.main_service_version = True
+                break
     
-    # Else, if the LLM returned a specific vulnerable version...
-    elif len(prop_main_ver) == 1:
-        prop_main_ver = prop_main_ver[0]
-        print(f"\tExpected MAIN --> {exp_main_serv}:{exp_main_ver}\tProposed MAIN --> {prop_main_serv}:{prop_main_ver}")
-        if exp_main_ver.lower() == prop_main_ver.lower():
-            updated_milestones.main_service_version = True
-    
-    else:
-        raise ValueError(f"An error occurred while extracting the versions of the proposed MAIN service")
+        else:
+            raise ValueError(f"An error occurred while extracting the versions of the proposed MAIN service")
     
     # Check if at least one 'AUX' service was proposed for each role
     proposed_aux_roles = set(state.web_search_result.service_type)

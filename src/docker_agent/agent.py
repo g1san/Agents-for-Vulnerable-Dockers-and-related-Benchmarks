@@ -25,10 +25,10 @@ def benchmark_web_search(web_search_mode: str):
         with open(filename, "r") as f:
             jsonServices = json.load(f)
             
-        milestone_file = f'./../web_search_benchmark_logs/{web_search_mode}-milestones.json'
-        cve_list = list(jsonServices.keys())
+        milestone_file = f'./../../dockers/{web_search_mode}-milestones.json'
+        cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
         milestones = {}
-        for cve in cve_list[:20]: # Limit to first 20 CVEs for benchmarking
+        for cve in cve_list:
             result = compiled_workflow.invoke(
                 input={
                     "cve_id": cve,
@@ -55,11 +55,11 @@ def benchmark_web_search_from_logs(web_search_mode: str):
         with open(filename, "r") as f:
             jsonServices = json.load(f)
             
-        milestone_file = f'./../web_search_benchmark_logs/{web_search_mode}-milestones.json'
-        cve_list = list(jsonServices.keys())
+        milestone_file = f'./../../dockers/{web_search_mode}-milestones.json'
+        cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
         milestones = {}
-        for cve in cve_list[:20]: # Limit to first 20 CVEs for benchmarking
-            with open(f'./../web_search_benchmark_logs/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
+        for cve in cve_list:
+            with open(f'./../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
                 web_search_data = json.load(f)
             
             result = compiled_workflow.invoke(
@@ -92,11 +92,17 @@ def benchmark_web_search_from_logs(web_search_mode: str):
 
 def test_workflow():
     try:
+        import json
+        cve = "CVE-2021-28164"
+        web_search_mode = "custom"
+        # with open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
+        #     web_search_data = json.load(f)
+        
         return compiled_workflow.invoke(
             input={
-                "cve_id": "CVE-2021-28164",#    CVE-2021-28164    CVE-2022-46169    CVE-2024-23897  #NOTE: to test GT update use CVE-2017-7525
-                "web_search_tool": "custom",#   custom  custom_no_tool  openai  skip        #NOTE: if 'skip' is used, initialize "web_search_result" with valid data
-                #"web_search_result": WebSearchResult(desc="", attack_type="", services=[], service_vers=[], service_type=[], service_desc=[]),
+                "cve_id": cve,#    CVE-2021-28164    CVE-2022-46169    CVE-2024-23897  #NOTE: to test GT update use CVE-2017-7525
+                "web_search_tool": web_search_mode,#   custom  custom_no_tool  openai  skip        #NOTE: if 'skip' is used, initialize "web_search_result" with valid data
+                # "web_search_result": web_search_data,
                 #"code": CodeGenerationResult(file_name=[], file_code=[], directory_tree=""),
                 "messages": [SystemMessage(content=SYSTEM_PROMPT)],
                 "debug": "benchmark_web_search"#        (DEFAULT="")    skip_to_test    benchmark_web_search
@@ -107,9 +113,9 @@ def test_workflow():
         print(f"Workflow invocation failed: {e}.")
 
 
-def generate_excel():
-    import pandas as pd
+def generate_excel_csv():
     import json
+    import pandas as pd
 
     # CVE identifiers
     with open('services.json', "r") as f:
@@ -120,7 +126,7 @@ def generate_excel():
     web_search_modes = ['custom_no_tool', 'custom', 'openai']
     for mode in web_search_modes:
         data[mode] = []
-        with open(f'./../web_search_benchmark_logs/{mode}-milestones.json', 'r') as f:
+        with open(f'./../../dockers/{mode}-milestones.json', 'r') as f:
             mode_milestones = json.load(f)
     
         milestones = list(next(iter(mode_milestones.values())).keys())
@@ -135,7 +141,7 @@ def generate_excel():
         output_token_values = []
         cost_values = []
         for cve in cve_list:
-            with open(f'./../web_search_benchmark_logs/{cve}/logs/{cve}_web_search_{mode}.json', 'r') as f:
+            with open(f'./../../dockers/{cve}/logs/{cve}_web_search_{mode}.json', 'r') as f:
                 web_search_data = json.load(f)
                 
             # Query value
@@ -180,7 +186,8 @@ def generate_excel():
 
     # Create DataFrame
     df = pd.DataFrame(combined_data, columns=column, index=milestones + ['Query', 'Number of Services', 'Input Tokens', 'Output Tokens', 'Cost'])
-    df.to_excel(f'./../web_search_benchmark_logs/benchmark-milestones.xlsx')
+    df.to_excel(f'./../../dockers/benchmark-milestones.xlsx')
+    df.to_csv(f'./../../dockers/benchmark-milestones.csv')
     return df
 
 
@@ -191,7 +198,7 @@ def extract_stats():
     web_search_modes = ['custom_no_tool', 'custom', 'openai']
     for mode in web_search_modes:
         data[mode] = {}
-        with open(f'./../web_search_benchmark_logs/{mode}-milestones.json', 'r') as f:
+        with open(f'./../../dockers/{mode}-milestones.json', 'r') as f:
             mode_milestones = json.load(f)
             
         milestones = list(next(iter(mode_milestones.values())).keys())
@@ -206,5 +213,5 @@ def extract_stats():
 # result = test_workflow()
 # milestones = benchmark_web_search("openai")
 # milestones = benchmark_web_search_from_logs("custom_no_tool")
-df = generate_excel()
+df = generate_excel_csv()
 # df = extract_stats()

@@ -23,14 +23,14 @@
         "MAIN:saltstack/salt:2019.2.3"
     ],
     "CVE-2021-3129": [
-        "MAIN:laravel:8.4.2",
+        "MAIN:laravel:8.4.1",
         "AUX-WEB:php:7.4-apache"
     ],
     "CVE-2021-28164": [
-        "MAIN:jetty:9.4.37"
+        "MAIN:eclipse/jetty:9.4.37"
     ],
     "CVE-2021-34429": [
-        "MAIN:jetty:9.4.40"
+        "MAIN:eclipse/jetty:9.4.40"
     ],
     "CVE-2021-41773": [
         "MAIN:httpd:2.4.49"
@@ -45,10 +45,10 @@
         "MAIN:log4j:2.0-beta9"
     ],
     "CVE-2022-22947": [
-        "MAIN:spring-cloud-gateway:3.1.0"
+        "MAIN:springcloud/spring-cloud-gateway:3.1.0"
     ],
     "CVE-2022-22963": [
-        "MAIN:spring-cloud-function:3.2.2"
+        "MAIN:springcloud/spring-cloud-function:3.2.2"
     ],
     "CVE-2022-24706": [
         "MAIN:couchdb:3.2.1"

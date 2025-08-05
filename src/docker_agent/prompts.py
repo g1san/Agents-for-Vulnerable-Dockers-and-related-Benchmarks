@@ -26,17 +26,17 @@ The response output should be formatted as follows:
 For each service the most following rules must be applied:
     - Service names must be the ones used in Docker Hub, do not use aliases.
     - One of these tags must be associated to each service:
-        - 'MAIN' if the service is the one vulnerable to {cve_id}.
-        - 'AUX' if the service is needed just to make the system work.
-        - If an 'AUX' service plays a specific role, use an extended tag using the format 'AUX-<ROLE>'. Examples:
+        - 'MAIN' if the service is the one vulnerable to {cve_id}, only one service can be associated to this tag.
+        - 'AUX' if the service is needed just to make the 'MAIN' service work.
+        - If an 'AUX' service plays a specific role, use an extended tag using the format 'AUX-<ROLE>'. Examples, but not limited to these roles:
             - Use 'AUX-DB' for relational databases (e.g. MySQL, MariaDB, PostgreSQL, MariaDB, Oracle).
             - Use 'AUX-MQ' for message queues (e.g. RabbitMQ, Kafka).
             - Use 'AUX-WEB' for web servers (e.g. Nginx, Apache, PHP, Tomcat).
             - USE 'AUX-CACHE' for caching/key-value store/coordination services (Redis, etcd, ZooKeeper).
     - Service version must be specified, do not be vague by citing just 'any compatible version' and do not include tags or service names:
-        - For 'MAIN' services, if more versions are vulnerable, include the range of vulnerable versions using the format "OLDEST-VERSION---NEWEST-VERSION".
-        - For 'AUX' services choose a version compatible with the range of versions of the 'MAIN' service, no need to use a range.
-        - All service version must be valid for Docker Hub and possibly compliant with PEP 440."""
+        - For 'MAIN' services, include all vulnerable versions using the range format "OLDEST-VERSION---NEWEST-VERSION,OLDEST-VERSION---NEWEST-VERSION" where ',' separates two version ranges. Unique vulnerable versions can also be specified 
+        - For 'AUX' services choose a single version compatible with the 'MAIN' service, no need to use a range.
+        - All service version must be valid for Docker Hub and possibly compliant with PEP 440, do not use aliases."""
 
 
 OPENAI_WEB_SEARCH_PROMPT = """Search the web and summarize all the information available about {cve_id}.
@@ -49,17 +49,17 @@ Important: do not include services that are not strictly necessary to reproduce 
 For each service the most following rules must be applied:
     - Service names must be the ones used in Docker Hub, do not use aliases.
     - One of these tags must be associated to each service:
-        - 'MAIN' if the service is the one vulnerable to {cve_id}.
-        - 'AUX' if the service is needed just to make the system work.
-        - If an 'AUX' service plays a specific role, use an extended tag using the format 'AUX-<ROLE>'. Examples:
+        - 'MAIN' if the service is the one vulnerable to {cve_id}, only one service can be associated to this tag.
+        - 'AUX' if the service is needed just to make the 'MAIN' service work.
+        - If an 'AUX' service plays a specific role, use an extended tag using the format 'AUX-<ROLE>'. Examples, but not limited to these roles:
             - Use 'AUX-DB' for relational databases (e.g. MySQL, MariaDB, PostgreSQL, MariaDB, Oracle).
             - Use 'AUX-MQ' for message queues (e.g. RabbitMQ, Kafka).
             - Use 'AUX-WEB' for web servers (e.g. Nginx, Apache, PHP, Tomcat).
             - USE 'AUX-CACHE' for caching/key-value store/coordination services (Redis, etcd, ZooKeeper).
     - Service version must be specified, do not be vague by citing just 'any compatible version' and do not include tags or service names:
-        - For 'MAIN' services, if more versions are vulnerable, include the range of vulnerable versions using the format "OLDEST-VERSION---NEWEST-VERSION".
-        - For 'AUX' services choose a version compatible with the range of versions of the 'MAIN' service, no need to use a range.
-        - All service version must be valid for Docker Hub and possibly compliant with PEP 440."""
+        - For 'MAIN' services, include all vulnerable versions using the range format "OLDEST-VERSION---NEWEST-VERSION,OLDEST-VERSION---NEWEST-VERSION" where ',' separates two version ranges. Unique vulnerable versions can also be specified 
+        - For 'AUX' services choose a single version compatible with the 'MAIN' service, no need to use a range.
+        - All service version must be valid for Docker Hub and possibly compliant with PEP 440, do not use aliases."""
         
         
 WEB_SEARCH_FORMAT_PROMPT = """Convert the following text in the provided structured output:
