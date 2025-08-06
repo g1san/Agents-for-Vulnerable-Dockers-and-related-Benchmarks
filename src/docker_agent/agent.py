@@ -94,18 +94,18 @@ def test_workflow():
     try:
         import json
         cve = "CVE-2021-28164"
-        web_search_mode = "custom"
-        # with open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
-        #     web_search_data = json.load(f)
+        web_search_mode = "custom_no_tool"
+        with open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
+            web_search_data = json.load(f)
         
         return compiled_workflow.invoke(
             input={
                 "cve_id": cve,#    CVE-2021-28164    CVE-2022-46169    CVE-2024-23897  #NOTE: to test GT update use CVE-2017-7525
                 "web_search_tool": web_search_mode,#   custom  custom_no_tool  openai  skip        #NOTE: if 'skip' is used, initialize "web_search_result" with valid data
-                # "web_search_result": web_search_data,
+                "web_search_result": web_search_data,
                 #"code": CodeGenerationResult(file_name=[], file_code=[], directory_tree=""),
                 "messages": [SystemMessage(content=SYSTEM_PROMPT)],
-                "debug": "benchmark_web_search"#        (DEFAULT="")    skip_to_test    benchmark_web_search
+                "debug": "benchmark_code"#        (DEFAULT="")      skip_to_test      benchmark_web_search      benchmark_code
             },
             config={"callbacks": [langfuse_handler], "recursion_limit": 100},
         )
@@ -213,5 +213,5 @@ def extract_stats():
 # result = test_workflow()
 # milestones = benchmark_web_search("openai")
 # milestones = benchmark_web_search_from_logs("custom_no_tool")
-df = generate_excel_csv()
+# df = generate_excel_csv()
 # df = extract_stats()

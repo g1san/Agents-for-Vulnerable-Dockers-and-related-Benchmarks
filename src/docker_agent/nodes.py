@@ -56,6 +56,8 @@ test_code_llm = llm_model.with_structured_output(TestCodeResult)
 def get_cve_id(state: OverallState):
     if state.debug == "benchmark_web_search":
         print("[BENCHMARK] Web search benchmark starting!")
+    elif state.debug == "benchmark_code":
+        print("[BENCHMARK] Code benchmark starting!")
     
     """Checks if the CVE ID is correctly retrieved from the initialized state"""
     print(f"The provided CVE ID is {state.cve_id.upper()}!")

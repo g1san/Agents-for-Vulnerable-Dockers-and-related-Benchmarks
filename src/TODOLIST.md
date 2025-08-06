@@ -2,7 +2,7 @@
 - ***"get_cve_id"***: COMPLETED
 - ***"assess_cve_id"***: COMPLETED
 - ***"get_services"***
-    - Limit the number of web pages analysed (e.g. to 5) &rarr; modify tool so that it is possible to specify the number of pages to search (up to 10)
+    - (**DONE**) Limit the number of web pages analysed (e.g. to 5) &rarr; modify tool so that it is possible to specify the number of pages to search (up to 10)
     - Add a specific web search to check if the 'MAIN' service requires some specific 'AUX' services to work (e.g. check 3 web pages) &rarr; might require adjusting _WebSearchResult_, evaluate if a prompt variation for current web search solution is sufficient
     -  (Ask prof. Drago) Add manual retrieval of CVE data from local repository of Exploit DB
     - Measure how many URLs does the LLM need to check for a given CVE to get the right service list, do it just for one CVE, it is a useful result for the thesis
