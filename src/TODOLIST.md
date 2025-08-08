@@ -10,6 +10,7 @@
 - ***"assess_services"***
     - If assessment fails in any milestone, retry performing the web search up to 3 times until all milestones are passed &rarr; requires loop implementation and graph modification
 - ***"generate_code"***: COMPLETED
+- ***"save_code"***: COMPLETED
 - ***"test_code"***
     - Decide the maximum number of iterations in the loop (currently set to 10)
     - Implement "scratchpad" from which the LLM can memorise previous fix attempts
@@ -21,7 +22,7 @@
     - Keep going with the benchmarks using the web search results saved in _'web_search_benchmark_logs'_
     - Evaluate a change from _bool_ to _float_ for some milestones
     - Implement MCP for Docker Desktop in another branch for future proofing
-    - Review logging for graph history
+    - Review logging for graph history (a.k.a. _final\_report_)
 - **Problems discovered with testing**:
     - Some non-vulnerable service version are reported as vulnerable (e.g. CVE-2021-28164)
     - Launching the docker of CVE-2024-23897 requires root privileges to perform certain commands, might want to check security
