@@ -27,10 +27,10 @@
         "AUX-WEB:php:7.4-apache"
     ],
     "CVE-2021-28164": [
-        "MAIN:eclipse/jetty:9.4.37"
+        "MAIN:jetty:9.4.37"
     ],
     "CVE-2021-34429": [
-        "MAIN:eclipse/jetty:9.4.40"
+        "MAIN:jetty:9.4.40"
     ],
     "CVE-2021-41773": [
         "MAIN:httpd:2.4.49"

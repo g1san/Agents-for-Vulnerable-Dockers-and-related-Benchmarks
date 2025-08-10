@@ -29,12 +29,22 @@ class OverallState(BaseModel):
     )
 
     feedback: TestCodeResult = Field(
-        default=TestCodeResult(code_ok=False, error="", fix="", fixed_code=CodeGenerationResult(file_name=[], file_code=[], directory_tree="")),
+        default=TestCodeResult(error="", fix="", fixed_code=CodeGenerationResult(file_name=[], file_code=[], directory_tree="")),
         description="Feedback about the generated docker code"
     )
     
+    fixes: list[str] = Field(
+        default=[],
+        description="List of attempted fixes to the code"
+    )
+    
+    num_containers: int = Field(
+        default=0,
+        description="Number of containers created while testing the Docker"
+    )
+    
     test_iteration: int = Field(
-        default=0, 
+        default=0,
         description="Number of iterations of the test code node"
     )
 
