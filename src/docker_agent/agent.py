@@ -95,7 +95,7 @@ def benchmark_code_from_logs(web_search_mode: str):
         with builtins.open('services.json', "r") as f:
             jsonServices = json.load(f)
             
-        cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
+        cve_list = list(jsonServices.keys())[18:20]   # Limit to first 20 CVEs for benchmarking
         for cve in cve_list:
             with builtins.open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
                 web_search_data = json.load(f)
