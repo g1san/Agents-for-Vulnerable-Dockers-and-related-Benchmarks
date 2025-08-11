@@ -20,8 +20,7 @@
     - Review logging for code
     - Assess if it works correctly using the Dockers from VDaaS
 - **Generic**
-    - Keep going with the benchmarks using the web search results saved in _'web\_search\_benchmark\_logs'_
-        - Keep going from CVE-2022-22963 of the _custom\_no\_tool_ mode as it exited with error: Workflow invocation failed: Error code: 400 - {'error': {'message': "This model's maximum context length is 128000 tokens. However, your messages resulted in 230015 tokens (including 322 in the response_format schemas.). Please reduce the length of the messages or schemas.", 'type': 'invalid_request_error', 'param': 'messages', 'code': 'context_length_exceeded'}}.
+    - Change testing so that it also removes images
     - Evaluate a change from _bool_ to _float_ for some milestones
     - Implement MCP for Docker Desktop in another branch for future proofing
     - Review logging for graph history (a.k.a. _final\_report_)
@@ -30,3 +29,5 @@
     - Launching the docker of CVE-2024-23897 requires root privileges to perform certain commands, might want to check security
     - Manually forcing the Docker to stop (e.g. CVE-2022-46169) is seen as a potential issue by LLM which tries to solve the problem, even though the containers seem to work fine, might be related to having multiple active containers
     - CVE-2020-7247 and CVE-2021-41773 repeatedly caused this error: Workflow invocation failed: Could not parse response content as the length limit was reached - CompletionUsage(completion_tokens=16384, prompt_tokens=3447, total_tokens=19831, completion_tokens_details=CompletionTokensDetails(accepted_prediction_tokens=0, audio_tokens=0, reasoning_tokens=0, rejected_prediction_tokens=0), prompt_tokens_details=PromptTokensDetails(audio_tokens=0, cached_tokens=0)). **SOLVED**: imposed a 16000 response token limit both in code and through prompt
+    - [Errno 21] Is a directory: '../../dockers/CVE-2021-34429/openai/nginx.conf'.
+        - Always happens with _nginx_ related files

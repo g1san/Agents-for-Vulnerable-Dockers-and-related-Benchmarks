@@ -36,14 +36,16 @@ from configuration import (
     CodeMilestonesAssessment,
 )
 
-llm_model = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2, max_completion_tokens=5000)
-llm_openai_web_search_tool = llm_model.bind_tools([openai_web_search])
-llm_custom_web_search_tool = llm_model.bind_tools([web_search])
-web_search_llm = llm_model.with_structured_output(WebSearchResult)
-ver_ass_llm = llm_model.with_structured_output(MAINServiceVersionAssessment)
-code_generation_llm = llm_model.with_structured_output(CodeGenerationResult)
-code_ass_llm = llm_model.with_structured_output(CodeMilestonesAssessment)
-test_code_llm = llm_model.with_structured_output(TestCodeResult)
+llm_web_search = ChatOpenAI(model="gpt-4o", temperature=0, max_retries=2)
+llm_openai_web_search_tool = llm_web_search.bind_tools([openai_web_search])
+llm_custom_web_search_tool = llm_web_search.bind_tools([web_search])
+web_search_llm = llm_web_search.with_structured_output(WebSearchResult)
+ver_ass_llm = llm_web_search.with_structured_output(MAINServiceVersionAssessment)
+
+llm_code = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2, max_completion_tokens=5000)
+code_generation_llm = llm_code.with_structured_output(CodeGenerationResult)
+code_ass_llm = llm_code.with_structured_output(CodeMilestonesAssessment)
+test_code_llm = llm_code.with_structured_output(TestCodeResult)
 
 
 def create_dir(dir_path):
@@ -104,10 +106,7 @@ def assess_cve_id(state: OverallState):
 
 
 def route_cve(state: OverallState) -> Literal["Found", "Not Found"]:
-    """DEBUG: route the graph to the 'test_code' node"""
-    if state.debug == "skip_to_test" or state.debug == "benchmark_code":
-        if state.debug == "skip_to_test":
-            print("[DEBUG] Skipping 'route_cve'...")
+    if state.debug == "benchmark_code":
         return "Found"
     
     """Terminate the graph or go to the next step"""
@@ -119,10 +118,7 @@ def route_cve(state: OverallState) -> Literal["Found", "Not Found"]:
     
 
 def get_services(state: OverallState):
-    """DEBUG: route the graph to the 'test_code' node"""
-    if state.debug == "skip_to_test" or state.debug == "benchmark_code" or state.web_search_tool == "skip":
-        if state.debug == "skip_to_test":
-            print("[DEBUG] Skipping 'get_services'...")
+    if state.debug == "benchmark_code":
         return {}
     
     """The agent performs a web search to gather relevant information about the services needed to generate the vulnerable Docker code"""
@@ -167,7 +163,7 @@ def get_services(state: OverallState):
         formatted_response = web_search_llm.invoke(WEB_SEARCH_FORMAT_PROMPT.format(web_search_result=response_sourceless), config={"callbacks": [langfuse_handler]})
         
     else:
-        raise ValueError("Invalid web search tool specified. Use 'custom', 'custom_no_tool', 'openai' or 'skip'.")
+        raise ValueError("Invalid web search tool specified. Use 'custom', 'custom_no_tool' or 'openai'.")
     
     
     # Building response to be added to messages 
@@ -224,14 +220,7 @@ def is_version_in_range(serv: str, pred_ver: str, start: str, end: str) -> bool:
     
 
 def assess_services(state: OverallState):
-    """DEBUG: route the graph to the 'test_code' node"""
-    if state.debug == "skip_to_test":
-        print("[DEBUG] Skipping 'assess_services'...")
-        updated_milestones = state.milestones
-        updated_milestones.main_service = True
-        updated_milestones.main_version = True
-        return {"milestones": updated_milestones}
-    elif state.debug == "benchmark_code":
+    if state.debug == "benchmark_code":
         return {}
     
     """Checks if the services needed to generate the vulnerable Docker code are correct by using the ones of Vulhub as GT"""
@@ -239,7 +228,6 @@ def assess_services(state: OverallState):
     filename = 'services.json'
     with builtins.open(filename, "r") as f:
         jsonServices = json.load(f)
-        f.close()
         
     updated_milestones = state.milestones
     
@@ -255,7 +243,6 @@ def assess_services(state: OverallState):
         jsonServices[state.cve_id] = services
         with builtins.open(filename, "w") as f:
             json.dump(jsonServices, f, indent=4)
-            f.close()
             
         updated_milestones.main_service = True
         updated_milestones.main_version = True
@@ -309,10 +296,7 @@ def assess_services(state: OverallState):
 
 
 def route_services(state: OverallState) -> Literal["Ok", "Not Ok"]:
-    """DEBUG: route the graph to the 'test_code' node"""
-    if state.debug == "skip_to_test" or state.debug == "benchmark_code":
-        if state.debug == "skip_to_test":
-            print("[DEBUG] Skipping 'route_services'...")
+    if state.debug == "benchmark_code":
         return "Ok"
     
     """Route to the code generator or terminate the graph"""
@@ -325,12 +309,7 @@ def route_services(state: OverallState) -> Literal["Ok", "Not Ok"]:
         return "Not Ok"
 
 
-def generate_code(state: OverallState):
-    """DEBUG: route the graph to the 'test_code' node"""
-    if state.debug == "skip_to_test":
-        print("[DEBUG] Skipping 'generate_code'...")
-        return {}
-    
+def generate_code(state: OverallState):    
     """The agent generates/fixes the docker code to reproduce the CVE"""
     print("Generating the code...")
     code_gen_query = CODING_PROMPT.format(
@@ -338,6 +317,7 @@ def generate_code(state: OverallState):
         desc=state.web_search_result.desc,
         serv=state.web_search_result.services,
         serv_vers=state.web_search_result.service_vers,
+        mode=state.web_search_tool,
     )
     
     generated_code = code_generation_llm.invoke(
@@ -361,11 +341,6 @@ def generate_code(state: OverallState):
 
 
 def save_code(state: OverallState):
-    """DEBUG: route the graph to the 'test_code' node"""
-    if state.debug == "skip_to_test":
-        print("[DEBUG] Skipping 'save_code'...")
-        return {"debug": ""}
-    
     """The agent saves the tested code in a local directory structured as the directory tree"""
     print("Saving code...")
     code_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/")
@@ -385,7 +360,6 @@ def save_code(state: OverallState):
         
         with builtins.open(full_path, "w", encoding="utf-8") as f:
             f.write(file_content)
-            f.close()
         print(f"\tSaved file: {full_path}")
 
     print("Code saved!")
@@ -451,12 +425,22 @@ def down_docker(code_dir_path):
     
     
 def remove_docker_image():
-    # Ensure that the Docker image is removed in order to apply fixes
-    subprocess.run(
-        ["sudo", "docker", "rmi", "-f"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
+    # Run the docker command to get image IDs
+    result = subprocess.run(
+        ["sudo", "docker", "images", "-q"],
+        stdout=subprocess.PIPE,
+        text=True
     )
+    # Convert the output into a Python list (splitting by newlines)
+    image_ids = result.stdout.strip().split("\n")
+    
+    for image in image_ids:
+        # Remove all Docker images in order to apply fixes
+        subprocess.run(
+            ["sudo", "docker", "rmi", "-f", image],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
 
 
 def test_code(state: OverallState):
@@ -473,7 +457,6 @@ def test_code(state: OverallState):
     log_file = logs_dir_path / f"{state.cve_id}_{state.web_search_tool}_log{state.test_iteration}.txt"
     with builtins.open(log_file, "w") as f:
         f.write(logs)
-        f.close()
     print(f"\tTest logs saved to: {log_file}")
     
     code = ""
@@ -495,7 +478,8 @@ def test_code(state: OverallState):
             serv_type=state.web_search_result.service_type,
             serv_desc=state.web_search_result.service_desc,
             cve_id=state.cve_id,
-            fixes=state.fixes
+            mode=state.web_search_tool,
+            fixes=state.fixes,
         )
         
         test_code_results = test_code_llm.invoke(
@@ -535,18 +519,14 @@ def test_code(state: OverallState):
             main_serv_ver=main_serv_ver, 
             code_dir_path=code_dir_path,
         )
-        
         print(f"\n\tResult: {result.fail_explanation if result.fail_explanation else ""}")
         print(f"\t- docker_runs={result.docker_runs}")
         print(f"\t- services_ok={result.services_ok}")
         print(f"\t- code_main_version={result.code_main_version}\n")
+        down_docker(code_dir_path=code_dir_path)
         
-        if not result.docker_runs:
-            if state.debug == "benchmark_code":
-                print("\t[DEBUG] NOT_SUCCESS")
-            down_docker(code_dir_path=code_dir_path)
+        if not result.docker_runs:            
             remove_docker_image()
-            
             # Different query w.r.t. the one above
             query = NOT_DOCKER_RUNS.format(
                 fail_explanation=result.fail_explanation,
@@ -556,7 +536,8 @@ def test_code(state: OverallState):
                 serv_type=state.web_search_result.service_type,
                 serv_desc=state.web_search_result.service_desc,
                 cve_id=state.cve_id,
-                fixes=state.fixes
+                mode=state.web_search_tool,
+                fixes=state.fixes,
             )
 
             test_code_results = test_code_llm.invoke(
@@ -591,7 +572,6 @@ def test_code(state: OverallState):
         
         else:
             print(f"Docker is running correctly with {num_containers} containers")
-            down_docker(code_dir_path=code_dir_path)
             updated_milestones.docker_runs = result.docker_runs
             updated_milestones.services_ok = result.services_ok
             updated_milestones.code_main_version = result.code_main_version
@@ -621,21 +601,18 @@ def route_code(state: OverallState) -> Literal["Stop Testing", "Keep Testing"]:
         final_report_file = logs_dir_path / f"{state.cve_id}_{state.web_search_tool}_final_report.txt"
         with builtins.open(final_report_file, "w") as f:
             f.write(state.final_report)
-            f.close()
         
         code_stats = {
             "test_iterations": state.test_iteration,
             "num_containers": state.num_containers,
         } 
-        code_stats_file = logs_dir_path / f"{state.cve_id}_{state.web_search_tool}_code_stats.txt"
+        code_stats_file = logs_dir_path / f"{state.cve_id}_{state.web_search_tool}_code_stats.json"
         with builtins.open(code_stats_file, "w") as f:
             json.dump(code_stats, f, indent=4)
-            f.close()
             
-        milestone_file = logs_dir_path / f"{state.cve_id}_{state.web_search_tool}_milestones.txt"
+        milestone_file = logs_dir_path / f"{state.cve_id}_{state.web_search_tool}_milestones.json"
         with builtins.open(milestone_file, "w") as f:
             json.dump(dict(state.milestones), f, indent=4)
-            f.close()
         
         print("Execution Terminated!")
         return "Stop Testing"

@@ -25,7 +25,6 @@ def benchmark_web_search(web_search_mode: str):
         filename = 'services.json'
         with builtins.open(filename, "r") as f:
             jsonServices = json.load(f)
-            f.close()
             
         milestone_file = f'./../../dockers/{web_search_mode}-milestones.json'
         cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
@@ -43,7 +42,6 @@ def benchmark_web_search(web_search_mode: str):
             milestones[cve] = dict(result['milestones'])
             with builtins.open(milestone_file, "w") as f:
                 json.dump(milestones, f, indent=4)
-                f.close()
                 
         return milestones
 
@@ -56,7 +54,6 @@ def benchmark_web_search_from_logs(web_search_mode: str):
         filename = 'services.json'
         with builtins.open(filename, "r") as f:
             jsonServices = json.load(f)
-            f.close()
             
         milestone_file = f'./../../dockers/{web_search_mode}-milestones.json'
         cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
@@ -64,7 +61,6 @@ def benchmark_web_search_from_logs(web_search_mode: str):
         for cve in cve_list:
             with builtins.open(f'./../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
                 web_search_data = json.load(f)
-                f.close()
             
             result = compiled_workflow.invoke(
                 input={
@@ -87,7 +83,6 @@ def benchmark_web_search_from_logs(web_search_mode: str):
             milestones[cve] = dict(result['milestones'])
             with builtins.open(milestone_file, "w") as f:
                 json.dump(milestones, f, indent=4)
-                f.close()
                 
         return milestones
 
@@ -99,21 +94,17 @@ def benchmark_code_from_logs(web_search_mode: str):
     try:
         with builtins.open('services.json', "r") as f:
             jsonServices = json.load(f)
-            f.close()
             
-        cve_list = list(jsonServices.keys())[14:20]   # Limit to first 20 CVEs for benchmarking
+        cve_list = list(jsonServices.keys())[9:20]   # Limit to first 20 CVEs for benchmarking
         for cve in cve_list:
             with builtins.open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
                 web_search_data = json.load(f)
-                f.close()
 
             with builtins.open(f'./../../dockers/{web_search_mode}-milestones.json', 'r') as f:
                 milestones = json.load(f)
-                f.close()
             
             with builtins.open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
                 web_search_data = json.load(f)
-                f.close()
             
             result = compiled_workflow.invoke(
                 input={
@@ -131,7 +122,6 @@ def benchmark_code_from_logs(web_search_mode: str):
             with builtins.open(f'./../../dockers/{web_search_mode}-milestones.json', 'w') as f:
                 milestones[cve] = dict(result['milestones'])
                 json.dump(milestones, f, indent=4)
-                f.close()
 
         return milestones
 
@@ -141,26 +131,24 @@ def benchmark_code_from_logs(web_search_mode: str):
 
 def test_workflow():
     try:
-        cve = "CVE-2017-7525"  #   CVE-2021-28164    CVE-2022-46169    CVE-2024-23897
+        cve = "CVE-2021-28164"  #   CVE-2021-28164    CVE-2022-46169    CVE-2024-23897
         web_search_mode = "custom"
         
-        # with builtins.open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
-        #     web_search_data = json.load(f)
-        #     f.close()
-        # 
-        # with builtins.open(f'./../../dockers/{web_search_mode}-milestones.json', 'r') as f:
-        #     milestones = json.load(f)
-        #     f.close()
+        with builtins.open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
+            web_search_data = json.load(f)
+        
+        with builtins.open(f'./../../dockers/{web_search_mode}-milestones.json', 'r') as f:
+            milestones = json.load(f)
         
         result = compiled_workflow.invoke(
             input={
                 "cve_id": cve,
                 "web_search_tool": web_search_mode,
-                # "web_search_result": web_search_data,
+                "web_search_result": web_search_data,
                 # "code": CodeGenerationResult(file_name=[], file_code=[], directory_tree=""),
                 "messages": [SystemMessage(content=SYSTEM_PROMPT)],
-                # "milestones": milestones[cve],
-                # "debug": "benchmark_code"
+                "milestones": milestones[cve],
+                "debug": "benchmark_code"
             },
             config={"callbacks": [langfuse_handler], "recursion_limit": 100},
         )
@@ -174,7 +162,6 @@ def generate_excel_csv():
     # CVE identifiers
     with builtins.open('services.json', "r") as f:
         jsonServices = json.load(f)
-        f.close()
     cve_list = list(jsonServices.keys())[:20]
     
     data = {}
@@ -183,7 +170,6 @@ def generate_excel_csv():
         data[mode] = []
         with builtins.open(f'./../../dockers/{mode}-milestones.json', 'r') as f:
             mode_milestones = json.load(f)
-            f.close()
     
         milestones = list(next(iter(mode_milestones.values())).keys())
 
@@ -196,10 +182,11 @@ def generate_excel_csv():
         input_token_values = []
         output_token_values = []
         cost_values = []
+        test_iteration_values = []
+        num_containers_values = []
         for cve in cve_list:
             with builtins.open(f'./../../dockers/{cve}/logs/{cve}_web_search_{mode}.json', 'r') as f:
                 web_search_data = json.load(f)
-                f.close()
                 
             # Query value
             if mode == 'custom_no_tool':
@@ -223,12 +210,21 @@ def generate_excel_csv():
             elif mode == 'openai':
                 cost = web_search_openai_tool_cost + (web_search_data['output_tokens'] * output_token_cost)
                 cost_values.append(round(cost, 5))
+                
+            with builtins.open(f'./../../dockers/{cve}/{mode}/logs/{cve}_{mode}_code_stats.json', 'r') as f:
+                code_stats = json.load(f)
+                
+            test_iteration_values.append(code_stats['test_iterations'])
+            num_containers_values.append(code_stats['num_containers'])    
         
         data[mode].append(query_values)
         data[mode].append(number_of_services)
         data[mode].append(input_token_values)
         data[mode].append(output_token_values)
         data[mode].append(cost_values)
+        data[mode].append(test_iteration_values)
+        data[mode].append(num_containers_values)
+        
 
     # Construct MultiIndex columns
     arrays = [[cve for cve in cve_list for _ in (0, 1, 2)], ['custom_no_tool', 'custom', 'openai'] * len(cve_list)]
@@ -242,7 +238,7 @@ def generate_excel_csv():
         combined_data.append(combined)
 
     # Create DataFrame
-    df = pd.DataFrame(combined_data, columns=column, index=milestones + ['Query', 'Number of Services', 'Input Tokens', 'Output Tokens', 'Cost'])
+    df = pd.DataFrame(combined_data, columns=column, index=milestones + ['Query', 'Number of Services', 'Input Tokens', 'Output Tokens', 'Cost', 'Test Iterations', 'Number of Containers'])
     df.to_excel(f'./../../dockers/benchmark-milestones.xlsx')
     df.to_csv(f'./../../dockers/benchmark-milestones.csv')
     return df
@@ -255,7 +251,6 @@ def extract_stats():
         data[mode] = {}
         with builtins.open(f'./../../dockers/{mode}-milestones.json', 'r') as f:
             mode_milestones = json.load(f)
-            f.close()
             
         milestones = list(next(iter(mode_milestones.values())).keys())
 
@@ -271,4 +266,5 @@ def extract_stats():
 # milestones = benchmark_web_search_from_logs("custom_no_tool")
 milestones = benchmark_code_from_logs("custom_no_tool")
 # df = generate_excel_csv()
-# df = extract_stats()
+# data = extract_stats()
+# data

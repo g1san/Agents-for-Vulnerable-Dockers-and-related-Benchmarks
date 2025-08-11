@@ -79,8 +79,9 @@ Here is a list of important rules you have to take into account:
     - Services to be included in the system: {serv}
     - Service version (beware that '---' delineates a range of versions, not a specific version): {serv_vers}
 - The system must be immediately deployable using the "docker compose up" command.
-- The directory tree where the files will be stored must be rooted it in the "{cve_id}" folder.
-- The file names must indicate the relative path from the "{cve_id}" folder.
+- Always specify {cve_id} in the image tag of the 'docker-compose.yml' file.
+- The directory tree where the files will be stored must be rooted it in the "./../../dockers/{cve_id}/{mode}" folder.
+- The file names must indicate the relative path from the "./../../dockers/{cve_id}/{mode}" folder.
 """
 
 
@@ -99,8 +100,9 @@ Here is a list of important rules you have to take into account:
     - Service Type: {serv_type}
     - Service Description: {serv_desc}
 - The system must be immediately deployable using the "docker compose up" command.
-- The directory tree where the files will be stored must be rooted it in the "{cve_id}" folder.
-- The file names must indicate the relative path from the "{cve_id}" folder.
+- Always specify {cve_id} in the image tag of the 'docker-compose.yml' file.
+- The directory tree where the files will be stored must be rooted it in the "./../../dockers/{cve_id}/{mode}" folder.
+- The file names must indicate the relative path from the "./../../dockers/{cve_id}/{mode}" folder.
 
 Here is the list of previous fixes that were attempted but did not work on the code, my suggestion is to try something different from these:
 {fixes}
@@ -121,8 +123,9 @@ Here is a list of important rules you have to take into account:
     - Service Type: {serv_type}
     - Service Description: {serv_desc}
 - The system must be immediately deployable using the "docker compose up" command.
-- The directory tree where the files will be stored must be rooted it in the "{cve_id}" folder.
-- The file names must indicate the relative path from the "{cve_id}" folder.
+- Always specify {cve_id} in the image tag of the 'docker-compose.yml' file.
+- The directory tree where the files will be stored must be rooted it in the "./../../dockers/{cve_id}/{mode}" folder.
+- The file names must indicate the relative path from the "./../../dockers/{cve_id}/{mode}" folder.
 
 Here is the list of previous fixes that were attempted but did not work on the code, my suggestion is to try something different from these:
 {fixes}
@@ -168,6 +171,7 @@ LIST OF IMPORTANT THINGS TO REMEMBER:
     - Modify the files to make the system work.
     - Do not use service and/or service versions that are not listed, unless compatibility issues have emerged.
     - The container must be immediately deployable using the "docker compose up" command.
-    - The directory tree where the files will be stored must be rooted it in the "{cve_id}" folder.
-    - The file names must indicate the relative path from the "{cve_id}" folder.
+    - Always specify {cve_id} in the image tag of the 'docker-compose.yml' file.
+    - The directory tree where the files will be stored must be rooted it in the "./../../dockers/{cve_id}/{mode}" folder.
+    - The file names must indicate the relative path from the "./../../dockers/{cve_id}/{mode}" folder.
 """
