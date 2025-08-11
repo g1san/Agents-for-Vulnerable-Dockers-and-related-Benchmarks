@@ -422,25 +422,6 @@ def down_docker(code_dir_path):
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL
     )
-    
-    
-def remove_docker_image():
-    # Run the docker command to get image IDs
-    result = subprocess.run(
-        ["sudo", "docker", "images", "-q"],
-        stdout=subprocess.PIPE,
-        text=True
-    )
-    # Convert the output into a Python list (splitting by newlines)
-    image_ids = result.stdout.strip().split("\n")
-    
-    for image in image_ids:
-        # Remove all Docker images in order to apply fixes
-        subprocess.run(
-            ["sudo", "docker", "rmi", "-f", image],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
 
 
 def test_code(state: OverallState):
@@ -467,7 +448,6 @@ def test_code(state: OverallState):
         if state.debug == "benchmark_code":
             print("\t[DEBUG] NOT_SUCCESS")
         down_docker(code_dir_path=code_dir_path)
-        remove_docker_image()
         
         query = NOT_SUCCESS_PROMPT.format(
             # Passing just the last 100 lines of logs to mitigate ContextWindow saturation
@@ -525,8 +505,7 @@ def test_code(state: OverallState):
         print(f"\t- code_main_version={result.code_main_version}\n")
         down_docker(code_dir_path=code_dir_path)
         
-        if not result.docker_runs:            
-            remove_docker_image()
+        if not result.docker_runs:
             # Different query w.r.t. the one above
             query = NOT_DOCKER_RUNS.format(
                 fail_explanation=result.fail_explanation,
