@@ -51,7 +51,7 @@
         "docker_runs": true,
         "services_ok": true,
         "code_main_version": false,
-        "docker_vulnerable": false,
+        "docker_vulnerable": true,
         "exploitable": false
     },
     "CVE-2020-11652": {
@@ -62,7 +62,7 @@
         "docker_runs": true,
         "services_ok": false,
         "code_main_version": false,
-        "docker_vulnerable": false,
+        "docker_vulnerable": true,
         "exploitable": false
     },
     "CVE-2021-3129": {
@@ -95,7 +95,7 @@
         "docker_runs": true,
         "services_ok": true,
         "code_main_version": true,
-        "docker_vulnerable": false,
+        "docker_vulnerable": true,
         "exploitable": false
     },
     "CVE-2021-41773": {

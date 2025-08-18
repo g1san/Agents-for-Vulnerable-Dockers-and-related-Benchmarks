@@ -1,7 +1,11 @@
 """Run the agent by providing it with a CVE ID."""
+import math
 import json
 import builtins
+import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+from IPython.display import Image, display
 from langchain_core.messages import SystemMessage
 
 # My modules
@@ -10,9 +14,6 @@ from prompts import SYSTEM_PROMPT
 from graph import compiled_workflow
 
 def draw_graph():
-    """Display the image of the compiled graph"""
-    from IPython.display import Image, display
-    
     try:
         display(Image(compiled_workflow.get_graph().draw_mermaid_png(output_file_path="Mermaid Chart.png")))
         
@@ -244,27 +245,238 @@ def generate_excel_csv():
     return df
 
 
-def extract_stats():    
+def extract_milestones_stats(logs_set: str):    
     data = {}
     web_search_modes = ['custom_no_tool', 'custom', 'openai']
     for mode in web_search_modes:
         data[mode] = {}
-        with builtins.open(f'./../../dockers/{mode}-milestones.json', 'r') as f:
+        with builtins.open(f'./../../benchmark_logs/{logs_set}-benchmark-session/milestones-after-analysis/{mode}-milestones.json', 'r') as f:
             mode_milestones = json.load(f)
             
         milestones = list(next(iter(mode_milestones.values())).keys())
 
         for m in milestones:
-            data[mode][m] = [1 if mode_milestones[cve][m] else 0 for cve in mode_milestones].count(1)
+            data[mode][m] = [1 if mode_milestones[cve][m] else 0 for cve in mode_milestones].count(1) * 100 /len(mode_milestones)
          
-    return data   
+    return data  
+
+
+def get_cve_df(logs_set: str):
+    # CVE identifiers
+    with builtins.open('services.json', "r") as f:
+        jsonServices = json.load(f)
+    cve_list = list(jsonServices.keys())[:20]
+    
+    data = []
+    web_search_modes = ['custom_no_tool', 'custom', 'openai']
+    for cve in cve_list:
+        for mode in web_search_modes:
+            cve_data = {}
+            cve_data['cve_id'] = cve
+            cve_data['web_search_mode'] = mode
             
+            with builtins.open(f'./../../benchmark_logs/{logs_set}-benchmark-session/milestones-after-analysis/{mode}-milestones.json', 'r') as f:
+                mode_milestones = json.load(f)
+
+            for milestone, value in mode_milestones[cve].items():
+                if milestone != 'exploitable':
+                    cve_data[milestone] = True if value else False
+            
+            data.append(cve_data)
+
+    # Create DataFrame
+    df = pd.DataFrame(data)
+    return df 
+        
+            
+def is_achieved(x):
+    if pd.isna(x):
+        return False
+    if isinstance(x, (int, float, np.integer, np.floating)):
+        try:
+            return float(x) != 0.0 and not math.isclose(float(x), 0.0)
+        except:
+            return True
+    s = str(x).strip()
+    if s == "":
+        return False
+    s_low = s.lower()
+    falsey = {"0", "0.0", "false", "none", "nan", "n/a", "no", "not started", "not_started", "falsey"}
+    truthy = {"1", "yes", "true", "done", "completed", "complete", "y", "ok", "found"}
+    if s_low in falsey:
+        return False
+    if s_low in truthy:
+        return True
+    try:
+        num = float(s_low)
+        return not math.isclose(num, 0.0)
+    except:
+        pass
+    return True
+
+
+def compute_some_stats():
+    df = pd.concat([get_cve_df(logs_set="1st"), get_cve_df(logs_set="2nd")])
+    milestones = [c for c in df.columns if c not in ['cve_id','web_search_mode']]
+    # interpret 'True'/'False' strings if necessary
+    bool_df = df[milestones].map(lambda x: str(x).strip().lower()=='true')
+    pass_rates = bool_df.mean()
+    bool_df
+
+    pass_rates.plot(kind='bar')
+    plt.ylabel('Fraction passing')
+    plt.title('Milestone pass rates (funnel)')
+    plt.ylim(0,1)
+    plt.show()
+
+    adj_cond = []
+    for i in range(len(milestones)-1):
+        prev = milestones[i]
+        nxt = milestones[i+1]
+        prev_pass = bool_df[prev]
+        denom = prev_pass.sum()
+        if denom == 0:
+            prob = np.nan
+        else:
+            prob = ((prev_pass) & (bool_df[nxt])).sum() / denom
+        adj_cond.append({'from': prev, 'to': nxt, 'P(next|prev)': prob, 'prev_pass_count': denom})
+    adj_cond_df = pd.DataFrame(adj_cond)
+    display(adj_cond_df)
+    #! I do not think this is useful, the milestones do not have a consequential correlation
+
+
+    # 4) Most common pass/fail patterns
+    patterns = bool_df.astype(int).astype(str).agg(''.join, axis=1)
+    pattern_counts = patterns.value_counts().reset_index()
+    pattern_counts.columns = ['pattern', 'count']
+    # Add human readable pattern labels (mapping 1/0 to milestone names)
+    def pattern_to_list(pat):
+        return {milestones[i]: ('pass' if ch=='1' else 'fail') for i,ch in enumerate(pat)}
+    pattern_counts['example_milestone_states'] = pattern_counts['pattern'].map(lambda p: str(pattern_to_list(p)))
+    display(pattern_counts)
+    
+    binary = df[milestones].map(is_achieved).astype(int)
+
+    # Per-CVE summary
+    per_cve = pd.DataFrame({
+        "cve_id": df["cve_id"],
+        "milestones_achieved": binary.sum(axis=1),
+        "milestones_total": len(milestones)
+    })
+    per_cve["milestones_percent"] = (per_cve["milestones_achieved"] / per_cve["milestones_total"]) * 100
+
+    # Add web_search_mode for grouping
+    per_cve["web_search_mode"] = df["web_search_mode"]
+
+    # --- Group-level stats ---
+    agg_stats = per_cve.groupby("web_search_mode").agg(
+        num_cves=("cve_id", "count"),
+        mean_achieved=("milestones_achieved", "mean"),
+        median_achieved=("milestones_achieved", "median"),
+        min_achieved=("milestones_achieved", "min"),
+        max_achieved=("milestones_achieved", "max")
+    )
+
+    # Milestone-specific achievement rates per web_search_mode
+    milestone_by_mode = df.groupby("web_search_mode")[milestones].apply(lambda g: g.map(is_achieved).mean() * 100)
+
+    # Show tables
+    display("Milestone achievement summary by web_search_mode", agg_stats.reset_index())
+    display("Milestone-specific achievement rates by web_search_mode (%)", milestone_by_mode.reset_index())
+
+    # Plot average milestones achieved
+    plt.figure(figsize=(8,5))
+    plt.bar(agg_stats.index.astype(str), agg_stats["mean_achieved"])
+    plt.ylabel("Average milestones achieved")
+    plt.title("Average milestones achieved by web_search_mode")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+    # Heatmap of milestone-specific achievement %
+    plt.figure(figsize=(5,5))
+    plt.imshow(milestone_by_mode.T, aspect="auto", cmap="Reds")
+    plt.colorbar(label="% Achieved")
+    plt.xticks(range(len(milestone_by_mode.index)), milestone_by_mode.index, rotation=45)
+    plt.yticks(range(len(milestone_by_mode.columns)), milestone_by_mode.columns)
+    # plt.title("Milestone achievement rates by web_search_mode")
+    plt.tight_layout()
+    plt.show()
+    
+    # df.groupby(['cve_id'])
+
+
+def best_cve_runs():
+    df = pd.concat([get_cve_df(logs_set="1st"), get_cve_df(logs_set="2nd")])
+    grouped_df = df.drop(columns='web_search_mode', axis=1).groupby('cve_id')
+
+
+    best_cve_run = {}
+    for cve, group in grouped_df:
+        best_result = 0
+        for index, row in group.iterrows():
+            result = 0
+            milestones = row.iloc[1:]
+            for m, val in milestones.items():
+                if val:
+                    result += 1
+                else:
+                    break
+
+            if result > best_result:
+                best_result = result
+        best_cve_run[cve] = best_result
+
+    sorted(best_cve_run.items(), key=lambda x:x[1])
+    milestone_list = df.columns[1:].tolist()
+    milestone_list[0] = ""
+    milestone_list
+
+    cves, values = zip(*sorted(best_cve_run.items(), key=lambda x:x[1]))
+    colors = ['orange', 'purple', 'yellow']
+    # Plot
+    plt.figure(figsize=(8, 10))
+
+    for cve, val in zip(cves, values):
+        start = 0
+
+        # First segment: up to min(val, 4)
+        seg1 = min(val, 4) - start
+        if seg1 > 0:
+            plt.barh(cve, seg1, left=start, color=colors[0])
+            start += seg1
+
+        # Second segment: from 4 to min(val, 7)
+        seg2 = min(val, 7) - start
+        if seg2 > 0:
+            plt.barh(cve, seg2, left=start, color=colors[1])
+            start += seg2
+
+        # Third segment: from 7 to val (max 8)
+        seg3 = val - start
+        if seg3 > 0:
+            plt.barh(cve, seg3, left=start, color=colors[2])
+
+
+
+    plt.yticks(fontsize=10)
+    plt.xticks(range(len(milestone_list)), milestone_list, rotation=30)
+    plt.xlabel("Milestones")
+    plt.ylabel("CVE-ID")
+    plt.title("Best run for each CVE")
+    plt.tight_layout()
+    plt.grid(axis='x')
+    plt.show()
 
 # draw_graph()
 # result = test_workflow()
 # milestones = benchmark_web_search("custom_no_tool")
 # milestones = benchmark_web_search_from_logs("custom_no_tool")
 # milestones = benchmark_code_from_logs("openai")
-df = generate_excel_csv()
-# data = extract_stats()
-# data
+# df = generate_excel_csv()
+# data = extract_milestones_stats(logs_set="2nd")
+# compute_some_stats()
+# best_cve_runs()
+
+
+    
