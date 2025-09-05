@@ -412,6 +412,30 @@ def check_services(services, main_serv, main_serv_ver, code_dir_path):
         [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=query)], 
         config={"callbacks": [langfuse_handler]}
     )
+    
+
+def get_cve_list(code_dir_path):
+    with builtins.open(f"{code_dir_path}/logs/cves.json", "w") as f:
+        subprocess.run(
+            ["docker", "scout", "cves", "--format", "gitlab"],
+            cwd=code_dir_path,
+            stdout=f,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        print(f"\tCVE List file saved to: {code_dir_path}/logs/cves.json")
+
+
+def check_docker_vulnerability(cve_id, code_dir_path):
+    get_cve_list(code_dir_path=code_dir_path)
+    cves_file_path = code_dir_path / "logs/cves.json"
+    with builtins.open(cves_file_path, "r") as f:
+        cve_list = json.load(f)
+    cve_list = cve_list["vulnerabilities"]
+    for cve in cve_list:
+        if cve["cve"] == cve_id:
+            return True
+    return False
 
 
 def down_docker(code_dir_path):
@@ -423,6 +447,18 @@ def down_docker(code_dir_path):
         stderr=subprocess.DEVNULL
     )
 
+
+def remove_all_images():
+    image_ids = subprocess.check_output(["docker", "images", "-aq"]).decode().split()
+
+    if image_ids:
+        subprocess.run(
+            ["docker", "rmi", "-f"] + image_ids,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True
+        )
+        
 
 def test_code(state: OverallState):
     """The agent tests the docker to check if it work correctly"""    
@@ -499,13 +535,15 @@ def test_code(state: OverallState):
             main_serv_ver=main_serv_ver, 
             code_dir_path=code_dir_path,
         )
-        print(f"\n\tResult: {result.fail_explanation if result.fail_explanation else ""}")
+        print(f"\tResult: {result.fail_explanation if result.fail_explanation else ""}")
         print(f"\t- docker_runs={result.docker_runs}")
         print(f"\t- services_ok={result.services_ok}")
         print(f"\t- code_main_version={result.code_main_version}\n")
         down_docker(code_dir_path=code_dir_path)
         
         if not result.docker_runs:
+            if state.debug == "benchmark_code":
+                print("\t[DEBUG] NOT_DOCKER_RUNS")
             # Different query w.r.t. the one above
             query = NOT_DOCKER_RUNS.format(
                 fail_explanation=result.fail_explanation,
@@ -550,10 +588,19 @@ def test_code(state: OverallState):
             }
         
         else:
-            print(f"Docker is running correctly with {num_containers} containers")
+            print(f"\tDocker is running correctly with {num_containers} containers")
             updated_milestones.docker_runs = result.docker_runs
             updated_milestones.services_ok = result.services_ok
-            updated_milestones.code_main_version = result.code_main_version
+            updated_milestones.docker_vulnerable = check_docker_vulnerability(cve_id=state.cve_id, code_dir_path=code_dir_path)
+            if updated_milestones.docker_vulnerable:
+                updated_milestones.code_main_version = True
+            else:
+                updated_milestones.code_main_version = result.code_main_version
+            down_docker(code_dir_path=code_dir_path)
+            
+            code_file = logs_dir_path / f"{state.cve_id}_{state.web_search_tool}_code.json"
+            with builtins.open(code_file, "w") as f:
+                json.dump(dict(state.code), f, indent=4)
             
             formatted_code = f"Directory tree:\n{state.code.directory_tree}\n\n"
             for name, code in zip(state.code.file_name, state.code.file_code):
@@ -593,6 +640,7 @@ def route_code(state: OverallState) -> Literal["Stop Testing", "Keep Testing"]:
         with builtins.open(milestone_file, "w") as f:
             json.dump(dict(state.milestones), f, indent=4)
         
+        remove_all_images()
         print("Execution Terminated!")
         return "Stop Testing"
     else:

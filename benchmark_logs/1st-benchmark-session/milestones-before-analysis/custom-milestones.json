@@ -81,8 +81,8 @@
         "main_service": true,
         "main_version": true,
         "aux_services": true,
-        "docker_runs": true,
-        "services_ok": true,
+        "docker_runs": false,
+        "services_ok": false,
         "code_main_version": false,
         "docker_vulnerable": false,
         "exploitable": false

@@ -2,32 +2,18 @@
 - ***"get_cve_id"***: COMPLETED
 - ***"assess_cve_id"***: COMPLETED
 - ***"get_services"***
-    - (**DONE**) Limit the number of web pages analysed (e.g. to 5) &rarr; modify tool so that it is possible to specify the number of pages to search (up to 10)
-    - Add a specific web search to check if the 'MAIN' service requires some specific 'AUX' services to work (e.g. check 3 web pages) &rarr; might require adjusting _WebSearchResult_, evaluate if a prompt variation for current web search solution is sufficient
+    - (Prof. Giordano suggestion) Add a specific web search to check if the 'MAIN' service requires some specific 'AUX' services to work (e.g. check 3 web pages) &rarr; might require adjusting _WebSearchResult_, evaluate if a prompt variation for current web search solution is sufficient
     -  (Ask prof. Drago) Add manual retrieval of CVE data from local repository of Exploit DB
-    - Measure how many URLs does the LLM need to check for a given CVE to get the right service list, do it just for one CVE, it is a useful result for the thesis
-    - Check if order of URL provided by Google API is the same every time
 - ***"assess_services"***
-    - If assessment fails in any milestone, retry performing the web search up to 3 times until all milestones are passed &rarr; requires loop implementation and graph modification
+    - (Prof. Giordano suggestion) If assessment fails in any milestone, retry performing the web search up to 3 times until all milestones are passed &rarr; requires loop implementation and graph modification
 - ***"generate_code"***: COMPLETED
 - ***"save_code"***: COMPLETED
 - ***"test_code"***
-    - Implement HEALTHCHECKS
-    - Decide the maximum number of iterations in the loop (currently set to 10)
-    - Implement "scratchpad" from which the LLM can memorise previous fix attempts
     - Use MAVEN to assess if CVE is present in Docker (look at what Docker Desktop can do)
-    - Implement LLM-as-a-judge: invoke LLM to check if generated code uses the correct service versions provided by the web search &rarr; may require expanding the _CodeGenerationResult_
-    - Review logging for code
-    - Assess if it works correctly using the Dockers from VDaaS
 - **Generic**
-    - Change testing so that it also removes images
-    - Evaluate a change from _bool_ to _float_ for some milestones
     - Implement MCP for Docker Desktop in another branch for future proofing
     - Review logging for graph history (a.k.a. _final\_report_)
 - **Problems discovered with testing**:
-    - Some non-vulnerable service version are reported as vulnerable (e.g. CVE-2021-28164)
-    - Launching the docker of CVE-2024-23897 requires root privileges to perform certain commands, might want to check security
-    - Manually forcing the Docker to stop (e.g. CVE-2022-46169) is seen as a potential issue by LLM which tries to solve the problem, even though the containers seem to work fine, might be related to having multiple active containers
-    - CVE-2020-7247 and CVE-2021-41773 repeatedly caused this error: Workflow invocation failed: Could not parse response content as the length limit was reached - CompletionUsage(completion_tokens=16384, prompt_tokens=3447, total_tokens=19831, completion_tokens_details=CompletionTokensDetails(accepted_prediction_tokens=0, audio_tokens=0, reasoning_tokens=0, rejected_prediction_tokens=0), prompt_tokens_details=PromptTokensDetails(audio_tokens=0, cached_tokens=0)). **SOLVED**: imposed a 16000 response token limit both in code and through prompt
+    - CVE-2020-7247 and CVE-2021-41773 repeatedly caused this error: Workflow invocation failed: Could not parse response content as the length limit was reached - CompletionUsage(completion_tokens=16384, prompt_tokens=3447, total_tokens=19831, completion_tokens_details=CompletionTokensDetails(accepted_prediction_tokens=0, audio_tokens=0, reasoning_tokens=0, rejected_prediction_tokens=0), prompt_tokens_details=PromptTokensDetails(audio_tokens=0, cached_tokens=0)).
     - [Errno 21] Is a directory: '../../dockers/CVE-2021-34429/openai/nginx.conf'.
         - Always happens with _nginx_ related files

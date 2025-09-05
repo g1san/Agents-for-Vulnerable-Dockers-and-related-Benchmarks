@@ -96,16 +96,13 @@ def benchmark_code_from_logs(web_search_mode: str):
         with builtins.open('services.json', "r") as f:
             jsonServices = json.load(f)
             
-        cve_list = list(jsonServices.keys())[13:20]   # Limit to first 20 CVEs for benchmarking
+        cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
         for cve in cve_list:
             with builtins.open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
                 web_search_data = json.load(f)
 
             with builtins.open(f'./../../dockers/{web_search_mode}-milestones.json', 'r') as f:
                 milestones = json.load(f)
-            
-            with builtins.open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
-                web_search_data = json.load(f)
             
             result = compiled_workflow.invoke(
                 input={
@@ -386,7 +383,7 @@ def compute_some_stats():
 
     # Plot average milestones achieved
     plt.figure(figsize=(8,5))
-    plt.bar(agg_stats.index.astype(str), agg_stats["mean_achieved"])
+    plt.bar(['Mode 1', 'Mode 2', 'Mode 3'], agg_stats["mean_achieved"])
     plt.ylabel("Average milestones achieved")
     plt.title("Average milestones achieved by web_search_mode")
     plt.xticks(rotation=45)
@@ -397,7 +394,7 @@ def compute_some_stats():
     plt.figure(figsize=(5,5))
     plt.imshow(milestone_by_mode.T, aspect="auto", cmap="Reds")
     plt.colorbar(label="% Achieved")
-    plt.xticks(range(len(milestone_by_mode.index)), milestone_by_mode.index, rotation=45)
+    plt.xticks(range(len(milestone_by_mode.index)), ['Mode 1', 'Mode 2', 'Mode 3'])
     plt.yticks(range(len(milestone_by_mode.columns)), milestone_by_mode.columns)
     # plt.title("Milestone achievement rates by web_search_mode")
     plt.tight_layout()
@@ -407,7 +404,8 @@ def compute_some_stats():
 
 
 def best_cve_runs():
-    df = pd.concat([get_cve_df(logs_set="1st"), get_cve_df(logs_set="2nd")])
+    # df = pd.concat([get_cve_df(logs_set="1st"), get_cve_df(logs_set="2nd")])
+    df = get_cve_df(logs_set="2nd")
     grouped_df = df.drop(columns='web_search_mode', axis=1).groupby('cve_id')
 
 
@@ -468,6 +466,106 @@ def best_cve_runs():
     plt.grid(axis='x')
     plt.show()
 
+
+def test_docker_scout():
+    #! Isolate all nodes except the "test_docker" one before running this (check "graph.py") !#
+    try:
+        with builtins.open('services.json', "r") as f:
+            jsonServices = json.load(f)
+        
+        modes = ['custom_no_tool', 'custom', 'openai']          
+        cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
+
+        for web_search_mode in modes:
+            with builtins.open(f'./../../dockers/{web_search_mode}-milestones.json', 'r') as f:
+                og_milestones = json.load(f)
+                
+            for cve in cve_list:
+                cve_milestones = og_milestones[cve]
+                if not cve_milestones['docker_runs']:
+                    continue
+                
+                with builtins.open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
+                    web_search_data = json.load(f)
+
+                print(f"[{cve}][{web_search_mode}] Starting test...")
+                result = compiled_workflow.invoke(
+                    input={
+                        "cve_id": cve,
+                        "web_search_tool": web_search_mode,
+                        "web_search_result": web_search_data,
+                        "messages": [SystemMessage(content=SYSTEM_PROMPT)],
+                        "milestones": cve_milestones,
+                        "debug": "benchmark_code"
+                    },
+                    config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+                )
+
+                new_milestones = dict(result['milestones'])
+                for milestone, og, new in zip(cve_milestones.keys(), cve_milestones.values(), new_milestones.values()):
+                    print(f"\t[{cve}][{web_search_mode}] '{milestone}': {og} --> {new}.")
+                print(f"[{cve}][{web_search_mode}] Ending test...\n\n\n")
+            
+    except Exception as e:
+        print(f"Workflow invocation failed: {e}.")
+        
+        
+def recompute_milestones():
+    #! Isolate all nodes except the "test_docker" one before running this (check "graph.py") !#
+    try:
+        with builtins.open('services.json', "r") as f:
+            jsonServices = json.load(f)
+        
+        modes = ['custom_no_tool', 'custom', 'openai']
+        cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
+        for web_search_mode in modes:
+            milestones = {}
+            with builtins.open(f'./../../dockers/milestones-after-analysis/{web_search_mode}-milestones.json', 'r') as f:
+                og_milestones = json.load(f)
+                
+            for cve in cve_list:
+                cve_milestones = og_milestones[cve].copy()
+                if not cve_milestones['docker_runs']:
+                    with builtins.open(f'./../../dockers/{web_search_mode}-milestones.json', 'w') as f:
+                        milestones[cve] = cve_milestones
+                        json.dump(milestones, f, indent=4)
+                    continue
+                
+                cve_milestones['services_ok'] = False
+                cve_milestones['code_main_version'] = False
+                cve_milestones['docker_vulnerable'] = False
+                
+                with builtins.open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
+                    web_search_data = json.load(f)
+
+                print(f"[{cve}][{web_search_mode}] Starting test...")
+                result = compiled_workflow.invoke(
+                    input={
+                        "cve_id": cve,
+                        "web_search_tool": web_search_mode,
+                        "web_search_result": web_search_data,
+                        "messages": [SystemMessage(content=SYSTEM_PROMPT)],
+                        "milestones": cve_milestones,
+                        "debug": "benchmark_code"
+                    },
+                    config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+                )
+
+                new_milestones = dict(result['milestones'])
+                for milestone, og, new in zip(og_milestones[cve].keys(), og_milestones[cve].values(), new_milestones.values()):
+                    if og != new:
+                        print(f"\t[{cve}][{web_search_mode}] '{milestone}': {og} --> {new}.")
+                print(f"[{cve}][{web_search_mode}] Ending test...\n\n\n")
+                
+                # Append new milestones to JSON file
+                with builtins.open(f'./../../dockers/{web_search_mode}-milestones.json', 'w') as f:
+                    milestones[cve] = dict(result['milestones'])
+                    json.dump(milestones, f, indent=4)
+            
+    except Exception as e:
+        print(f"Workflow invocation failed: {e}.")
+        
+
 # draw_graph()
 # result = test_workflow()
 # milestones = benchmark_web_search("custom_no_tool")
@@ -477,6 +575,5 @@ def best_cve_runs():
 # data = extract_milestones_stats(logs_set="2nd")
 # compute_some_stats()
 # best_cve_runs()
-
-
-    
+# test_docker_scout()
+# recompute_milestones()    

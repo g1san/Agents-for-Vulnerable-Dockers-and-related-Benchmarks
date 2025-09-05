@@ -149,8 +149,8 @@
         "aux_services": true,
         "docker_runs": true,
         "services_ok": true,
-        "code_main_version": true,
-        "docker_vulnerable": true,
+        "code_main_version": false,
+        "docker_vulnerable": false,
         "exploitable": false
     },
     "CVE-2022-22963": {
@@ -213,7 +213,7 @@
         "main_service": true,
         "main_version": true,
         "aux_services": true,
-        "docker_runs": true,
+        "docker_runs": false,
         "services_ok": false,
         "code_main_version": false,
         "docker_vulnerable": false,
