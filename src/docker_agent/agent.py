@@ -129,29 +129,19 @@ def benchmark_code_from_logs(web_search_mode: str):
 
 def test_workflow():
     try:
-        cve = "CVE-2021-28164"  #   CVE-2021-28164    CVE-2022-46169    CVE-2024-23897
+        cve = "CVE-2022-22947"
         web_search_mode = "custom"
-        
-        with builtins.open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
-            web_search_data = json.load(f)
-        
-        with builtins.open(f'./../../dockers/{web_search_mode}-milestones.json', 'r') as f:
-            milestones = json.load(f)
         
         result = compiled_workflow.invoke(
             input={
                 "cve_id": cve,
                 "web_search_tool": web_search_mode,
-                "web_search_result": web_search_data,
-                # "code": CodeGenerationResult(file_name=[], file_code=[], directory_tree=""),
-                "messages": [SystemMessage(content=SYSTEM_PROMPT)],
-                "milestones": milestones[cve],
-                "debug": "benchmark_code"
+                "messages": [SystemMessage(content=SYSTEM_PROMPT)]
             },
             config={"callbacks": [langfuse_handler], "recursion_limit": 100},
-        )
-                
+        )  
         return result
+    
     except Exception as e:
         print(f"Workflow invocation failed: {e}.")
 
@@ -404,8 +394,7 @@ def compute_some_stats():
 
 
 def best_cve_runs():
-    # df = pd.concat([get_cve_df(logs_set="1st"), get_cve_df(logs_set="2nd")])
-    df = get_cve_df(logs_set="2nd")
+    df = pd.concat([get_cve_df(logs_set="1st"), get_cve_df(logs_set="2nd")])
     grouped_df = df.drop(columns='web_search_mode', axis=1).groupby('cve_id')
 
 

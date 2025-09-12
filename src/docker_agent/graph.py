@@ -25,7 +25,7 @@ workflow.add_node("save_code", nodes.save_code)
 workflow.add_node("test_code", nodes.test_code)
 
 # Add edges to the workflow
-workflow.add_edge(START, "test_code")  #! Modified for testing purposes OG: workflow.add_edge(START, "get_cve_id")
+workflow.add_edge(START, "get_cve_id")
 workflow.add_edge("get_cve_id", "assess_cve_id")
 workflow.add_conditional_edges(
     "assess_cve_id",
