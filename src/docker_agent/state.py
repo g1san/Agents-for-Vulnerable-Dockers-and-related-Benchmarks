@@ -14,12 +14,12 @@ class OverallState(BaseModel):
     )
 
     web_search_tool: str = Field(
-        default="custom", 
-        description="The name of the web search tool"
+        default="custom_no_tool", 
+        description="The web search mode"
     )
 
     web_search_result: WebSearchResult = Field(
-        default=WebSearchResult(desc="", attack_type="", services=[], service_vers=[], service_type=[], service_desc=[]), 
+        default=WebSearchResult(desc="", attack_type="", services=[]), 
         description="The result of the web search"
     )
 
@@ -31,6 +31,21 @@ class OverallState(BaseModel):
     feedback: TestCodeResult = Field(
         default=TestCodeResult(error="", fix="", fixed_code=CodeGenerationResult(file_name=[], file_code=[], directory_tree="")),
         description="Feedback about the generated docker code"
+    )
+    
+    logs: str = Field(
+        default="",
+        description="Logs obtained while testing the Docker code"
+    )
+    
+    fail_explanation: str = Field(
+        default="",
+        description="Detailed explanation of why one or more milestones have failed"
+    )
+    
+    revision_type: str = Field(
+        default="",
+        description="Type of revision to be applied to the Docker code"
     )
     
     fixes: list[str] = Field(

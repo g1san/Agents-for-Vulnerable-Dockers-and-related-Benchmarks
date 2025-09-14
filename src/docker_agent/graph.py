@@ -23,6 +23,8 @@ workflow.add_node("assess_services", nodes.assess_services)
 workflow.add_node("generate_code", nodes.generate_code)
 workflow.add_node("save_code", nodes.save_code)
 workflow.add_node("test_code", nodes.test_code)
+workflow.add_node("revise_code", nodes.revise_code)
+workflow.add_node("assess_vuln", nodes.assess_vuln)
 
 # Add edges to the workflow
 workflow.add_edge(START, "get_cve_id")
@@ -50,10 +52,12 @@ workflow.add_conditional_edges(
     "test_code",
     nodes.route_code,
     {
-        "Stop Testing": END,
-        "Keep Testing": "save_code",
+        "Stop Testing": "assess_vuln",
+        "Revise Code": "revise_code",
     },
 )
+workflow.add_edge("revise_code", "save_code")
+workflow.add_edge("assess_vuln", END)
 
 # Compile the graph
 compiled_workflow = workflow.compile()

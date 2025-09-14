@@ -13,6 +13,7 @@ from configuration import langfuse_handler, WebSearchResult, CodeGenerationResul
 from prompts import SYSTEM_PROMPT
 from graph import compiled_workflow
 
+
 def draw_graph():
     try:
         display(Image(compiled_workflow.get_graph().draw_mermaid_png(output_file_path="Mermaid Chart.png")))
@@ -20,7 +21,7 @@ def draw_graph():
     except Exception as e:
         print(f"Rendering failed with code {e}.\nHere's the Mermaid source:\n{compiled_workflow.get_graph().draw_mermaid()}")
 
-    
+
 def benchmark_web_search(web_search_mode: str):
     try:
         filename = 'services.json'
@@ -129,13 +130,17 @@ def benchmark_code_from_logs(web_search_mode: str):
 
 def test_workflow():
     try:
-        cve = "CVE-2022-22947"
-        web_search_mode = "custom"
+        cve = "CVE-2020-11651"
+        web_search_mode = "custom_no_tool"
+        
+        with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:
+            web_search_data = json.load(f)
         
         result = compiled_workflow.invoke(
             input={
                 "cve_id": cve,
                 "web_search_tool": web_search_mode,
+                "web_search_result": web_search_data,
                 "messages": [SystemMessage(content=SYSTEM_PROMPT)]
             },
             config={"callbacks": [langfuse_handler], "recursion_limit": 100},
@@ -521,7 +526,7 @@ def recompute_milestones():
                     continue
                 
                 cve_milestones['services_ok'] = False
-                cve_milestones['code_main_version'] = False
+                cve_milestones['code_hard_version'] = False
                 cve_milestones['docker_vulnerable'] = False
                 
                 with builtins.open(f'./../../dockers/{cve}/logs/{cve}_web_search_{web_search_mode}.json', 'r') as f:
@@ -556,7 +561,7 @@ def recompute_milestones():
         
 
 # draw_graph()
-# result = test_workflow()
+result = test_workflow()
 # milestones = benchmark_web_search("custom_no_tool")
 # milestones = benchmark_web_search_from_logs("custom_no_tool")
 # milestones = benchmark_code_from_logs("openai")

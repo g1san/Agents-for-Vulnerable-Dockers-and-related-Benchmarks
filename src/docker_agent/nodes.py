@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Literal
 from datetime import datetime
 from packaging import version
-from langchain_openai import ChatOpenAI
+from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 # My modules
@@ -20,7 +20,7 @@ from prompts import (
     WEB_SEARCH_FORMAT_PROMPT,
     CUSTOM_WEB_SEARCH_PROMPT,
     OPENAI_WEB_SEARCH_PROMPT,
-    MAIN_SERV_VERS_ASSESSMENT_PROMPT, 
+    HARD_SERV_VERS_ASSESSMENT_PROMPT, 
     CODING_PROMPT,
     NOT_SUCCESS_PROMPT,
     NOT_DOCKER_RUNS,
@@ -30,22 +30,20 @@ from prompts import (
 from configuration import (
     langfuse_handler,
     WebSearchResult,
-    MAINServiceVersionAssessment,
+    HARDServiceVersionAssessment,
     CodeGenerationResult,
     TestCodeResult,
     CodeMilestonesAssessment,
 )
 
-llm_web_search = ChatOpenAI(model="gpt-4o", temperature=0, max_retries=2)
-llm_openai_web_search_tool = llm_web_search.bind_tools([openai_web_search])
-llm_custom_web_search_tool = llm_web_search.bind_tools([web_search])
-web_search_llm = llm_web_search.with_structured_output(WebSearchResult)
-ver_ass_llm = llm_web_search.with_structured_output(MAINServiceVersionAssessment)
-
-llm_code = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2, max_completion_tokens=5000)
-code_generation_llm = llm_code.with_structured_output(CodeGenerationResult)
-code_ass_llm = llm_code.with_structured_output(CodeMilestonesAssessment)
-test_code_llm = llm_code.with_structured_output(TestCodeResult)
+llm = init_chat_model(model="gpt-4o", temperature=0.5, max_retries=2)
+llm_openai_web_search_tool = llm.bind_tools([openai_web_search])
+llm_custom_web_search_tool = llm.bind_tools([web_search])
+web_search_llm = llm.with_structured_output(WebSearchResult)
+ver_ass_llm = llm.with_structured_output(HARDServiceVersionAssessment)
+code_generation_llm = llm.with_structured_output(CodeGenerationResult)
+code_ass_llm = llm.with_structured_output(CodeMilestonesAssessment)
+test_code_llm = llm.with_structured_output(TestCodeResult)
 
 
 def create_dir(dir_path):
@@ -83,16 +81,15 @@ def assess_cve_id(state: OverallState):
         docker_dir_path = Path(f"./../../dockers/{state.cve_id}")
         if not docker_dir_path.exists():
             create_dir(dir_path=docker_dir_path)
-            
-        updated_milestones = state.milestones
-        updated_milestones.cve_id_ok = True
+        
+        state.milestones.cve_id_ok = True
         
         updated_final_report = state.final_report + "="*10 + f" {state.cve_id} Final Report "  + "="*10
         updated_final_report += "\n" + "="*10 + f" Initial Parameters " + "="*10 
         updated_final_report += f"\n'cve_id': {state.cve_id}\n'web_search_tool': {state.web_search_tool}\n'web_search_result': {state.web_search_result}"
         updated_final_report += f"\n'code': {state.code}\n'messages': {state.messages}\n'debug': {state.debug}\n\n"
         return {
-            "milestones": updated_milestones,
+            "milestones": state.milestones,
             "final_report": updated_final_report,
         }
 
@@ -118,29 +115,31 @@ def route_cve(state: OverallState) -> Literal["Found", "Not Found"]:
     
 
 def get_services(state: OverallState):
-    if state.debug == "benchmark_code":
-        return {}
+    if state.web_search_result.desc != "" or state.debug == "benchmark_code":
+        response = f"CVE description: {state.web_search_result.desc}\nAttack Type: {state.web_search_result.attack_type}\nServices (format: [SERVICE-DEPENDENCY-TYPE][SERVICE-NAME][SERVICE-VERSIONS] SERVICE-DESCRIPTION):"
+        for service in state.web_search_result.services:
+            response += f"\n- [{service.dependency_type}][{service.name}][{service.version}] {service.description}"
+        return {"messages": state.messages + [AIMessage(content=response)]}
     
     """The agent performs a web search to gather relevant information about the services needed to generate the vulnerable Docker code"""
     print("Searching the web...")
     
-    docker_dir_path = Path(f"./../../dockers/{state.cve_id}")
-    logs_dir_path = docker_dir_path / "logs"
+    code_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/")
+    logs_dir_path = code_dir_path / "logs"
     
     # Create the directory to save logs (if it does not exist)
     if not logs_dir_path.exists():
         create_dir(dir_path=logs_dir_path)
         
-    web_search_file = logs_dir_path / f"{state.cve_id}_web_search_{state.web_search_tool}.json"
-    messages = state.messages
-
     # Invoking the LLM with the chosen web search mode 
     if state.web_search_tool == "custom":
         web_query = CUSTOM_WEB_SEARCH_PROMPT.format(cve_id=state.cve_id)
-        messages += [HumanMessage(content=web_query)]
         
         # Invoke the LLM to generate the custom tool arguments
-        tool_call = llm_custom_web_search_tool.invoke(messages, config={"callbacks": [langfuse_handler]})
+        tool_call = llm_custom_web_search_tool.invoke(
+            [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=web_query)],
+            config={"callbacks": [langfuse_handler]}
+        )
         # Extract the tool arguments from the LLM call
         tool_call_args = json.loads(tool_call.additional_kwargs['tool_calls'][0]['function']['arguments'])
         query, cve_id = tool_call_args['query'], tool_call_args['cve_id']
@@ -150,16 +149,20 @@ def get_services(state: OverallState):
     
     elif state.web_search_tool == "custom_no_tool":
         #NOTE: 'web_search_func' internally formats the response into a WebSearchResult Pydantic class
-        formatted_response, in_token, out_token = web_search_func(state.cve_id, n_documents=5, verbose=False)
+        formatted_response, in_token, out_token = web_search_func(cve_id=state.cve_id, n_documents=5, verbose=False)
     
     elif state.web_search_tool == "openai":
         web_query = OPENAI_WEB_SEARCH_PROMPT.format(cve_id=state.cve_id)
-        messages += [HumanMessage(content=web_query)]
         
         # Invoke the LLM to perform the web search and extract the token usage
-        web_search_result = llm_openai_web_search_tool.invoke(messages, config={"callbacks": [langfuse_handler]})
+        web_search_result = llm_openai_web_search_tool.invoke(
+            [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=web_query)],
+            config={"callbacks": [langfuse_handler]}
+        )
         in_token, out_token = web_search_result.usage_metadata['input_tokens'], web_search_result.usage_metadata['output_tokens']
         response_sourceless = web_search_result.content[0]["text"]
+        
+        # Invoke the LLM to convert the web search results into a structured output
         formatted_response = web_search_llm.invoke(WEB_SEARCH_FORMAT_PROMPT.format(web_search_result=response_sourceless), config={"callbacks": [langfuse_handler]})
         
     else:
@@ -167,28 +170,21 @@ def get_services(state: OverallState):
     
     
     # Building response to be added to messages 
-    if state.web_search_tool == "custom" or state.web_search_tool == "custom_no_tool":
-        response = f"CVE description: {formatted_response.desc}\nAttack Type: {formatted_response.attack_type}\nService list:"
-        for service, description in zip(formatted_response.services, formatted_response.service_desc):
-            response += f"\n[{service}] {description}"
-            
-    elif state.web_search_tool == "openai":
-        response = response_sourceless + "\n\nSources:"
-        source_set = set()
-        for source in web_search_result.content[0]["annotations"]:
-            source_set.add(f"{source['title']} ({source['url']})")
-        for i, source in enumerate(source_set):
-            response += f"\n{i + 1}) {source}"
+    response = f"CVE description: {formatted_response.desc}\nAttack Type: {formatted_response.attack_type}\nServices (format: [SERVICE-DEPENDENCY-TYPE][SERVICE-NAME][SERVICE-VERSIONS] SERVICE-DESCRIPTION):"
+    for service in formatted_response.services:
+        response += f"\n- [{service.dependency_type}][{service.name}][{service.version}] {service.description}"
             
     if state.debug == "benchmark_web_search":
         print(f"\t[TOKEN USAGE INFO] This web search used {in_token} input tokens and {out_token} output tokens")
     
     # Saving web search log
-    web_search_dict = dict(formatted_response)
+    web_search_dict = formatted_response.model_dump()
     web_search_dict["input_tokens"] = in_token
     web_search_dict["output_tokens"] = out_token
     if state.web_search_tool == "custom":
         web_search_dict["query"] = query
+    
+    web_search_file = logs_dir_path / f"web_search_results.json"
     with builtins.open(web_search_file, 'w') as fp:
         json.dump(web_search_dict, fp, indent=4)
     print(f"\tWeb search result saved to: {web_search_file}")
@@ -196,27 +192,26 @@ def get_services(state: OverallState):
     return {
         "final_report": state.final_report + "="*10 + f" Web Search Result " + "="*10 + f"\n{formatted_response}\n\n",
         "web_search_result": formatted_response,
-        "messages": messages + [AIMessage(content=response)],
+        "messages": state.messages + [AIMessage(content=response)],
     }
 
 
-def is_version_in_range(serv: str, pred_ver: str, start: str, end: str) -> bool:
-    try:
-        return version.parse(start) <= version.parse(pred_ver) <= version.parse(end)
-    except:
-        print("\tUsing LLM-as-a-judge to assess MAIN service version...")
-        ver_ass_query = MAIN_SERV_VERS_ASSESSMENT_PROMPT.format(
-            range="[start, end]",
-            vers=pred_ver,
-            service=serv,
-        )
-
-        response = ver_ass_llm.invoke(
-            [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=ver_ass_query)], 
-            config={"callbacks": [langfuse_handler]}
-        )
-        print(f"\tResult: main_version={response.main_version}")
-        return response.main_version
+# def is_version_in_range(serv: str, pred_ver: str, start: str, end: str) -> bool:
+#     try:
+#         return version.parse(start) <= version.parse(pred_ver) <= version.parse(end)
+#     except:
+#         ver_ass_query = HARD_SERV_VERS_ASSESSMENT_PROMPT.format(
+#             range="[start, end]",
+#             vers=pred_ver,
+#             service=serv,
+#         )
+# 
+#         response = ver_ass_llm.invoke(
+#             [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=ver_ass_query)], 
+#             config={"callbacks": [langfuse_handler]}
+#         )
+#         print(f"\tResult: hard_version={response.hard_version}")
+#         return response.hard_version
     
 
 def assess_services(state: OverallState):
@@ -228,80 +223,94 @@ def assess_services(state: OverallState):
     filename = 'services.json'
     with builtins.open(filename, "r") as f:
         jsonServices = json.load(f)
-        
-    updated_milestones = state.milestones
     
+    #! Check again this approach !#
     # If the services of CVE do not exist in 'services.json', update 'services.json' and skip the check
-    if not jsonServices.get(state.cve_id) and state.debug != "benchmark_web_search":
-        print(f"\t{state.cve_id} is not in 'services.json'! Updating 'services.json' with the following services:")
-        services = []
-        for serv, serv_type, serv_ver in zip(state.web_search_result.services, state.web_search_result.service_type, state.web_search_result.service_vers):
-            new_service = f"{serv_type.upper()}:{serv.split("/")[-1].lower()}:{serv_ver.split(",")[0].split("---")[0]}"
-            print(f"\t- {new_service}")
-            services.append(new_service)
-            
-        jsonServices[state.cve_id] = services
-        with builtins.open(filename, "w") as f:
-            json.dump(jsonServices, f, indent=4)
-            
-        updated_milestones.main_service = True
-        updated_milestones.main_version = True
-        return {"milestones": updated_milestones}
+    # if not jsonServices.get(state.cve_id) and state.debug != "benchmark_web_search":
+    #     print(f"\t{state.cve_id} is not in 'services.json'! Updating 'services.json' with the following services:")
+    #     services = []
+    #     for serv, serv_type, serv_ver in zip(state.web_search_result.services, state.web_search_result.service_type, state.web_search_result.service_vers):
+    #         new_service = f"{serv_type.upper()}:{serv.split("/")[-1].lower()}:{serv_ver.split(",")[0].split("---")[0]}"
+    #         print(f"\t- {new_service}")
+    #         services.append(new_service)
+    #         
+    #     jsonServices[state.cve_id] = services
+    #     with builtins.open(filename, "w") as f:
+    #         json.dump(jsonServices, f, indent=4)
+    #         
+    #     state.milestones.hard_service = True
+    #     state.milestones.hard_version = True
+    #     state.milestones.soft_services = True
+    #     return {"milestones": state.milestones}
     
-    # Else, proceed with the check
+    # Else, proceed with the milestone checks
     expected_services = jsonServices.get(state.cve_id)
-    expected_aux_roles = set()
-    for temp in expected_services:
-        exp_type, exp_serv, exp_ver = temp.split(":")
-        if exp_type.upper() == "MAIN":
-            exp_main_serv, exp_main_ver = exp_serv.split("/")[-1], exp_ver
-        if exp_type.upper() != "AUX":
-            expected_aux_roles.add(exp_type.upper())
+    expected_hard = {}
+    expected_soft_roles = set()
+    for service in expected_services:
+        dep_type, serv, ver = service.split(":")
+        if dep_type == "HARD":
+            if serv.split("/")[-1] not in expected_hard.keys():
+                expected_hard[serv.split("/")[-1]] = ver
+            else:
+                expected_hard[serv.split("/")[-1]] += ver
+        elif dep_type != "SOFT":
+            expected_soft_roles.add(dep_type)
             
-    # Check if the MAIN service is identified correctly
-    for serv, serv_ver, serv_type in zip(state.web_search_result.services, state.web_search_result.service_vers, state.web_search_result.service_type):
-        if serv_type.upper() == "MAIN":
-            print(f"\tExpected MAIN --> {exp_main_serv}:{exp_main_ver}\tProposed MAIN --> {serv}:[{serv_ver}]")
-            prop_main_serv, prop_main_ver = serv.split("/")[-1], serv_ver.split(",")
+    proposed_hard = {}
+    proposed_soft_roles = set()
+    for service in state.web_search_result.services:
+        if service.dependency_type == "HARD":
+            if service.name.split("/")[-1] not in proposed_hard.keys():
+                proposed_hard[service.name.split("/")[-1]] = service.version
+            else:
+                proposed_hard[service.name.split("/")[-1]] += service.version
+        elif service.dependency_type != "SOFT":
+            proposed_soft_roles.add(service.dependency_type)
+    
+    # Check if all expected 'HARD' services were proposed
+    if set(expected_hard.keys()).issubset(set(proposed_hard.keys())):
+        state.milestones.hard_service = True
+    else:
+        print("\tExpected 'HARD' dependencies service not proposed!")
+    print("[DEBUG] 'hard_service' milestone checked")
         
-    if exp_main_serv.lower() == prop_main_serv.lower(): 
-        updated_milestones.main_service = True
 
-    for ver in prop_main_ver:
-        ver = ver.split("---")
-        # If the LLM returned a range of vulnerable versions...
-        if len(ver) > 1:
-            ver_min, ver_max = ver[0], ver[1]
-            if is_version_in_range(exp_main_serv, exp_main_ver, ver_min, ver_max):
-                updated_milestones.main_version = True
-                break
+    # Check if the vulnerable version of all expected 'HARD' services was proposed
+    response_list = []
+    for service, version_list, version in zip(proposed_hard.keys(), proposed_hard.values(), expected_hard.values()):
+        ver_ass_query = HARD_SERV_VERS_ASSESSMENT_PROMPT.format(
+            version=version,
+            service=service,
+            version_list=version_list,
+        )
 
-        # Else, if the LLM returned a specific vulnerable version...
-        elif len(ver) == 1:
-            if exp_main_ver.lower() == ver[0].lower():
-                updated_milestones.main_version = True
-                break
+        response = ver_ass_llm.invoke(
+            [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=ver_ass_query)], 
+            config={"callbacks": [langfuse_handler]}
+        )
+        response_list.append(response.hard_version)
+        
+    if False not in response_list:
+        state.milestones.hard_version = True
+    else:
+        print("\tExpected 'HARD' dependencies version not proposed!")
+    print("[DEBUG] 'hard_version' milestone checked")
+            
+    # Check if all expected 'SOFT' roles were proposed
+    if set(expected_soft_roles).issubset(set(proposed_soft_roles)):
+        state.milestones.soft_services = True
+    else:
+        print("\tExpected 'SOFT' role(s) not proposed!")
+    print("[DEBUG] 'soft_services' milestone checked")
     
-        else:
-            raise ValueError(f"An error occurred while extracting the versions of the proposed MAIN service")
-    
-    # Check if at least one 'AUX' service was proposed for each role
-    proposed_aux_roles = set(state.web_search_result.service_type)
-    for role in expected_aux_roles:
-        if role not in proposed_aux_roles:
-            print(f"\t{role} service not proposed!")
-            updated_milestones.aux_services = False
-    
-    return {"milestones": updated_milestones}
+    return {"milestones": state.milestones}
 
 
-def route_services(state: OverallState) -> Literal["Ok", "Not Ok"]:
-    if state.debug == "benchmark_code":
-        return "Ok"
-    
+def route_services(state: OverallState) -> Literal["Ok", "Not Ok"]:    
     """Route to the code generator or terminate the graph"""
-    print(f"Routing services (main_service={state.milestones.main_service}, main_version={state.milestones.main_version}, aux_services={state.milestones.aux_services})")
-    if state.milestones.main_service and state.milestones.main_version and state.milestones.aux_services and state.debug != "benchmark_web_search":
+    print(f"Routing services (hard_service={state.milestones.hard_service}, hard_version={state.milestones.hard_version}, soft_services={state.milestones.soft_services})")
+    if (state.milestones.hard_service and state.milestones.hard_version and state.milestones.soft_services and state.debug != "benchmark_web_search") or state.debug == "benchmark_code":
         return "Ok"
     else:
         if state.debug == "benchmark_web_search":
@@ -309,19 +318,23 @@ def route_services(state: OverallState) -> Literal["Ok", "Not Ok"]:
         return "Not Ok"
 
 
-def generate_code(state: OverallState):    
+def generate_code(state: OverallState):
+    if state.code.directory_tree != "":
+        print("Code already provided!")
+        response = f"Directory tree:\n{state.code.directory_tree}\n\n"
+        for name, code in zip(state.code.file_name, state.code.file_code):
+            response += "-" * 10 + f" {name} " + "-" * 10 + f"\n{code}\n\n"
+        return {"messages": state.messages + [AIMessage(content=response)]}
+    
     """The agent generates/fixes the docker code to reproduce the CVE"""
     print("Generating the code...")
     code_gen_query = CODING_PROMPT.format(
         cve_id=state.cve_id,
-        desc=state.web_search_result.desc,
-        serv=state.web_search_result.services,
-        serv_vers=state.web_search_result.service_vers,
         mode=state.web_search_tool,
     )
     
     generated_code = code_generation_llm.invoke(
-        [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=code_gen_query)], 
+        state.messages + [HumanMessage(content=code_gen_query)], 
         config={"callbacks": [langfuse_handler]}
     )
     
@@ -379,7 +392,7 @@ def launch_docker(code_dir_path):
     return success, logs
 
 
-def check_services(services, main_serv, main_serv_ver, code_dir_path):
+def check_services(services, hard_service_versions, code_dir_path):
     result = subprocess.run(
         ["sudo", "docker", "compose", "ps", "--quiet"],
         cwd=code_dir_path,
@@ -402,10 +415,9 @@ def check_services(services, main_serv, main_serv_ver, code_dir_path):
             raise ValueError(f"Failed to parse JSON for container {cid}")
         
     query = CODE_MILESTONE_PROMPT.format(
-        service_list=services,
-        main_service=main_serv,
-        main_version=main_serv_ver,
         inspect_logs=inspect_logs,
+        service_list=services,
+        hard_service_versions=hard_service_versions,
     )
     
     return len(container_ids), code_ass_llm.invoke(
@@ -458,12 +470,11 @@ def remove_all_images():
             stderr=subprocess.DEVNULL,
             check=True
         )
-        
+
 
 def test_code(state: OverallState):
     """The agent tests the docker to check if it work correctly"""    
     print("Testing code...")
-    updated_milestones = state.milestones
     code_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/")
     logs_dir_path = code_dir_path / "logs"
     if not logs_dir_path.exists():
@@ -471,150 +482,70 @@ def test_code(state: OverallState):
     
     success, logs = launch_docker(code_dir_path=code_dir_path)
 
-    log_file = logs_dir_path / f"{state.cve_id}_{state.web_search_tool}_log{state.test_iteration}.txt"
+    log_file = logs_dir_path / f"log{state.test_iteration}.txt"
     with builtins.open(log_file, "w") as f:
         f.write(logs)
     print(f"\tTest logs saved to: {log_file}")
-    
-    code = ""
-    for name, content in zip(state.code.file_name, state.code.file_code):
-        code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{content}\n\n"
+        
     
     if not success:
-        if state.debug == "benchmark_code":
-            print("\t[DEBUG] NOT_SUCCESS")
-        down_docker(code_dir_path=code_dir_path)
-        
-        query = NOT_SUCCESS_PROMPT.format(
-            # Passing just the last 100 lines of logs to mitigate ContextWindow saturation
-            logs="\n".join(logs.splitlines()[-100:]),
-            code=code,
-            serv=state.web_search_result.services,
-            serv_vers=state.web_search_result.service_vers,
-            serv_type=state.web_search_result.service_type,
-            serv_desc=state.web_search_result.service_desc,
-            cve_id=state.cve_id,
-            mode=state.web_search_tool,
-            fixes=state.fixes,
-        )
-        
-        test_code_results = test_code_llm.invoke(
-            [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=query)],
-            config={"callbacks": [langfuse_handler]}
-        )
-        
-        updated_milestones.docker_runs = False
-        updated_milestones.services_ok = False
-        updated_milestones.code_main_version = False
-        
-        response = f"Test iteration #{state.test_iteration} failed!"
-        response += f"\n\tError: {test_code_results.error}\n\tFix: {test_code_results.fix}"
-        print(response)
-        
         return {
-            "milestones": updated_milestones,
-            "final_report": state.final_report + f"\n{response}",
-            "code": test_code_results.fixed_code,
-            "feedback": test_code_results,
             "test_iteration": state.test_iteration + 1,
-            "fixes": state.fixes + [test_code_results.fix],
-            "messages": state.messages + [
-                HumanMessage(content=query),
-                AIMessage(content=response)
-            ],
+            "logs": logs,
+            "revision_type": "Not Success",
         }
         
-    else:
-        for serv_type, serv, ver in zip(state.web_search_result.service_type, state.web_search_result.services, state.web_search_result.service_vers):
-            if serv_type == "MAIN":
-                main_serv, main_serv_ver = serv, ver
-        
-        num_containers, result = check_services(
-            services=state.web_search_result.services, 
-            main_serv=main_serv, 
-            main_serv_ver=main_serv_ver, 
-            code_dir_path=code_dir_path,
-        )
-        print(f"\tResult: {result.fail_explanation if result.fail_explanation else ""}")
-        print(f"\t- docker_runs={result.docker_runs}")
-        print(f"\t- services_ok={result.services_ok}")
-        print(f"\t- code_main_version={result.code_main_version}\n")
-        down_docker(code_dir_path=code_dir_path)
-        
-        if not result.docker_runs:
-            if state.debug == "benchmark_code":
-                print("\t[DEBUG] NOT_DOCKER_RUNS")
-            # Different query w.r.t. the one above
-            query = NOT_DOCKER_RUNS.format(
-                fail_explanation=result.fail_explanation,
-                code=code,
-                serv=state.web_search_result.services,
-                serv_vers=state.web_search_result.service_vers,
-                serv_type=state.web_search_result.service_type,
-                serv_desc=state.web_search_result.service_desc,
-                cve_id=state.cve_id,
-                mode=state.web_search_tool,
-                fixes=state.fixes,
-            )
-
-            test_code_results = test_code_llm.invoke(
-                [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=query)],
-                config={"callbacks": [langfuse_handler]}
-            )
+    #! IMPLEMENT FUNCTION TO CHECK EACH CONTAINER LOG WITH docker logs <container_id> !#
+    #! IF IT CRASHES MAKE A NEW PROMPT AND LLM INVOCATION TO REVISE THE CODE !#
+    
+    hard_service_versions = ""
+    for service in state.web_search_result.services:
+        if service.dependency_type == "HARD":
+            hard_service_versions += f"\n\t\t- {service.name}: {service.version}"
             
-            updated_milestones.docker_runs = False
-            updated_milestones.services_ok = False
-            updated_milestones.code_main_version = False
+    service_list = []
+    for service in state.web_search_result.services:
+        service_list.append(service.name)
+    
+    num_containers, result = check_services(
+        services=service_list, 
+        hard_service_versions=hard_service_versions,
+        code_dir_path=code_dir_path,
+    )
+    print(f"\tResult: {result.fail_explanation if result.fail_explanation else ""}")
+    print(f"\t- docker_runs={result.docker_runs}")
+    print(f"\t- services_ok={result.services_ok}")
+    print(f"\t- code_hard_version={result.code_hard_version}\n")
+    
+    if not result.docker_runs:
+        return {
+            "test_iteration": state.test_iteration + 1,
+            "fail_explanation": result.fail_explanation,
+            "revision_type": "Docker Not Running"
+        }
 
-            response = f"Test iteration #{state.test_iteration} failed!"
-            if result.fail_explanation:
-                response += f"\n\tFail Explanation: {result.fail_explanation}"
-            response += f"\n\tError: {test_code_results.error}"
-            response += f"\n\tFix: {test_code_results.fix}"
-            print(response)
+    print(f"\tDocker is running correctly with {num_containers} containers")
+    state.milestones.docker_runs = result.docker_runs
+    state.milestones.services_ok = result.services_ok
+    state.milestones.code_hard_version = result.code_hard_version
+    
+    code_file = logs_dir_path / f"code.json"
+    with builtins.open(code_file, "w") as f:
+        json.dump(state.code.model_dump(), f, indent=4)
+    
+    formatted_code = f"Directory tree:\n{state.code.directory_tree}\n\n"
+    for name, code in zip(state.code.file_name, state.code.file_code):
+        formatted_code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{code}\n\n"
 
-            return {
-                "milestones": updated_milestones,
-                "final_report": state.final_report + f"\n{response}",
-                "code": test_code_results.fixed_code,
-                "feedback": test_code_results,
-                "test_iteration": state.test_iteration + 1,
-                "num_containers": num_containers,
-                "fixes": state.fixes + [test_code_results.fix],
-                "messages": state.messages + [
-                    HumanMessage(content=query),
-                    AIMessage(content=response)
-                ],
-            }
-        
-        else:
-            print(f"\tDocker is running correctly with {num_containers} containers")
-            updated_milestones.docker_runs = result.docker_runs
-            updated_milestones.services_ok = result.services_ok
-            updated_milestones.docker_vulnerable = check_docker_vulnerability(cve_id=state.cve_id, code_dir_path=code_dir_path)
-            if updated_milestones.docker_vulnerable:
-                updated_milestones.code_main_version = True
-            else:
-                updated_milestones.code_main_version = result.code_main_version
-            down_docker(code_dir_path=code_dir_path)
-            
-            code_file = logs_dir_path / f"{state.cve_id}_{state.web_search_tool}_code.json"
-            with builtins.open(code_file, "w") as f:
-                json.dump(dict(state.code), f, indent=4)
-            
-            formatted_code = f"Directory tree:\n{state.code.directory_tree}\n\n"
-            for name, code in zip(state.code.file_name, state.code.file_code):
-                formatted_code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{code}\n\n"
-
-            return {
-                "milestones": updated_milestones,
-                "num_containers": num_containers,
-                "final_report": state.final_report + "="*10 + f" Test Passed! Generated Code (Final Version) " + "="*10 + f"\n{formatted_code}",
-                "messages": state.messages + [AIMessage(content="Test Passed!")],
-            }
+    return {
+        "milestones": state.milestones,
+        "num_containers": num_containers,
+        "final_report": state.final_report + "="*10 + f" Test Passed! Generated Code (Final Version) " + "="*10 + f"\n{formatted_code}",
+        "messages": state.messages + [AIMessage(content="Test Passed!")],
+    }
 
 
-def route_code(state: OverallState) -> Literal["Stop Testing", "Keep Testing"]:
+def route_code(state: OverallState) -> Literal["Stop Testing", "Revise Code"]:
     """Route back to fix the code or terminate the graph"""
     print(f"Routing test (docker_runs = {state.milestones.docker_runs}, test_iteration = {state.test_iteration})")
     if state.milestones.docker_runs or state.test_iteration >= 10:
@@ -624,24 +555,103 @@ def route_code(state: OverallState) -> Literal["Stop Testing", "Keep Testing"]:
             print("[BENCHMARK] Code benchmark terminated!")
             
         logs_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/logs")
-        final_report_file = logs_dir_path / f"{state.cve_id}_{state.web_search_tool}_final_report.txt"
+        final_report_file = logs_dir_path / f"final_report.txt"
         with builtins.open(final_report_file, "w") as f:
             f.write(state.final_report)
         
-        code_stats = {
+        stats = {
             "test_iterations": state.test_iteration,
             "num_containers": state.num_containers,
         } 
-        code_stats_file = logs_dir_path / f"{state.cve_id}_{state.web_search_tool}_code_stats.json"
-        with builtins.open(code_stats_file, "w") as f:
-            json.dump(code_stats, f, indent=4)
-            
-        milestone_file = logs_dir_path / f"{state.cve_id}_{state.web_search_tool}_milestones.json"
-        with builtins.open(milestone_file, "w") as f:
-            json.dump(dict(state.milestones), f, indent=4)
+        stats_file = logs_dir_path / f"stats.json"
+        with builtins.open(stats_file, "w") as f:
+            json.dump(stats, f, indent=4)
         
-        remove_all_images()
-        print("Execution Terminated!")
         return "Stop Testing"
     else:
-        return "Keep Testing"
+        return "Revise Code"
+    
+    
+def revise_code(state: OverallState):
+    code_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/")
+    
+    code = "This is the latest version of the code you have to revise:\n"
+    for name, content in zip(state.code.file_name, state.code.file_code):
+        code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{content}\n\n"
+
+    down_docker(code_dir_path=code_dir_path)
+    
+    if state.revision_type == "Not Success":
+        print("[DEBUG] Not Success")
+        query = NOT_SUCCESS_PROMPT.format(
+            # Passing just the last 100 lines of logs to mitigate ContextWindow saturation
+            logs="\n".join(state.logs.splitlines()[-100:]),
+            # code=code,
+            # serv=state.web_search_result.services,
+            # serv_vers=state.web_search_result.service_vers,
+            # serv_type=state.web_search_result.service_type,
+            # serv_desc=state.web_search_result.service_desc,
+            cve_id=state.cve_id,
+            mode=state.web_search_tool,
+            fixes=state.fixes,
+        )
+        
+    elif state.revision_type == "Docker Not Running":
+        print("[DEBUG] Docker Not Running")
+        query = NOT_DOCKER_RUNS.format(
+            fail_explanation=state.fail_explanation,
+            # code=code,
+            # serv=state.web_search_result.services,
+            # serv_vers=state.web_search_result.service_vers,
+            # serv_type=state.web_search_result.service_type,
+            # serv_desc=state.web_search_result.service_desc,
+            cve_id=state.cve_id,
+            mode=state.web_search_tool,
+            fixes=state.fixes,
+        )
+
+    test_code_results = test_code_llm.invoke(
+        state.messages + [HumanMessage(content=code), HumanMessage(content=query)],
+        config={"callbacks": [langfuse_handler]}
+    )
+    
+    state.milestones.docker_runs = False
+    state.milestones.services_ok = False
+    state.milestones.code_hard_version = False
+
+    response = f"Test iteration #{state.test_iteration} failed!"
+    if state.fail_explanation:
+        response += f"\n\tFail Explanation: {state.fail_explanation}"
+    response += f"\n\tError: {test_code_results.error}"
+    response += f"\n\tFix: {test_code_results.fix}"
+    print(response)
+
+    return {
+        "milestones": state.milestones,
+        "final_report": state.final_report + f"\n{response}",
+        "code": test_code_results.fixed_code,
+        "feedback": test_code_results,
+        "fixes": state.fixes + [test_code_results.fix],
+        "messages": state.messages + [
+            HumanMessage(content=query),
+            AIMessage(content=response)
+        ],
+    }
+         
+
+def assess_vuln(state: OverallState):
+    code_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/")
+    
+    state.milestones.docker_vulnerable = check_docker_vulnerability(cve_id=state.cve_id, code_dir_path=code_dir_path)
+    if state.milestones.docker_vulnerable:
+        state.milestones.code_hard_version = True
+        
+    down_docker(code_dir_path=code_dir_path)
+    remove_all_images()
+                
+    milestone_file = code_dir_path / "logs/milestones.json"
+    with builtins.open(milestone_file, "w") as f:
+        json.dump(state.milestones.model_dump(), f, indent=4)
+    
+    print("Execution Terminated!")
+    return {"milestones": state.milestones}

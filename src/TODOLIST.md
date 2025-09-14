@@ -1,18 +1,7 @@
 # TODOLIST
-- ***"get_cve_id"***: COMPLETED
-- ***"assess_cve_id"***: COMPLETED
-- ***"get_services"***
-    - (Prof. Giordano suggestion) Add a specific web search to check if the 'MAIN' service requires some specific 'AUX' services to work (e.g. check 3 web pages) &rarr; might require adjusting _WebSearchResult_, evaluate if a prompt variation for current web search solution is sufficient
-    -  (Ask prof. Drago) Add manual retrieval of CVE data from local repository of Exploit DB
-- ***"assess_services"***
-    - (Prof. Giordano suggestion) If assessment fails in any milestone, retry performing the web search up to 3 times until all milestones are passed &rarr; requires loop implementation and graph modification
-- ***"generate_code"***: COMPLETED
-- ***"save_code"***: COMPLETED
-- ***"test_code"***
-    - Use MAVEN to assess if CVE is present in Docker (look at what Docker Desktop can do)
-- **Generic**
-    - Implement MCP for Docker Desktop in another branch for future proofing
-    - Review logging for graph history (a.k.a. _final\_report_)
+- Implement MCP for Docker Desktop in another branch for future proofing
+- Rewrite which messages are passed to the LLM at each step to decrease token consumption
+- Rewrite _final\_report_ as a continuous effort to to write on the file from start to beginning
 - **Problems discovered with testing**:
     - CVE-2020-7247 and CVE-2021-41773 repeatedly caused this error: Workflow invocation failed: Could not parse response content as the length limit was reached - CompletionUsage(completion_tokens=16384, prompt_tokens=3447, total_tokens=19831, completion_tokens_details=CompletionTokensDetails(accepted_prediction_tokens=0, audio_tokens=0, reasoning_tokens=0, rejected_prediction_tokens=0), prompt_tokens_details=PromptTokensDetails(audio_tokens=0, cached_tokens=0)).
     - [Errno 21] Is a directory: '../../dockers/CVE-2021-34429/openai/nginx.conf'.

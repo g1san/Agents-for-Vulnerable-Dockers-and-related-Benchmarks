@@ -6,7 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
+from langchain.chat_models import init_chat_model
 
 # My modules
 from prompts import (
@@ -151,7 +151,7 @@ class ContextGenerator:
                 HumanMessage(content=f"Here is the content you have to summarise: {doc[:max_chars]}"),
             ]
             # Initialize the LLM with OpenAI's GPT-4o model
-            llm_model = ChatOpenAI(model="gpt-4o", temperature=0, max_retries=2)
+            llm_model = init_chat_model(model="gpt-4o", temperature=0.5, max_retries=2)
             
             # Invoke the LLM to summarize the web page content
             response = llm_model.invoke(messages, config={"callbacks": [langfuse_handler]})
@@ -186,7 +186,7 @@ class ContextGenerator:
                 HumanMessage(content=f"Use the following knowledge to achieve your task: {conc_sum[:max_chars]}"),
             ]
             # Initialize the LLM with OpenAI's GPT-4o model
-            llm_model = ChatOpenAI(model="gpt-4o", temperature=0, max_retries=2)
+            llm_model = init_chat_model(model="gpt-4o", temperature=0.5, max_retries=2)
             
             # Set the LLM to return a structured output from web search
             docker_services_llm = llm_model.with_structured_output(WebSearchResult)
