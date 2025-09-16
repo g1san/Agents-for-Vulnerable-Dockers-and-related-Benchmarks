@@ -40,6 +40,11 @@ class CodeGenerationResult(BaseModel):
     file_name: list[str] = Field(description="Name of the files needed to reproduce the CVE")
     file_code: list[str] = Field(description="Name and code of the various files needed to reproduce the CVE")
     directory_tree: str = Field(description="Directory tree where the files will be stored, rooted in the CVE-ID folder")
+
+
+class ContainerLogsAssessment(BaseModel):
+    container_ok: bool = Field(description="Does the Docker container run correctly?")
+    fault: Optional[str] = Field(description="Detailed explanation of the error presented by the logs")
     
     
 class TestCodeResult(BaseModel):

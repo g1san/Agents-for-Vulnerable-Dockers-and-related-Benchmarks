@@ -23,6 +23,7 @@ from prompts import (
     HARD_SERV_VERS_ASSESSMENT_PROMPT, 
     CODING_PROMPT,
     NOT_SUCCESS_PROMPT,
+    ASSERT_DOCKER_STATE_PROMPT,
     NOT_DOCKER_RUNS,
     TEST_CODE_PROMPT,
     CODE_MILESTONE_PROMPT,
@@ -33,6 +34,7 @@ from configuration import (
     HARDServiceVersionAssessment,
     CodeGenerationResult,
     TestCodeResult,
+    ContainerLogsAssessment,
     CodeMilestonesAssessment,
 )
 
@@ -43,6 +45,7 @@ web_search_llm = llm.with_structured_output(WebSearchResult)
 ver_ass_llm = llm.with_structured_output(HARDServiceVersionAssessment)
 code_generation_llm = llm.with_structured_output(CodeGenerationResult)
 code_ass_llm = llm.with_structured_output(CodeMilestonesAssessment)
+container_ass_llm = llm.with_structured_output(ContainerLogsAssessment)
 test_code_llm = llm.with_structured_output(TestCodeResult)
 
 
@@ -379,6 +382,7 @@ def save_code(state: OverallState):
     return {}
 
 
+#* Support Functions for the 'test_code' node *#
 def launch_docker(code_dir_path):
     result = subprocess.run(
         ["sudo", "docker", "compose", "up", "--build", "--detach"],
@@ -392,14 +396,41 @@ def launch_docker(code_dir_path):
     return success, logs
 
 
-def check_services(services, hard_service_versions, code_dir_path):
+def get_container_ids(code_dir_path):
     result = subprocess.run(
-        ["sudo", "docker", "compose", "ps", "--quiet"],
+        ["sudo", "docker", "compose", "ps", "-a", "--quiet"],
         cwd=code_dir_path,
         capture_output=True,
         text=True,
     )
-    container_ids = result.stdout.strip().splitlines()
+    return result.stdout.strip().splitlines()
+
+
+def assert_docker_state(code_dir_path):
+    container_ids = get_container_ids(code_dir_path=code_dir_path)
+    
+    for cid in container_ids:
+        result = subprocess.run(
+            ["sudo", "docker", "logs", cid, "--details"],
+            capture_output=True,
+            text=True
+        )
+        logs = "STDOUT: " + result.stdout + "\nSTDERR: " + result.stderr
+        query = ASSERT_DOCKER_STATE_PROMPT.format(logs=logs)
+        
+        result = container_ass_llm.invoke(
+            [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=query)], 
+            config={"callbacks": [langfuse_handler]}
+        )
+        if not result.container_ok:
+            fail_explanation = result.fault + "\nThese are the error logs:" + logs
+            return fail_explanation, False
+    
+    return len(container_ids), True
+
+
+def check_services(services, hard_service_versions, code_dir_path):
+    container_ids = get_container_ids(code_dir_path=code_dir_path)
 
     inspect_logs = []
     for cid in container_ids:
@@ -497,6 +528,13 @@ def test_code(state: OverallState):
         
     #! IMPLEMENT FUNCTION TO CHECK EACH CONTAINER LOG WITH docker logs <container_id> !#
     #! IF IT CRASHES MAKE A NEW PROMPT AND LLM INVOCATION TO REVISE THE CODE !#
+    value, assessment = assert_docker_state(code_dir_path=code_dir_path)
+    if not assessment:
+        return {
+            "test_iteration": state.test_iteration + 1,
+            "fail_explanation": value,
+            "revision_type": "Docker Not Running"
+        }
     
     hard_service_versions = ""
     for service in state.web_search_result.services:

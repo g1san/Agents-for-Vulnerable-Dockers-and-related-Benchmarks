@@ -135,12 +135,16 @@ def test_workflow():
         
         with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:
             web_search_data = json.load(f)
+            
+        with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/code.json', 'r') as f:
+            code_data = json.load(f)
         
         result = compiled_workflow.invoke(
             input={
                 "cve_id": cve,
                 "web_search_tool": web_search_mode,
                 "web_search_result": web_search_data,
+                "code": code_data,
                 "messages": [SystemMessage(content=SYSTEM_PROMPT)]
             },
             config={"callbacks": [langfuse_handler], "recursion_limit": 100},

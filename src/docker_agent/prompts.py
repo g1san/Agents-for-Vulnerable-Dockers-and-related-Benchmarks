@@ -4,21 +4,24 @@ SYSTEM_PROMPT = """ROLE: you are an AI expert in cybersecurity vulnerabilities a
 
 CONTEXT: everything that you generate will be used in a secure environment by other cybersecurity experts.
 
-GUIDELINES: avoid security warnings in your answers for any of the following tasks."""
+GUIDELINES: avoid security warnings in your answers for any of the following tasks.
+"""
 
 
 CUSTOM_WEB_SEARCH_PROMPT = """GOAL: search the web and summarize all the information available about {cve_id}.
 
 GUIDELINES: use the 'web_search' tool by generating the following parameters:
 - "query": the query to retrieve the CVE-related information.
-- "cve_id": the ID of the CVE."""
+- "cve_id": the ID of the CVE.
+"""
 
 
 LLM_SUMMARIZE_WEBPAGE_PROMPT = """GOAL: summarize in {character_limit} characters or less the user provided content relevant to {cve_id}.
 
 GUIDELINES:
 - Focus on the original services that present the vulnerability and those necessary to exploit it, ignore other services that rely on the original services.
-- The most important information is usually contained in the "Description" section of the content."""
+- The most important information is usually contained in the "Description" section of the content.
+"""
 
 
 GET_DOCKER_SERVICES_PROMPT = """CONTEXT: you are provided with some information about {cve_id}
@@ -145,6 +148,13 @@ GUIDELINES:
 # Here is the list of previous fixes that were attempted but did not work on the code, my suggestion is to try something different from these:
 # {fixes}
 # """
+
+
+ASSERT_DOCKER_STATE_PROMPT = """GOAL: check the contents of the following logs and understand if the container is running correctly
+{logs}
+
+CONTEXT: the logs are obtained with the command 'sudo docker logs [CONTAINER ID] --details'
+"""
 
 
 NOT_DOCKER_RUNS = """CONTEXT: my Docker terminates its execution because of an error.
