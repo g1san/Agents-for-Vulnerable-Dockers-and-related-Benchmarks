@@ -27,11 +27,6 @@ class OverallState(BaseModel):
         default=CodeGenerationResult(file_name=[], file_code=[], directory_tree=""),
         description="The generated file name, code and associated directory tree"
     )
-
-    feedback: TestCodeResult = Field(
-        default=TestCodeResult(error="", fix="", fixed_code=CodeGenerationResult(file_name=[], file_code=[], directory_tree="")),
-        description="Feedback about the generated docker code"
-    )
     
     logs: str = Field(
         default="",
@@ -40,7 +35,7 @@ class OverallState(BaseModel):
     
     fail_explanation: str = Field(
         default="",
-        description="Detailed explanation of why one or more milestones have failed"
+        description="Detailed explanation of why the Docker has failed testing"
     )
     
     revision_type: str = Field(
@@ -66,11 +61,6 @@ class OverallState(BaseModel):
     messages: Annotated[list[AnyMessage], add_messages] = Field(
         default=[], 
         description="Conversation with LLM, tracked for analysis"
-    )
-    
-    final_report: str = Field(
-        default="",
-        description="String that summarizes the workflow which will be ave in the 'final_report.txt' file"
     )
     
     milestones: Milestones = Field(

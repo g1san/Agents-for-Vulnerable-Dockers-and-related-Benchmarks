@@ -130,26 +130,32 @@ def benchmark_code_from_logs(web_search_mode: str):
 
 def test_workflow():
     try:
-        cve = "CVE-2020-11651"
-        web_search_mode = "custom_no_tool"
-        
-        with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:
-            web_search_data = json.load(f)
+        with builtins.open('services.json', "r") as f:
+            jsonServices = json.load(f)
             
-        with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/code.json', 'r') as f:
-            code_data = json.load(f)
-        
-        result = compiled_workflow.invoke(
-            input={
-                "cve_id": cve,
-                "web_search_tool": web_search_mode,
-                "web_search_result": web_search_data,
-                "code": code_data,
-                "messages": [SystemMessage(content=SYSTEM_PROMPT)]
-            },
-            config={"callbacks": [langfuse_handler], "recursion_limit": 100},
-        )  
-        return result
+        # cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
+        cve_list = ["CVE-2024-23897"]
+        for cve in cve_list:
+            # cve = "CVE-2020-11651"
+            web_search_mode = "custom_no_tool"
+
+            with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:
+                web_search_data = json.load(f)
+
+            # with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/code.json', 'r') as f:
+            #     code_data = json.load(f)
+
+            result = compiled_workflow.invoke(
+                input={
+                    "cve_id": cve,
+                    "web_search_tool": web_search_mode,
+                    "web_search_result": web_search_data,
+                    # "code": code_data,
+                    "messages": [SystemMessage(content=SYSTEM_PROMPT)]
+                },
+                config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+            )  
+            # return result
     
     except Exception as e:
         print(f"Workflow invocation failed: {e}.")

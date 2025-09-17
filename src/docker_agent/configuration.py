@@ -44,7 +44,7 @@ class CodeGenerationResult(BaseModel):
 
 class ContainerLogsAssessment(BaseModel):
     container_ok: bool = Field(description="Does the Docker container run correctly?")
-    fault: Optional[str] = Field(description="Detailed explanation of the error presented by the logs")
+    fail_explanation: Optional[str] = Field(description="Detailed explanation of the error presented by the logs")
     
     
 class TestCodeResult(BaseModel):
