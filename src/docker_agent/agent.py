@@ -133,8 +133,8 @@ def test_workflow():
         with builtins.open('services.json', "r") as f:
             jsonServices = json.load(f)
             
-        # cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
-        cve_list = ["CVE-2024-23897"]
+        cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
+        cve_list = ["CVE-2021-43798"]
         for cve in cve_list:
             # cve = "CVE-2020-11651"
             web_search_mode = "custom_no_tool"
