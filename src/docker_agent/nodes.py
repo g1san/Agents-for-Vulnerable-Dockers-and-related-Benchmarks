@@ -28,6 +28,7 @@ from prompts import (
     CONTAINER_NOT_RUN_PROMPT,
     CHECK_SERVICES_PROMPT,
     NOT_DOCKER_RUNS,
+    NOT_VULNERABLE_VERSION_PROMPT,
 )
 from configuration import (
     langfuse_handler,
@@ -67,7 +68,7 @@ def get_cve_id(state: OverallState):
         print("[BENCHMARK] Code benchmark starting!")
     
     """Checks if the CVE ID is correctly retrieved from the initialized state"""
-    print(f"The provided CVE ID is {state.cve_id.upper()}!")
+    print(f"The provided CVE ID is {state.cve_id.upper()}!\n")
     return {"cve_id": state.cve_id.upper()}
 
 
@@ -80,7 +81,7 @@ def assess_cve_id(state: OverallState):
     response = requests.get(f"https://cveawg.mitre.org/api/cve/{state.cve_id}")
 
     if response.status_code == 200:
-        print(f"{state.cve_id} exists!")
+        print(f"\t{state.cve_id} exists!\n")
         
         logs_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/logs")
         if not logs_dir_path.exists():
@@ -124,7 +125,7 @@ def route_cve(state: OverallState) -> Literal["Found", "Not Found"]:
         return "Found"
     
     """Terminate the graph or go to the next step"""
-    print(f"Routing CVE (cve_id_ok = {state.milestones.cve_id_ok})")
+    print(f"Routing CVE (cve_id_ok = {state.milestones.cve_id_ok})\n")
     if state.milestones.cve_id_ok:
         return "Found"
     else:
@@ -133,9 +134,12 @@ def route_cve(state: OverallState) -> Literal["Found", "Not Found"]:
 
 def get_services(state: OverallState):
     """The agent performs a web search to gather relevant information about the services needed to generate the vulnerable Docker code"""
+    print("Searching the web...")
     code_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/")
     logs_dir_path = code_dir_path / "logs"
+    
     if state.web_search_result.desc != "" or state.debug == "benchmark_code":
+        print("\tWeb search results already provided!\n")
         response = f"CVE description: {state.web_search_result.desc}\nAttack Type: {state.web_search_result.attack_type}\nServices (format: [SERVICE-DEPENDENCY-TYPE][SERVICE-NAME][SERVICE-VERSIONS] SERVICE-DESCRIPTION):"
         for service in state.web_search_result.services:
             response += f"\n- [{service.dependency_type}][{service.name}][{service.version}] {service.description}"
@@ -146,7 +150,6 @@ def get_services(state: OverallState):
             
         return {"messages": state.messages + [AIMessage(content=response)]}
     
-    print("Searching the web...")
     # Create the directory to save logs (if it does not exist)
     if not logs_dir_path.exists():
         create_dir(dir_path=logs_dir_path)
@@ -294,12 +297,12 @@ def assess_services(state: OverallState):
     # Check if all expected 'HARD' services were proposed
     if set(expected_hard.keys()).issubset(set(proposed_hard.keys())):
         state.milestones.hard_service = True
+        print("\t- 'hard_service'=True")
     else:
         output_string = "Expected 'HARD' dependencies service not proposed!\n"
         print(f"\t{output_string}")
         with builtins.open(final_report_file, "a") as f:
             f.write(f"{output_string}\n")
-    print("\t[DEBUG] 'hard_service' milestone checked")
         
 
     # Check if the vulnerable version of all expected 'HARD' services was proposed
@@ -319,29 +322,30 @@ def assess_services(state: OverallState):
         
     if False not in response_list:
         state.milestones.hard_version = True
+        print("\t- 'hard_version'=True")
+        
     else:
         output_string = "Expected 'HARD' dependencies version not proposed!\n"
         print(f"\t{output_string}")
         with builtins.open(final_report_file, "a") as f:
             f.write(f"{output_string}\n")
-    print("\t[DEBUG] 'hard_version' milestone checked")
             
     # Check if all expected 'SOFT' roles were proposed
     if set(expected_soft_roles).issubset(set(proposed_soft_roles)):
         state.milestones.soft_services = True
+        print("\t- 'soft_services'=True")
     else:
         output_string = "Expected 'SOFT' role(s) not proposed!\n"
         print(f"\t{output_string}")
         with builtins.open(final_report_file, "a") as f:
             f.write(f"{output_string}\n")
-    print("\t[DEBUG] 'soft_services' milestone checked")
     
     return {"milestones": state.milestones}
 
 
 def route_services(state: OverallState) -> Literal["Ok", "Not Ok"]:    
     """Route to the code generator or terminate the graph"""
-    print(f"Routing services (hard_service={state.milestones.hard_service}, hard_version={state.milestones.hard_version}, soft_services={state.milestones.soft_services})")
+    print(f"\nRouting services (hard_service={state.milestones.hard_service}, hard_version={state.milestones.hard_version}, soft_services={state.milestones.soft_services})\n")
     if (state.milestones.hard_service and state.milestones.hard_version and state.milestones.soft_services and state.debug != "benchmark_web_search") or state.debug == "benchmark_code":
         return "Ok"
     else:
@@ -351,13 +355,12 @@ def route_services(state: OverallState) -> Literal["Ok", "Not Ok"]:
 
 
 def generate_code(state: OverallState):
-    
-    if state.code.directory_tree != "":
-        print("Code already provided!")        
-        return {}
-    
     """The agent generates/fixes the docker code to reproduce the CVE"""
     print("Generating the code...")
+    if state.code.directory_tree != "":
+        print("\tCode already provided!\n")        
+        return {}
+    
     final_report_file = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/logs/final_report.txt")
     
     code_gen_query = CODING_PROMPT.format(
@@ -378,7 +381,7 @@ def generate_code(state: OverallState):
     with builtins.open(final_report_file, "a") as f:
         f.write(output_string)
         
-    print("Code generated!")
+    print("\tCode generated!\n")
     return {"code": generated_code}
 
 
@@ -408,7 +411,7 @@ def save_code(state: OverallState):
     with builtins.open(code_file, "w") as f:
         json.dump(state.code.model_dump(), f, indent=4)
 
-    print("Code saved!")
+    print("\tCode saved!\n")
     return {}
 
 
@@ -460,13 +463,12 @@ def assert_docker_state(code_dir_path, log_file):
         )
         
         if not result.container_ok:
-            print(f"\t{result.fail_explanation}")
             return logs, result.fail_explanation, False
     
     return "", "", True
 
 
-def check_services(services, hard_service_versions, code_dir_path, log_file):
+def check_services(code, services, hard_service_versions, code_dir_path, log_file):
     container_ids = get_container_ids(code_dir_path=code_dir_path)
 
     inspect_logs = []
@@ -491,17 +493,10 @@ def check_services(services, hard_service_versions, code_dir_path, log_file):
         hard_service_versions=hard_service_versions,
     )
     
-    result = code_ass_llm.invoke(
-        [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=query)], 
+    return len(container_ids), code_ass_llm.invoke(
+        [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=code), HumanMessage(content=query)], 
         config={"callbacks": [langfuse_handler]}
     )
-    
-    print(f"\tResult: {result.fail_explanation if result.fail_explanation else ""}")
-    print(f"\t- docker_runs={result.docker_runs}")
-    print(f"\t- services_ok={result.services_ok}")
-    print(f"\t- code_hard_version={result.code_hard_version}\n")
-    
-    return len(container_ids), result
     
 
 def get_cve_list(code_dir_path):
@@ -576,8 +571,13 @@ def test_code(state: OverallState):
         code_dir_path=code_dir_path, 
         log_file=log_file
     )
+    
     if not assessment:
         print("\t[DEBUG] Container Not Running")
+        output_string = f"\tContainer failure explanation: {fail_explanation}"
+        print(f"{output_string}\n")
+        with builtins.open(final_report_file, "a") as f:
+            f.write(output_string)
         return {
             "test_iteration": state.test_iteration + 1,
             "logs": logs,
@@ -592,12 +592,28 @@ def test_code(state: OverallState):
         if service.dependency_type == "HARD":
             hard_service_versions += f"\n\t\t- {service.name}: {service.version}"
     
+    code = "This is the Docker code:\n"
+    for name, content in zip(state.code.file_name, state.code.file_code):
+        code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{content}\n\n"
+    
     num_containers, result = check_services(
+        code=code,
         services=service_list, 
         hard_service_versions=hard_service_versions,
         code_dir_path=code_dir_path,
         log_file=log_file,
     )
+    
+    if result.fail_explanation:
+        output_string = f"\tMilestone(s) failure explanation: {result.fail_explanation}"
+        print(f"{output_string}")
+        with builtins.open(final_report_file, "a") as f:
+            f.write(output_string)
+    else:
+        print(f"\tResult:")
+    print(f"\t- docker_runs={result.docker_runs}")
+    print(f"\t- code_hard_version={result.code_hard_version}")
+    print(f"\t- services_ok={result.services_ok}")
     
     if not result.docker_runs:
         print("\t[DEBUG] Docker Not Running")
@@ -606,17 +622,25 @@ def test_code(state: OverallState):
             "fail_explanation": result.fail_explanation,
             "revision_type": "Docker Not Running"
         }
+    
+    if not result.code_hard_version:
+        print("\t[DEBUG] Not Vulnerable Version")
+        return {
+            "test_iteration": state.test_iteration + 1,
+            "fail_explanation": result.fail_explanation,
+            "revision_type": "Not Vulnerable Version"
+        }
 
-    print(f"\tDocker is running correctly with {num_containers} containers")
+    print(f"\tDocker is running correctly with {num_containers} containers!\n")
     state.milestones.docker_runs = result.docker_runs
-    state.milestones.services_ok = result.services_ok
     state.milestones.code_hard_version = result.code_hard_version
+    state.milestones.services_ok = result.services_ok
     
     formatted_code = f"Directory tree:\n{state.code.directory_tree}\n\n"
     for name, code in zip(state.code.file_name, state.code.file_code):
         formatted_code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{code}\n\n"
         
-    output_string = f"\nThis is the final version of the generated code:\n\n{formatted_code}\n\n"
+    output_string = f"\nDocker is running correctly with {num_containers} containers!\nThis is the final version of the generated code:\n\n{formatted_code}\n\n"
     with builtins.open(final_report_file, "a") as f:
         f.write(output_string)
 
@@ -628,14 +652,13 @@ def test_code(state: OverallState):
 
 def route_code(state: OverallState) -> Literal["Stop Testing", "Revise Code"]:
     """Route back to fix the code or terminate the graph"""
-    print(f"Routing test (docker_runs = {state.milestones.docker_runs}, test_iteration = {state.test_iteration})")
-    if state.milestones.docker_runs or state.test_iteration >= 10:
+    print(f"Routing test (docker_runs = {state.milestones.docker_runs}, code_hard_version = {state.milestones.code_hard_version}, test_iteration = {state.test_iteration})")
+    if state.milestones.docker_runs or state.milestones.code_hard_version or state.test_iteration >= 10:
         if state.test_iteration >= 10:
-            print("\tMax Iterations Reached!")
+            print("\tMax Iterations Reached!\n")
         if state.debug == "benchmark_code":
-            print("[BENCHMARK] Code benchmark terminated!")
+            print("\t[BENCHMARK] Code benchmark terminated!\n")
             
-        
         stats = {
             "test_iterations": state.test_iteration,
             "num_containers": state.num_containers,
@@ -646,7 +669,13 @@ def route_code(state: OverallState) -> Literal["Stop Testing", "Revise Code"]:
         
         return "Stop Testing"
     else:
-        print(f"\tTest iteration #{state.test_iteration} failed!")
+        final_report_file = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/logs/final_report.txt")
+        output_string = f"Test iteration #{state.test_iteration - 1} failed!"
+        print(f"\t{output_string}\n")
+        output_string += f" See 'log{state.test_iteration - 1}.txt' for details.\n"
+        with builtins.open(final_report_file, "a") as f:
+            f.write(output_string)
+            
         return "Revise Code"
     
     
@@ -654,10 +683,11 @@ def revise_code(state: OverallState):
     """The agent is tasked with revising the Docker's code to fix the errors"""
     print("Revising code...")
     state.milestones.docker_runs = False
-    state.milestones.services_ok = False
     state.milestones.code_hard_version = False
+    state.milestones.services_ok = False
     
     code_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/")
+    final_report_file = code_dir_path / "logs/final_report.txt"        
     down_docker(code_dir_path=code_dir_path)
     
     if state.revision_type == "Not Success":
@@ -684,6 +714,13 @@ def revise_code(state: OverallState):
             cve_id=state.cve_id,
             mode=state.web_search_tool,
         )
+    
+    elif state.code_hard_version == "Not Vulnerable Version":
+        query = NOT_VULNERABLE_VERSION_PROMPT.format(
+            fail_explanation=state.fail_explanation,
+            cve_id=state.cve_id,
+            mode=state.web_search_tool,
+        )
 
     code = "This is the code you have to revise:\n"
     for name, content in zip(state.code.file_name, state.code.file_code):
@@ -694,9 +731,11 @@ def revise_code(state: OverallState):
         config={"callbacks": [langfuse_handler]}
     )
 
-    response = f"\t- Error: {revise_code_results.error}\n"
-    response += f"\t- Fix: {revise_code_results.fix}"
-    print(response)
+    output_string = f"\t- ERROR: {revise_code_results.error}\n"
+    output_string += f"\t- FIX: {revise_code_results.fix}\n"
+    print(output_string)
+    with builtins.open(final_report_file, "a") as f:
+        f.write(output_string)
 
     return {
         "milestones": state.milestones,
@@ -708,13 +747,17 @@ def revise_code(state: OverallState):
 def assess_vuln(state: OverallState):
     """The Docker is checked for the presence of the CVE with Docker Scout (but only if the Docker runs)"""
     code_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/")
+    final_report_file = code_dir_path / "logs/final_report.txt"        
     
     if state.milestones.docker_runs:
-        print("Assessing Docker vulnerability...")
+        print("\nAssessing Docker vulnerability...")
         if check_docker_vulnerability(cve_id=state.cve_id, code_dir_path=code_dir_path):
-            print(f"\tThe Docker is vulnerable to {state.cve_id}!")
-            state.milestones.docker_vulnerable = True
+            output_string = f"The Docker is vulnerable to {state.cve_id}!"
+            print(f"\t{output_string}")
             state.milestones.code_hard_version = True
+            state.milestones.docker_vulnerable = True
+            with builtins.open(final_report_file, "a") as f:
+                f.write(output_string)
         
     down_docker(code_dir_path=code_dir_path)
     remove_all_images()

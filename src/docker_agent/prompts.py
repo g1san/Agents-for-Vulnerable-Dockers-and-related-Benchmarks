@@ -153,19 +153,19 @@ GUIDELINES:
 """
 
 
-CHECK_SERVICES_PROMPT = """GOALS: 
-- Check the following milestones:
-    - Check if the Docker containers are running correctly ('docker_runs' milestone)
-    - Check if the Docker uses the following services: {service_list} ('services_ok' milestone)
-    - Check if the following services are using one of the versions listed to their side ('code_hard_version' milestone):{hard_service_versions}
-    - Analyse the output of the command 'sudo docker inspect [CONTAINED ID]'
-    {inspect_logs}
+CHECK_SERVICES_PROMPT = """GOALS: analyse the output of the command 'sudo docker inspect [CONTAINED ID]' and the code contained in the previous message to:
+- Check if the Docker containers are running correctly ('docker_runs' milestone)
+- Check if the following services are using one of the versions listed to their side ('code_hard_version' milestone):{hard_service_versions}
+- Check if the Docker uses the following services: {service_list} ('services_ok' milestone)
+----- START OF INSPECT LOGS -----
+{inspect_logs}
+-----  END OF INSPECT LOGS  -----
 
-CONTEXT: the version lists may contain multiple entries separated by ','. Each entry can be:
+CONTEXT: the version lists of each service may contain multiple entries separated by ','. Each entry can be:
 - A specific version
 - A range of versions delineated by '---'
 
-GUIDELINES: if any of the milestones is not achieved, explain why the Docker fails to achieve them
+GUIDELINES: if any of the milestones is not achieved, you must explain why the Docker fails to achieve them
 """
 
 
@@ -174,6 +174,23 @@ NOT_DOCKER_RUNS = """CONTEXT: my Docker terminates its execution because of an e
 
 GOAL: fix the Docker system problems by modifying its code, which is available in my previous message. Here is the list of previous fixes that you attempted but did not work, my suggestion is to try something different from these:
 {fixes}
+
+GUIDELINES:
+- The system must be immediately deployable using the "docker compose up" command
+- Your answer must include all files, both the updated ones and the unchanged ones
+- The directory tree where the files will be stored must be rooted it in the "./../../dockers/{cve_id}/{mode}" folder
+- The file names must indicate the relative path from the "./../../dockers/{cve_id}/{mode}" folder
+- The Docker code was generated using the data in the message about {cve_id} and its services
+    - You must use all and only the services that are listed in the message that describes {cve_id}
+    - If a service requires a dedicated container write the code for it
+    - You must not use versions of 'HARD' services that are not listed in the message about {cve_id} and its services
+"""
+
+
+NOT_VULNERABLE_VERSION_PROMPT = """CONTEXT: my Docker is not using a vulnerable version of the 'HARD' service(s) listed in the previous message
+{fail_explanation}
+
+GOAL: fix the Docker system by ensuring a vulnerable version of the 'HARD' service is used. Modify its code, which is available in my previous message
 
 GUIDELINES:
 - The system must be immediately deployable using the "docker compose up" command

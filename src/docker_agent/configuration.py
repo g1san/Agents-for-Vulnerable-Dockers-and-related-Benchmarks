@@ -70,8 +70,8 @@ class Milestones(BaseModel):
     soft_services: bool = Field(default=False, description="Are all the necessary 'SOFT' services proposed?")
     # Code Milestones
     docker_runs: bool = Field(default=False, description="Does the Docker container run correctly?")
-    services_ok: bool = Field(default=False, description="Does the generated code contain the services provided by the web search?")
     code_hard_version: bool = Field(default=False, description="Does the generated code use vulnerable version of the 'HARD' services?")
+    services_ok: bool = Field(default=False, description="Does the generated code contain the services provided by the web search?")
     # Exploitability Milestones
     docker_vulnerable: bool = Field(default=False, description="Is the Docker environment vulnerable to the specified CVE?")
     exploitable: bool = Field(default=False, description="Does the exploit return the expected result?")
