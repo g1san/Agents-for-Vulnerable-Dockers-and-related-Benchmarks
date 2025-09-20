@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
 from langchain.chat_models import init_chat_model
 
 # My modules
@@ -151,7 +152,9 @@ class ContextGenerator:
                 HumanMessage(content=f"Here is the content you have to summarise: {doc[:max_chars]}"),
             ]
             # Initialize the LLM with OpenAI's GPT-4o model
-            llm_model = init_chat_model(model="gpt-4o", temperature=0.5, max_retries=2)
+            # llm_model = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+            # Initialize the LLM with OpenAI's GPT-5 model
+            llm_model = ChatOpenAI(model="gpt-5", max_retries=2)
             
             # Invoke the LLM to summarize the web page content
             response = llm_model.invoke(messages, config={"callbacks": [langfuse_handler]})
@@ -186,7 +189,9 @@ class ContextGenerator:
                 HumanMessage(content=f"Use the following knowledge to achieve your task: {conc_sum[:max_chars]}"),
             ]
             # Initialize the LLM with OpenAI's GPT-4o model
-            llm_model = init_chat_model(model="gpt-4o", temperature=0.5, max_retries=2)
+            # llm_model = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+            # Initialize the LLM with OpenAI's GPT-5 model
+            llm_model = ChatOpenAI(model="gpt-5", max_retries=2)
             
             # Set the LLM to return a structured output from web search
             docker_services_llm = llm_model.with_structured_output(WebSearchResult)
@@ -241,7 +246,7 @@ class ContextGenerator:
         input_token_count = 0
         output_token_count = 0
         summary_dict = {}
-        for url, doc in tqdm(results, desc=f"Summarizing", disable=not self.verbose, leave=False):
+        for url, doc in tqdm(results, desc="Summarizing", disable=not self.verbose, leave=False):
             (summary, inputCount, outputCount) = self.summarize_web_page(doc=doc, cve_id=cve_id)
             input_token_count += inputCount
             output_token_count += outputCount

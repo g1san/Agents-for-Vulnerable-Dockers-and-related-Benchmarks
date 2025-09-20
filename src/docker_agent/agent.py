@@ -48,11 +48,12 @@ def test_workflow():
     try:
         with builtins.open('services.json', "r") as f:
             jsonServices = json.load(f)
-            
+        
+        cve_list = [""]
         cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
         for cve in cve_list:
             # cve = "CVE-2020-11651"
-            web_search_mode = "openai"
+            web_search_mode = "custom_no_tool"
 
             # with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:
             #     web_search_data = json.load(f)
@@ -465,10 +466,10 @@ def best_cve_runs():
         
 
 # draw_graph()
-# result = test_workflow()
-# milestones = benchmark("openai")
+# test_workflow()
+# milestones = benchmark("custom_no_tool")
 # df = generate_excel_csv()
-# df = generate_excel_csv_mono_mode(model="GPT-4o", logs_set="3rd", mode="openai")
+df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="custom_no_tool")
 # data = extract_milestones_stats(model="GPT-4o", logs_set="3rd")
 # stats_computation()
 # best_cve_runs()   

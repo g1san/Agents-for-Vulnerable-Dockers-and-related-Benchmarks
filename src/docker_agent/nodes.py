@@ -6,6 +6,7 @@ import builtins
 import subprocess
 from pathlib import Path
 from typing import Literal
+from langchain_openai import ChatOpenAI
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
@@ -38,7 +39,10 @@ from configuration import (
     CodeMilestonesAssessment,
 )
 
-llm = init_chat_model(model="gpt-5", temperature=0.5, max_retries=2)
+# Initialize the LLM with OpenAI's GPT-4o model
+# llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+# Initialize the LLM with OpenAI's GPT-5 model
+llm = ChatOpenAI(model="gpt-5", max_retries=2)
 llm_openai_web_search_tool = llm.bind_tools([openai_web_search])
 llm_custom_web_search_tool = llm.bind_tools([web_search])
 web_search_llm = llm.with_structured_output(WebSearchResult)
@@ -553,7 +557,6 @@ def test_code(state: OverallState):
     if not success:
         print("\t[DEBUG] Not Success")
         return {
-            "test_iteration": state.test_iteration + 1,
             "logs": logs,
             "revision_type": "Not Success",
         }
@@ -570,10 +573,9 @@ def test_code(state: OverallState):
         with builtins.open(final_report_file, "a") as f:
             f.write(output_string)
         return {
-            "test_iteration": state.test_iteration + 1,
             "logs": logs,
             "fail_explanation": fail_explanation,
-            "revision_type": "Container Not Running"
+            "revision_type": "Container Not Running",
         }
     
     service_list = []
@@ -609,17 +611,15 @@ def test_code(state: OverallState):
     if not result.docker_runs:
         print("\t[DEBUG] Docker Not Running")
         return {
-            "test_iteration": state.test_iteration + 1,
             "fail_explanation": result.fail_explanation,
-            "revision_type": "Docker Not Running"
+            "revision_type": "Docker Not Running",
         }
     
     if not result.code_hard_version:
         print("\t[DEBUG] Not Vulnerable Version")
         return {
-            "test_iteration": state.test_iteration + 1,
             "fail_explanation": result.fail_explanation,
-            "revision_type": "Not Vulnerable Version"
+            "revision_type": "Not Vulnerable Version",
         }
 
     print(f"\tDocker is running correctly with {num_containers} containers!")
@@ -651,7 +651,7 @@ def route_code(state: OverallState) -> Literal["Stop Testing", "Revise Code"]:
             print("\t[BENCHMARK] Code benchmark terminated!")
             
         stats = {
-            "test_iterations": state.test_iteration,
+            "test_iterations": state.test_iteration + 1,
             "num_containers": state.num_containers,
         } 
         stats_file = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/logs/stats.json")
@@ -661,9 +661,9 @@ def route_code(state: OverallState) -> Literal["Stop Testing", "Revise Code"]:
         return "Stop Testing"
     else:
         final_report_file = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/logs/final_report.txt")
-        output_string = f"Test iteration #{state.test_iteration - 1} failed!"
+        output_string = f"\nTest iteration #{state.test_iteration} failed!"
         print(f"\t{output_string}")
-        output_string += f" See 'log{state.test_iteration - 1}.txt' for details."
+        output_string += f" See 'log{state.test_iteration}.txt' for details."
         with builtins.open(final_report_file, "a") as f:
             f.write(f"{output_string}\n")
             
@@ -729,6 +729,7 @@ def revise_code(state: OverallState):
         f.write(f"{output_string}\n")
 
     return {
+        "test_iteration": state.test_iteration + 1,
         "milestones": state.milestones,
         "code": revise_code_results.fixed_code,
         "fixes": state.fixes + [revise_code_results.fix],
