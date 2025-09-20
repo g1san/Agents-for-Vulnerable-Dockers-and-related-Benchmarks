@@ -26,7 +26,7 @@ GUIDELINES:
 
 GET_DOCKER_SERVICES_PROMPT = """CONTEXT: you are provided with some information about {cve_id}
 
-GOAL: identify the services needed to create a Docker system vulnerable to {cve_id}'
+GOAL: identify the services needed to create a Docker system vulnerable to {cve_id}
 
 GUIDELINES:
 - The description of {cve_id} must be extensive 
@@ -54,7 +54,7 @@ GUIDELINES:
 
 OPENAI_WEB_SEARCH_PROMPT = """CONTEXT: search the web and summarize all the information available about {cve_id}
 
-GOAL: identify the services needed to create a Docker system vulnerable to {cve_id}'
+GOAL: identify the services needed to create a Docker system vulnerable to {cve_id}
 
 GUIDELINES:
 - The description of {cve_id} must be extensive 

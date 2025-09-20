@@ -1,0 +1,21 @@
+,cve_id_ok,hard_service,hard_version,soft_services,docker_runs,code_hard_version,services_ok,docker_vulnerable,exploitable,Web Search Mode,Web Query,Attack Type,Number of Proposed Services,Input Tokens,Output Tokens,Web Search Costs,Test Iterations,Number of Containers
+CVE-2012-1823,True,True,True,True,False,False,False,False,False,openai,,Remote Code Execution (RCE),2,842,482,0.02982,10.0,0.0
+CVE-2016-5734,True,True,True,True,False,False,False,False,False,openai,,"This vulnerability enables remote attackers to execute arbitrary code on the affected system without requiring authentication. By exploiting the improper delimiter handling in the `preg_replace` function, an attacker can inject and execute malicious PHP code, potentially compromising the confidentiality, integrity, and availability of the system.",4,842,583,0.03083,10.0,0.0
+CVE-2018-12613,True,True,True,True,True,True,True,False,False,openai,,Remote Code Execution (RCE),3,842,469,0.02969,0.0,2.0
+CVE-2020-7247,True,True,True,True,False,False,False,False,False,openai,,Remote Code Execution (RCE),2,842,422,0.02922,10.0,0.0
+CVE-2020-11651,True,True,True,True,True,True,True,True,False,openai,,Remote Code Execution (RCE),3,842,559,0.03059,7.0,3.0
+CVE-2020-11652,True,True,True,True,False,False,False,False,False,openai,,Path Traversal,4,842,441,0.02941,10.0,0.0
+CVE-2021-3129,True,False,False,True,False,False,False,False,False,openai,,Remote Code Execution (RCE),4,842,512,0.03012,,
+CVE-2021-28164,True,True,True,True,True,True,True,True,False,openai,,Unauthorized access to sensitive information by bypassing access controls through crafted URI requests.,3,842,594,0.03094,0.0,2.0
+CVE-2021-34429,True,True,True,True,True,True,True,True,False,openai,,Unauthorized Access,2,842,608,0.03108,0.0,1.0
+CVE-2021-41773,True,True,True,True,True,True,False,False,False,openai,,"Path Traversal Attack, Remote Code Execution",2,842,452,0.02952,1.0,1.0
+CVE-2021-42013,True,True,True,True,False,False,False,False,False,openai,,"Path Traversal, Remote Code Execution",4,842,817,0.03317,10.0,0.0
+CVE-2021-43798,True,True,True,True,True,True,True,False,False,openai,,Directory Traversal,3,842,391,0.02891,2.0,3.0
+CVE-2021-44228,True,False,False,True,False,False,False,False,False,openai,,RCE,3,842,381,0.02881,,
+CVE-2022-22947,True,True,True,True,True,True,True,False,False,openai,,"This vulnerability allows for arbitrary remote code execution. An attacker can exploit this by sending malicious requests to the unsecured Gateway Actuator endpoint, leading to unauthorized command execution on the server.",4,842,467,0.02967,4.0,1.0
+CVE-2022-22963,True,True,True,True,True,True,True,True,False,openai,,RCE (Remote Code Execution),4,842,708,0.03208,9.0,2.0
+CVE-2022-24706,True,True,True,True,False,False,False,False,False,openai,,"This vulnerability enables unauthorized access to the system without authentication, allowing attackers to gain administrative privileges.",3,842,379,0.02879,10.0,0.0
+CVE-2022-46169,True,True,True,True,True,True,True,False,False,openai,,Command Injection,4,842,611,0.03111,3.0,2.0
+CVE-2023-23752,True,True,True,False,False,False,False,False,False,openai,,"This vulnerability allows unauthorized access to web service endpoints, leading to potential unauthorized data exposure and manipulation.",2,842,397,0.02897,,
+CVE-2023-42793,True,True,True,True,True,True,True,False,False,openai,,Remote Code Execution (RCE),3,842,672,0.03172,0.0,3.0
+CVE-2024-23897,True,True,True,True,True,True,True,True,False,openai,,"The attack involves unauthorized access to sensitive information by exploiting the CLI command parser's misconfiguration, allowing attackers to read arbitrary files on the Jenkins controller file system.",4,842,607,0.03107,5.0,3.0

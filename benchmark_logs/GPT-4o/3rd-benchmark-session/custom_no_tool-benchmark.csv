@@ -1,21 +1,21 @@
-,cve_id_ok,hard_service,hard_version,soft_services,docker_runs,code_hard_version,services_ok,docker_vulnerable,exploitable,Web Query,Number of Proposed Services,Input Tokens,Output Tokens,Web Search Costs,Test Iterations,Number of Containers
-CVE-2012-1823,True,True,True,True,False,False,False,False,False,CVE-2012-1823,2,6751,839,0.02527,10,0
-CVE-2016-5734,True,True,True,True,True,True,True,False,False,CVE-2016-5734,3,6379,892,0.02487,3,2
-CVE-2018-12613,True,True,True,True,True,True,True,False,False,CVE-2018-12613,3,7003,938,0.02689,3,2
-CVE-2020-7247,True,True,True,True,False,False,False,False,False,CVE-2020-7247,2,3657,690,0.01604,10,0
-CVE-2020-11651,True,True,True,True,True,True,True,True,False,CVE-2020-11651,4,5084,724,0.01995,6,1
-CVE-2020-11652,True,True,True,True,True,True,True,True,False,CVE-2020-11652,3,4811,728,0.01931,0,1
-CVE-2021-3129,True,True,True,True,True,True,True,True,False,CVE-2021-3129,6,6451,763,0.02376,6,3
-CVE-2021-28164,True,True,True,True,True,True,True,False,False,CVE-2021-28164,2,43605,911,0.11812,3,1
-CVE-2021-34429,True,True,True,True,True,True,True,True,False,CVE-2021-34429,2,55449,902,0.14764,1,1
-CVE-2021-41773,True,True,True,True,True,True,True,False,False,CVE-2021-41773,2,34665,809,0.09475,1,1
-CVE-2021-42013,True,True,True,True,True,True,True,False,False,CVE-2021-42013,2,33993,899,0.09397,9,1
-CVE-2021-43798,True,True,True,True,True,True,True,False,False,CVE-2021-43798,3,12184,1097,0.04143,6,3
-CVE-2021-44228,True,True,True,True,True,True,True,True,False,CVE-2021-44228,3,15469,931,0.04798,3,1
-CVE-2022-22947,True,True,True,True,True,True,True,False,False,CVE-2022-22947,4,4781,769,0.01964,8,1
-CVE-2022-22963,True,True,True,True,True,True,True,False,False,CVE-2022-22963,4,7068,724,0.02491,4,1
-CVE-2022-24706,True,True,True,True,True,True,True,False,False,CVE-2022-24706,3,8573,759,0.02902,0,1
-CVE-2022-46169,True,True,True,True,True,True,True,False,False,CVE-2022-46169,3,6944,1013,0.02749,6,3
-CVE-2023-23752,True,True,True,True,True,True,True,False,False,CVE-2023-23752,4,8009,754,0.02756,0,2
-CVE-2023-42793,True,True,True,True,True,True,True,False,False,CVE-2023-42793,3,19136,828,0.05612,5,3
-CVE-2024-23897,True,True,True,True,True,True,True,True,False,CVE-2024-23897,4,10957,843,0.03582,6,3
+,cve_id_ok,hard_service,hard_version,soft_services,docker_runs,code_hard_version,services_ok,docker_vulnerable,exploitable,Web Search Mode,Web Query,Attack Type,Number of Proposed Services,Input Tokens,Output Tokens,Web Search Costs,Test Iterations,Number of Containers
+CVE-2012-1823,True,True,True,True,False,False,False,False,False,custom_no_tool,CVE-2012-1823,Remote Code Execution,2,6751,839,0.02527,10,0
+CVE-2016-5734,True,True,True,True,True,True,True,False,False,custom_no_tool,CVE-2016-5734,Remote Code Execution,3,6379,892,0.02487,3,2
+CVE-2018-12613,True,True,True,True,True,True,True,False,False,custom_no_tool,CVE-2018-12613,Local File Inclusion (LFI) leading to Remote Code Execution (RCE),3,7003,938,0.02689,3,2
+CVE-2020-7247,True,True,True,True,False,False,False,False,False,custom_no_tool,CVE-2020-7247,Remote Code Execution,2,3657,690,0.01604,10,0
+CVE-2020-11651,True,True,True,True,True,True,True,True,False,custom_no_tool,CVE-2020-11651,remote code execution,4,5084,724,0.01995,6,1
+CVE-2020-11652,True,True,True,True,True,True,True,True,False,custom_no_tool,CVE-2020-11652,Unauthorized access to sensitive files,3,4811,728,0.01931,0,1
+CVE-2021-3129,True,True,True,True,True,True,True,True,False,custom_no_tool,CVE-2021-3129,Remote Code Execution,6,6451,763,0.02376,6,3
+CVE-2021-28164,True,True,True,True,True,True,True,False,False,custom_no_tool,CVE-2021-28164,Information Disclosure,2,43605,911,0.11812,3,1
+CVE-2021-34429,True,True,True,True,True,True,True,True,False,custom_no_tool,CVE-2021-34429,Path Traversal,2,55449,902,0.14764,1,1
+CVE-2021-41773,True,True,True,True,True,True,True,False,False,custom_no_tool,CVE-2021-41773,Path Traversal and Remote Code Execution,2,34665,809,0.09475,1,1
+CVE-2021-42013,True,True,True,True,True,True,True,False,False,custom_no_tool,CVE-2021-42013,Path Traversal and Remote Code Execution,2,33993,899,0.09397,9,1
+CVE-2021-43798,True,True,True,True,True,True,True,False,False,custom_no_tool,CVE-2021-43798,Path Traversal,3,12184,1097,0.04143,6,3
+CVE-2021-44228,True,True,True,True,True,True,True,True,False,custom_no_tool,CVE-2021-44228,Remote Code Execution,3,15469,931,0.04798,3,1
+CVE-2022-22947,True,True,True,True,True,True,True,False,False,custom_no_tool,CVE-2022-22947,"Code Injection, Remote Code Execution",4,4781,769,0.01964,8,1
+CVE-2022-22963,True,True,True,True,True,True,True,False,False,custom_no_tool,CVE-2022-22963,Remote Code Execution,4,7068,724,0.02491,4,1
+CVE-2022-24706,True,True,True,True,True,True,True,False,False,custom_no_tool,CVE-2022-24706,Remote Code Execution,3,8573,759,0.02902,0,1
+CVE-2022-46169,True,True,True,True,True,True,True,False,False,custom_no_tool,CVE-2022-46169,Remote Code Execution,3,6944,1013,0.02749,6,3
+CVE-2023-23752,True,True,True,True,True,True,True,False,False,custom_no_tool,CVE-2023-23752,Information Disclosure,4,8009,754,0.02756,0,2
+CVE-2023-42793,True,True,True,True,True,True,True,False,False,custom_no_tool,CVE-2023-42793,unauthenticated remote code execution,3,19136,828,0.05612,5,3
+CVE-2024-23897,True,True,True,True,True,True,True,True,False,custom_no_tool,CVE-2024-23897,Remote Code Execution,4,10957,843,0.03582,6,3
