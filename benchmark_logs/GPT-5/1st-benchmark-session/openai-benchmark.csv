@@ -1,0 +1,21 @@
+,cve_id_ok,hard_service,hard_version,soft_services,docker_runs,code_hard_version,services_ok,docker_vulnerable,exploitable,Web Search Mode,Web Query,Attack Type,Number of Proposed Services,Input Tokens,Output Tokens,Web Search Costs,Test Iterations,Number of Containers
+CVE-2012-1823,True,True,True,False,False,False,False,False,False,openai,,Remote code execution; Information disclosure; Denial of service,2,296671,9798,0.10798,,
+CVE-2016-5734,True,True,True,False,False,False,False,False,False,openai,,RCE,3,451562,7943,0.08943,,
+CVE-2018-12613,True,True,True,False,False,False,False,False,False,openai,,"Server-side file inclusion leading to arbitrary file read and, depending on configuration, remote code execution; possible authentication bypass of the vulnerable code path under specific phpMyAdmin settings.",2,152445,7618,0.08618,,
+CVE-2020-7247,True,False,False,True,False,False,False,False,False,openai,,Remote Code Execution (OS command injection); Local Privilege Escalation,2,155234,8858,0.09858,,
+CVE-2020-11651,True,True,True,True,False,False,False,False,False,openai,,"Authentication bypass leading to remote, unauthorized command execution on Salt minions and remote, unauthorized administrative control of the Salt master.",1,269977,6028,0.07028,11.0,0.0
+CVE-2020-11652,True,True,True,True,True,True,True,True,False,openai,,Directory Traversal (Arbitrary File Read),1,319266,6969,0.07969,2.0,1.0
+CVE-2021-3129,True,False,False,False,False,False,False,False,False,openai,,Unauthenticated Remote Code Execution (RCE),2,204784,9067,0.10067,,
+CVE-2021-28164,True,True,True,True,True,True,True,True,False,openai,,"Unauthorized access to protected files due to improper input validation and insufficient canonicalization of the request path, resulting in information disclosure from the WEB-INF area.",1,429339,6791,0.07791,1.0,1.0
+CVE-2021-34429,True,True,True,True,False,False,False,False,False,openai,,"Remote, unauthenticated information disclosure and security-constraint bypass via crafted HTTP request path normalization/canonicalization.",1,501856,6700,0.077,11.0,0.0
+CVE-2021-41773,True,True,True,True,True,True,True,False,False,openai,,Directory traversal/file disclosure; possible remote code execution when CGI is enabled for the aliased path.,1,283162,6358,0.07358,1.0,1.0
+CVE-2021-42013,True,True,True,True,True,True,True,False,False,openai,,Directory traversal; Arbitrary file read; Remote code execution (RCE),1,92499,5994,0.06994,4.0,1.0
+CVE-2021-43798,True,True,True,True,True,True,True,False,False,openai,,"Remote, unauthenticated directory traversal leading to arbitrary file read",1,48150,5226,0.06226,5.0,1.0
+CVE-2021-44228,True,False,False,True,False,False,False,False,False,openai,,Remote code execution (RCE); information disclosure; denial of service (DoS),1,266279,9518,0.10518,,
+CVE-2022-22947,True,False,False,True,False,False,False,False,False,openai,,RCE,1,421310,8521,0.09521,,
+CVE-2022-22963,True,True,True,True,True,True,True,True,False,openai,,Expression language injection leading to remote code execution (RCE),1,167473,8875,0.09875,3.0,1.0
+CVE-2022-24706,True,True,True,True,True,True,True,False,False,openai,,Unauthenticated remote privilege escalation (admin takeover); potential remote code execution via Erlang distribution,1,156424,7148,0.08148,3.0,1.0
+CVE-2022-46169,True,True,True,False,False,False,False,False,False,openai,,Unauthenticated Remote Code Execution (RCE) via authentication bypass and OS command injection,3,589870,8402,0.09402,,
+CVE-2023-23752,True,True,True,False,False,False,False,False,False,openai,,"Authentication bypass resulting in information disclosure (network-accessible, low complexity, no privileges, no user interaction; confidentiality impact only)",2,539748,5596,0.06596,,
+CVE-2023-42793,True,True,True,True,True,True,True,False,False,openai,,Authentication bypass leading to remote code execution (RCE),1,425812,6618,0.07618,10.0,1.0
+CVE-2024-23897,True,True,True,True,True,True,True,True,False,openai,,"Arbitrary file read via CLI argument expansion (expandAtFiles), with path traversal-assisted file disclosure and potential remote code execution through secondary post-read paths.",1,252982,5700,0.067,2.0,1.0
