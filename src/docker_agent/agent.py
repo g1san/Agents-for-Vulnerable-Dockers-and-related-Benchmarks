@@ -52,10 +52,10 @@ def test_workflow():
         cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
         for cve in cve_list:
             # cve = "CVE-2020-11651"
-            web_search_mode = "openai"
+            web_search_mode = "custom_no_tool"
 
-            # with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:
-            #     web_search_data = json.load(f)
+            #with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:
+            #    web_search_data = json.load(f)
 
             # with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/code.json', 'r') as f:
             #     code_data = json.load(f)
@@ -70,7 +70,7 @@ def test_workflow():
                 },
                 config={"callbacks": [langfuse_handler], "recursion_limit": 100},
             )  
-            # return result
+            return result
     
     except Exception as e:
         print(f"Workflow invocation failed: {e}.")
@@ -465,10 +465,10 @@ def best_cve_runs(model: str, logs_set: str, mode: str):
         
 
 # draw_graph()
-# test_workflow()
+# result = test_workflow()
 # milestones = benchmark("openai")
 # df = generate_excel_csv()
-df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
+# df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
 # data = extract_milestones_stats(model="GPT-5", logs_set="1st", mode='custom_no_tool')
 # web_search_mode_stats(model="GPT-5", logs_set="1st")
 # best_cve_runs(model="GPT-5", logs_set="1st", mode="openai")   

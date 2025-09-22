@@ -156,7 +156,13 @@ class ContextGenerator:
             # Initialize the LLM with OpenAI's GPT-4o model
             # llm_model = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
             # Initialize the LLM with OpenAI's GPT-5 model
-            llm_model = ChatOpenAI(model="gpt-5", max_retries=2)
+            # llm_model = ChatOpenAI(model="gpt-5", max_retries=2)
+            # Initialize the LLM with SmartData cluster's local model
+            llm_model = ChatOpenAI(
+                model="mistralai/Mistral-7B-Instruct-v0.1",
+                base_url="https://kubernetes.polito.it/vllm/v1",
+                api_key=os.getenv("SDC_API_KEY"),
+            )
             
             # Invoke the LLM to summarize the web page content
             response = llm_model.invoke(messages, config={"callbacks": [langfuse_handler]})
@@ -193,7 +199,13 @@ class ContextGenerator:
             # Initialize the LLM with OpenAI's GPT-4o model
             # llm_model = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
             # Initialize the LLM with OpenAI's GPT-5 model
-            llm_model = ChatOpenAI(model="gpt-5", max_retries=2)
+            # llm_model = ChatOpenAI(model="gpt-5", max_retries=2)
+            # Initialize the LLM with SmartData cluster's local model
+            llm_model = ChatOpenAI(
+                model="mistralai/Mistral-7B-Instruct-v0.1",
+                base_url="https://kubernetes.polito.it/vllm/v1",
+                api_key=os.getenv("SDC_API_KEY"),
+            )
             
             # Set the LLM to return a structured output from web search
             docker_services_llm = llm_model.with_structured_output(WebSearchResult)

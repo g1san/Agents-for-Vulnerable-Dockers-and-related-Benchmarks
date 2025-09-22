@@ -42,7 +42,13 @@ from configuration import (
 # Initialize the LLM with OpenAI's GPT-4o model
 # llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
 # Initialize the LLM with OpenAI's GPT-5 model
-llm = ChatOpenAI(model="gpt-5", max_retries=2)
+# llm = ChatOpenAI(model="gpt-5", max_retries=2)
+# Initialize the LLM with SmartData cluster's local model
+llm = ChatOpenAI(
+    model="mistralai/Mistral-7B-Instruct-v0.1",
+    base_url="https://kubernetes.polito.it/vllm/v1",
+    api_key=os.getenv("SDC_API_KEY"),
+)
 llm_openai_web_search_tool = llm.bind_tools([openai_web_search])
 llm_custom_web_search_tool = llm.bind_tools([web_search])
 web_search_llm = llm.with_structured_output(WebSearchResult)
@@ -179,7 +185,7 @@ def get_services(state: OverallState):
     
     elif state.web_search_tool == "custom_no_tool":
         #NOTE: 'web_search_func' internally formats the response into a WebSearchResult Pydantic class
-        formatted_response, in_token, out_token = web_search_func(cve_id=state.cve_id, n_documents=5, verbose=False)
+        formatted_response, in_token, out_token = web_search_func(cve_id=state.cve_id, n_documents=5, verbose=True)
     
     elif state.web_search_tool == "openai":
         web_query = OPENAI_WEB_SEARCH_PROMPT.format(cve_id=state.cve_id)

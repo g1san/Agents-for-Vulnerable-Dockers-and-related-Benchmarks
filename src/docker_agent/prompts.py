@@ -84,7 +84,7 @@ WEB_SEARCH_FORMAT_PROMPT = """GOAL: convert the following text in the provided s
 {web_search_result}"""
 
 
-HARD_SERV_VERS_ASSESSMENT_PROMPT = """GOAL: check if version {version} of the {service} service is contained in the following list of versions
+HARD_SERV_VERS_ASSESSMENT_PROMPT = """GOAL: check if version '{version}' of the '{service}' service is contained in the following list of versions
 {version_list}
 
 CONTEXT: the version list may contain multiple entries separated by ','. Each entry can be:
