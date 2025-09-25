@@ -54,12 +54,22 @@ class TestCodeResult(BaseModel):
 
     
 class CodeMilestonesAssessment(BaseModel):
-    docker_runs: bool = Field(default=False, description="Does the Docker system run correctly?")
+    docker_builds: bool = Field(description="Do all Docker images get built correctly?")
+    docker_runs: bool = Field(description="Does the Docker system run correctly?")
     services_ok: bool = Field(description="Does the generated code contain the services provided by the web search?")
     code_hard_version: bool = Field(description="Does the generated code use vulnerable version of the 'HARD' services?")
     fail_explanation: Optional[str] = Field(description="Detailed explanation of why one or more milestones have failed")
-    
 
+
+class Stats(BaseModel):
+    num_containers: int = Field(default=0, description="Number of containers created while testing the Docker")
+    test_iteration: int = Field(default=0, description="Number of iterations of the test loop")
+    starting_image_builds: bool = Field(default=True, description="Checks if the LLM is able to generate a buildable Docker image in the first test iteration")
+    image_build_failures: int = Field(default=0, description="Number of times the Docker image fails to build")
+    starting_container_runs: bool = Field(default=True, description="Checks if the LLM is able to generate working Docker container in the first test iteration")
+    container_run_failures: int = Field(default=0, description="Number of times the Docker container fails to run")
+    not_vuln_version_fail: int = Field(default=0, description="Number of times the Docker builds and runs correctly but uses a not vulnerable version of the 'HARD' service")
+    
     
 class Milestones(BaseModel):
     # CVE Milestone
@@ -69,9 +79,9 @@ class Milestones(BaseModel):
     hard_version: bool = Field(default=False, description="Do the 'HARD' services version range contain the expected version?")
     soft_services: bool = Field(default=False, description="Are all the necessary 'SOFT' services proposed?")
     # Code Milestones
-    docker_runs: bool = Field(default=False, description="Does the Docker container run correctly?")
+    docker_builds: bool = Field(default=False, description="Do all Docker images get built correctly?")
+    docker_runs: bool = Field(default=False, description="Do all Docker containers run correctly?")
     code_hard_version: bool = Field(default=False, description="Does the generated code use vulnerable version of the 'HARD' services?")
     services_ok: bool = Field(default=False, description="Does the generated code contain the services provided by the web search?")
     # Exploitability Milestones
     docker_vulnerable: bool = Field(default=False, description="Is the Docker environment vulnerable to the specified CVE?")
-    exploitable: bool = Field(default=False, description="Does the exploit return the expected result?")

@@ -4,10 +4,15 @@ from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 
 # My modules
-from configuration import CodeGenerationResult, WebSearchResult, TestCodeResult, Milestones
+from configuration import CodeGenerationResult, WebSearchResult, Stats, Milestones
 
 
 class OverallState(BaseModel):
+    model: str = Field(
+        default="",
+        description="Model chosen for this agent run"
+    )
+    
     cve_id: str = Field(
         default="",
         description="The ID of the CVE"
@@ -16,6 +21,11 @@ class OverallState(BaseModel):
     web_search_tool: str = Field(
         default="custom_no_tool", 
         description="The web search mode"
+    )
+    
+    verbose_web_search: bool = Field(
+        default=False,
+        description="Choose if the web search will be verbose or not"
     )
 
     web_search_result: WebSearchResult = Field(
@@ -47,20 +57,15 @@ class OverallState(BaseModel):
         default=[],
         description="List of attempted fixes to the code"
     )
-    
-    num_containers: int = Field(
-        default=0,
-        description="Number of containers created while testing the Docker"
-    )
-    
-    test_iteration: int = Field(
-        default=0,
-        description="Number of iterations of the test code node"
-    )
 
     messages: Annotated[list[AnyMessage], add_messages] = Field(
         default=[], 
         description="Conversation with LLM, tracked for analysis"
+    )
+    
+    stats: Stats = Field(
+        default=Stats(),
+        description="Various stats about the current workflow"
     )
     
     milestones: Milestones = Field(

@@ -18,10 +18,11 @@ from configuration import langfuse_handler, WebSearchResult
 
 
 class ContextGenerator:
-    def __init__(self, n_documents, verbose):
+    def __init__(self, n_documents, verbose, model):
         self.verbose = verbose
         self.n_documents = n_documents
         self.text_len_threshold = 50
+        self.model = model
 
         # Retrieve the Google CSE key and ID from environment variables
         self.google_api_key = os.getenv("GOOGLE_API_KEY")
@@ -151,16 +152,19 @@ class ContextGenerator:
                 # Passing the content of the web page as a user message
                 HumanMessage(content=f"Here is the content you have to summarise: {doc[:max_chars]}"),
             ]
-            # Initialize the LLM with OpenAI's GPT-4o model
-            # llm_model = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
-            # Initialize the LLM with OpenAI's GPT-5 model
-            # llm_model = ChatOpenAI(model="gpt-5", max_retries=2)
-            # Initialize the LLM with SmartData cluster's local model
-            llm_model = ChatOpenAI(
-                model="mistralai/Mistral-7B-Instruct-v0.1",
-                base_url="https://kubernetes.polito.it/vllm/v1",
-                api_key=os.getenv("SDC_API_KEY"),
-            )
+            
+            if self.model.lower() == "gpt-4o":
+                llm_model = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+            elif self.model.lower() == "gpt-5":
+                llm_model = ChatOpenAI(model="gpt-5", max_retries=2)
+            elif self.model == "mistralai/Mistral-7B-Instruct-v0.1":
+                llm_model = ChatOpenAI(
+                    model="mistralai/Mistral-7B-Instruct-v0.1",
+                    base_url="https://kubernetes.polito.it/vllm/v1",
+                    api_key=os.getenv("SDC_API_KEY"),
+                )
+            else:
+                raise ValueError("Model not supported")
             
             # Invoke the LLM to summarize the web page content
             response = llm_model.invoke(messages, config={"callbacks": [langfuse_handler]})
@@ -194,16 +198,19 @@ class ContextGenerator:
                 # Passing the content of the web search as a user message
                 HumanMessage(content=f"Use the following knowledge to achieve your task: {conc_sum[:max_chars]}"),
             ]
-            # Initialize the LLM with OpenAI's GPT-4o model
-            # llm_model = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
-            # Initialize the LLM with OpenAI's GPT-5 model
-            # llm_model = ChatOpenAI(model="gpt-5", max_retries=2)
-            # Initialize the LLM with SmartData cluster's local model
-            llm_model = ChatOpenAI(
-                model="mistralai/Mistral-7B-Instruct-v0.1",
-                base_url="https://kubernetes.polito.it/vllm/v1",
-                api_key=os.getenv("SDC_API_KEY"),
-            )
+            
+            if self.model.lower() == "gpt-4o":
+                llm_model = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+            elif self.model.lower() == "gpt-5":
+                llm_model = ChatOpenAI(model="gpt-5", max_retries=2)
+            elif self.model == "mistralai/Mistral-7B-Instruct-v0.1":
+                llm_model = ChatOpenAI(
+                    model="mistralai/Mistral-7B-Instruct-v0.1",
+                    base_url="https://kubernetes.polito.it/vllm/v1",
+                    api_key=os.getenv("SDC_API_KEY"),
+                )
+            else:
+                raise ValueError("Model not supported")
             
             # Set the LLM to return a structured output from web search
             docker_services_llm = llm_model.with_structured_output(WebSearchResult)
@@ -275,12 +282,12 @@ class ContextGenerator:
         return (formatted_response, input_token_count, output_token_count)
     
 
-def web_search_func(cve_id: str, n_documents: int = 10, verbose: bool = True):
+def web_search_func(cve_id: str, model: str, n_documents: int = 10, verbose: bool = True):
     inCount = 0
     outCount = 0
     
     try:
-        rag_model = ContextGenerator(n_documents=n_documents, verbose=verbose)
+        rag_model = ContextGenerator(n_documents=n_documents, verbose=verbose, model=model)
         (formatted_response, inCount, outCount) = rag_model.invoke(cve_id)
     except Exception as e:
         formatted_response = f"An error occurred during the web search: {str(e)}"

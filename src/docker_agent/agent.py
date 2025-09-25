@@ -10,13 +10,14 @@ from IPython.display import Image, display
 from langchain_core.messages import SystemMessage
 
 # My modules
-from configuration import langfuse_handler, WebSearchResult, CodeGenerationResult, Milestones
+from configuration import langfuse_handler
 from prompts import SYSTEM_PROMPT
 from graph import compiled_workflow
 
 
 def draw_graph():
     try:
+        # print(compiled_workflow.get_graph().draw_mermaid())
         display(Image(compiled_workflow.get_graph().draw_mermaid_png(output_file_path="Mermaid Chart.png")))
         
     except Exception as e:
@@ -49,28 +50,34 @@ def test_workflow():
         with builtins.open('services.json', "r") as f:
             jsonServices = json.load(f)
         
-        cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
+        cve_list = list(jsonServices.keys())[2:20]   # Limit to first 20 CVEs for benchmarking
+        # cve_list = ["CVE-2021-42013"]
+
+        web_search_mode = "custom_no_tool"
+        
         for cve in cve_list:
             # cve = "CVE-2020-11651"
-            web_search_mode = "custom_no_tool"
 
-            #with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:
-            #    web_search_data = json.load(f)
+            # with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:
+            with builtins.open(f'./../../benchmark_logs/GPT-4o/3rd-benchmark-session/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:   
+                web_search_data = json.load(f)
 
             # with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/code.json', 'r') as f:
             #     code_data = json.load(f)
 
             result = compiled_workflow.invoke(
-                input={
+                input={                 #! The model must be also manually initialized in the 'nodes.py' file !#
+                    "model": "gpt-4o",  #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
                     "cve_id": cve,
                     "web_search_tool": web_search_mode,
-                    # "web_search_result": web_search_data,
+                    "verbose_web_search": False,
+                    "web_search_result": web_search_data,
                     # "code": code_data,
                     "messages": [SystemMessage(content=SYSTEM_PROMPT)]
                 },
                 config={"callbacks": [langfuse_handler], "recursion_limit": 100},
             )  
-            return result
+            # return result
     
     except Exception as e:
         print(f"Workflow invocation failed: {e}.")
@@ -221,16 +228,26 @@ def generate_excel_csv_mono_mode(model, logs_set, mode):
                 code_stats = json.load(f) 
             cve_data["Test Iterations"] = code_stats['test_iterations']
             cve_data["Number of Containers"] = code_stats['num_containers']
+            cve_data["Starting Image Builds"] = code_stats['starting_image_builds']
+            cve_data["Image Build Failures"] = code_stats['image_build_failures']
+            cve_data["Starting Container Runs"] = code_stats['starting_container_runs']
+            cve_data["Container Run Failures"] = code_stats['container_run_failures']
+            cve_data["Not Vulnerable Version Failures"] = code_stats['not_vuln_version_fail']
             
         except FileNotFoundError as e:
             cve_data["Test Iterations"] = None
             cve_data["Number of Containers"] = None
+            cve_data["Starting Image Builds"] = None
+            cve_data["Image Build Failures"] = None
+            cve_data["Starting Container Runs"] = None
+            cve_data["Container Run Failures"] = None
+            cve_data["Not Vulnerable Version Failures"] = None
             
         data.append(cve_data)
 
     # Create DataFrame
     milestones = ['cve_id_ok', 'hard_service', 'hard_version', 'soft_services', 'docker_runs', 'code_hard_version', 'services_ok', 'docker_vulnerable', 'exploitable']
-    stats = ['Web Search Mode', 'Web Query', 'Attack Type', 'Number of Proposed Services', 'Input Tokens', 'Output Tokens', 'Web Search Costs', 'Test Iterations', 'Number of Containers']
+    stats = ['Web Search Mode', 'Web Query', 'Attack Type', 'Number of Proposed Services', 'Input Tokens', 'Output Tokens', 'Web Search Costs', 'Test Iterations', 'Number of Containers', 'Starting Image Builds', 'Image Build Failures', 'Starting Container Runs', 'Container Run Failures', 'Not Vulnerable Version Failures']
     df = pd.DataFrame(data=data, index=cve_list)
     df.to_excel(main_path / f'{mode}-benchmark.xlsx')
     df.to_csv(main_path / f'{mode}-benchmark.csv')
@@ -402,8 +419,13 @@ def extract_milestones_stats(model: str, logs_set: str, mode: str):
 
 
 def best_cve_runs(model: str, logs_set: str, mode: str):
-    # df = pd.concat([get_cve_df(logs_set="1st"), get_cve_df(logs_set="2nd")])
-    df = get_cve_df(model=model, logs_set=logs_set, mode=mode)
+    if mode == "":
+        df = pd.concat([
+            get_cve_df(model=model, logs_set=logs_set, mode='custom_no_tool'), 
+            get_cve_df(model=model, logs_set=logs_set, mode='openai'),
+        ])
+    else:
+        df = get_cve_df(model=model, logs_set=logs_set, mode=mode)
     grouped_df = df.drop(columns='web_search_mode', axis=1).groupby('cve_id')
 
 
@@ -465,10 +487,10 @@ def best_cve_runs(model: str, logs_set: str, mode: str):
         
 
 # draw_graph()
-# result = test_workflow()
+result = test_workflow()
 # milestones = benchmark("openai")
 # df = generate_excel_csv()
 # df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
 # data = extract_milestones_stats(model="GPT-5", logs_set="1st", mode='custom_no_tool')
 # web_search_mode_stats(model="GPT-5", logs_set="1st")
-# best_cve_runs(model="GPT-5", logs_set="1st", mode="openai")   
+# best_cve_runs(model="GPT-4o", logs_set="3rd", mode="")      # Leave mode="" to consider all web search modes

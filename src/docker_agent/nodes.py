@@ -22,11 +22,10 @@ from prompts import (
     OPENAI_WEB_SEARCH_PROMPT,
     HARD_SERV_VERS_ASSESSMENT_PROMPT, 
     CODING_PROMPT,
-    NOT_SUCCESS_PROMPT,
-    ASSERT_DOCKER_STATE_PROMPT,
+    IMAGE_NOT_BUILT_PROMPT,
+    ASSERT_CONTAINER_STATE_PROMPT,
     CONTAINER_NOT_RUN_PROMPT,
     CHECK_SERVICES_PROMPT,
-    NOT_DOCKER_RUNS,
     NOT_VULNERABLE_VERSION_PROMPT,
 )
 from configuration import (
@@ -40,15 +39,15 @@ from configuration import (
 )
 
 # Initialize the LLM with OpenAI's GPT-4o model
-# llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
 # Initialize the LLM with OpenAI's GPT-5 model
 # llm = ChatOpenAI(model="gpt-5", max_retries=2)
 # Initialize the LLM with SmartData cluster's local model
-llm = ChatOpenAI(
-    model="mistralai/Mistral-7B-Instruct-v0.1",
-    base_url="https://kubernetes.polito.it/vllm/v1",
-    api_key=os.getenv("SDC_API_KEY"),
-)
+# llm = ChatOpenAI(
+#     model="mistralai/Mistral-7B-Instruct-v0.1",
+#     base_url="https://kubernetes.polito.it/vllm/v1",
+#     api_key=os.getenv("SDC_API_KEY"),
+# )
 llm_openai_web_search_tool = llm.bind_tools([openai_web_search])
 llm_custom_web_search_tool = llm.bind_tools([web_search])
 web_search_llm = llm.with_structured_output(WebSearchResult)
@@ -181,11 +180,11 @@ def get_services(state: OverallState):
         query, cve_id = tool_call_args['query'], tool_call_args['cve_id']
         print(f"\tThe LLM invoked the 'web search' tool with parameters: query={query}, cve_id={cve_id}")
         #NOTE: 'web_search_tool_func' internally formats the response into a WebSearchResult Pydantic class
-        formatted_response, in_token, out_token = web_search_tool_func(query=query, cve_id=cve_id, n_documents=5, verbose=False)
+        formatted_response, in_token, out_token = web_search_tool_func(query=query, cve_id=cve_id, n_documents=5, verbose=state.verbose_web_search, model=state.model)
     
     elif state.web_search_tool == "custom_no_tool":
         #NOTE: 'web_search_func' internally formats the response into a WebSearchResult Pydantic class
-        formatted_response, in_token, out_token = web_search_func(cve_id=state.cve_id, n_documents=5, verbose=True)
+        formatted_response, in_token, out_token = web_search_func(cve_id=state.cve_id, n_documents=5, verbose=state.verbose_web_search, model=state.model)
     
     elif state.web_search_tool == "openai":
         web_query = OPENAI_WEB_SEARCH_PROMPT.format(cve_id=state.cve_id)
@@ -443,7 +442,7 @@ def get_container_ids(code_dir_path):
     return result.stdout.strip().splitlines()
 
 
-def assert_docker_state(code_dir_path, log_file):
+def assert_container_state(code_dir_path, log_file):
     container_ids = get_container_ids(code_dir_path=code_dir_path)
     time.sleep(10)
     for cid in container_ids:
@@ -457,7 +456,7 @@ def assert_docker_state(code_dir_path, log_file):
         with builtins.open(log_file, "a") as f:
             f.write(logs)
         
-        query = ASSERT_DOCKER_STATE_PROMPT.format(logs=logs)
+        query = ASSERT_CONTAINER_STATE_PROMPT.format(logs=logs)
         result = container_ass_llm.invoke(
             [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=query)], 
             config={"callbacks": [langfuse_handler]}
@@ -494,7 +493,7 @@ def check_services(code, services, hard_service_versions, code_dir_path, log_fil
         hard_service_versions=hard_service_versions,
     )
     
-    return len(container_ids), code_ass_llm.invoke(
+    return inspect_logs, len(container_ids), code_ass_llm.invoke(
         [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=code), HumanMessage(content=query)], 
         config={"callbacks": [langfuse_handler]}
     )
@@ -551,33 +550,37 @@ def test_code(state: OverallState):
     print("\nTesting code...")
     code_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/")
     logs_dir_path = code_dir_path / "logs"
-    log_file = logs_dir_path / f"log{state.test_iteration}.txt"
+    log_file = logs_dir_path / f"log{state.stats.test_iteration}.txt"
     final_report_file = logs_dir_path / "final_report.txt"
     if not logs_dir_path.exists():
         create_dir(dir_path=logs_dir_path)
+    
+    test_fail_output_string = f"\n\nTest iteration #{state.stats.test_iteration} failed! See 'log{state.stats.test_iteration}.txt' for details."
     
     success, logs = launch_docker(
         code_dir_path=code_dir_path, 
         log_file=log_file
     )  
     if not success:
-        print("\t[DEBUG] Not Success")
+        test_fail_output_string += f"\n\t- IMAGE BUILDING FAILURE"
+        print(f"{test_fail_output_string}")
+        with builtins.open(final_report_file, "a") as f:
+            f.write(test_fail_output_string)
         return {
             "logs": logs,
-            "revision_type": "Not Success",
+            "fail_explanation": "",
+            "revision_type": "Image Not Built",
         }
         
-    logs, fail_explanation, assessment = assert_docker_state(
+    logs, fail_explanation, assessment = assert_container_state(
         code_dir_path=code_dir_path, 
         log_file=log_file
     )
-    
     if not assessment:
-        print("\t[DEBUG] Container Not Running")
-        output_string = f"\tContainer failure explanation: {fail_explanation}"
-        print(f"{output_string}")
+        test_fail_output_string += f"\n\t- CONTAINER FAILURE: {fail_explanation}"
+        print(f"{test_fail_output_string}")
         with builtins.open(final_report_file, "a") as f:
-            f.write(output_string)
+            f.write(test_fail_output_string)
         return {
             "logs": logs,
             "fail_explanation": fail_explanation,
@@ -595,40 +598,55 @@ def test_code(state: OverallState):
     for name, content in zip(state.code.file_name, state.code.file_code):
         code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{content}\n\n"
     
-    num_containers, result = check_services(
+    inspect_logs, num_containers, result = check_services(
         code=code,
         services=service_list, 
         hard_service_versions=hard_service_versions,
         code_dir_path=code_dir_path,
         log_file=log_file,
     )
-    
-    if result.fail_explanation:
-        output_string = f"\tMilestone(s) failure explanation: {result.fail_explanation}"
-        print(f"{output_string}")
+    llm_aaj = f"\tLLM-as-a-Judge Milestone Check Values:"
+    llm_aaj += f"\n\t- docker_builds={result.docker_builds}"
+    llm_aaj += f"\n\t- docker_runs={result.docker_runs}"
+    llm_aaj += f"\n\t- code_hard_version={result.code_hard_version}"
+    llm_aaj += f"\n\t- services_ok={result.services_ok}"
+    print(llm_aaj)
+            
+    if not result.docker_builds:
+        test_fail_output_string += f"\n\t- MILESTONE CHECK FAILURE (IMAGE BUILDING FAILURE): {result.fail_explanation}"
+        print(f"{test_fail_output_string}")
         with builtins.open(final_report_file, "a") as f:
-            f.write(output_string)
-    else:
-        print(f"\tResult:")
-    print(f"\t- docker_runs={result.docker_runs}")
-    print(f"\t- code_hard_version={result.code_hard_version}")
-    print(f"\t- services_ok={result.services_ok}")
-    
-    if not result.docker_runs:
-        print("\t[DEBUG] Docker Not Running")
+            f.write(test_fail_output_string)
         return {
+            "logs": '\n'.join(inspect_logs),
             "fail_explanation": result.fail_explanation,
-            "revision_type": "Docker Not Running",
+            "revision_type": "Image Not Built",
         }
     
-    if not result.code_hard_version:
-        print("\t[DEBUG] Not Vulnerable Version")
+    if not result.docker_runs:
+        test_fail_output_string += f"\n\t- MILESTONE CHECK FAILURE (CONTAINER FAILURE): {result.fail_explanation}"
+        print(f"{test_fail_output_string}")
+        with builtins.open(final_report_file, "a") as f:
+            f.write(test_fail_output_string)
         return {
+            "logs": '\n'.join(inspect_logs),
+            "fail_explanation": result.fail_explanation,
+            "revision_type": "Container Not Running",
+        }
+        
+    if not result.code_hard_version:
+        test_fail_output_string += f"\n\t- MILESTONE CHECK FAILURE (NOT VULNERABLE VERSION): {result.fail_explanation}"
+        print(f"{test_fail_output_string}")
+        with builtins.open(final_report_file, "a") as f:
+            f.write(test_fail_output_string)
+        return {
+            "logs": "",
             "fail_explanation": result.fail_explanation,
             "revision_type": "Not Vulnerable Version",
         }
 
     print(f"\tDocker is running correctly with {num_containers} containers!")
+    state.milestones.docker_builds = result.docker_builds
     state.milestones.docker_runs = result.docker_runs
     state.milestones.code_hard_version = result.code_hard_version
     state.milestones.services_ok = result.services_ok
@@ -637,48 +655,40 @@ def test_code(state: OverallState):
     for name, code in zip(state.code.file_name, state.code.file_code):
         formatted_code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{code}\n\n"
         
-    output_string = f"\nDocker is running correctly with {num_containers} containers!\nThis is the final version of the generated code:\n\n{formatted_code}\n\n"
+    output_string = f"\nDocker is running correctly with {num_containers} containers!\n\n\n\nThis is the final version of the generated code:\n\n{formatted_code}\n\n"
     with builtins.open(final_report_file, "a") as f:
         f.write(output_string)
 
+    state.stats.num_containers = num_containers
     return {
+        "stats": state.stats,
         "milestones": state.milestones,
-        "num_containers": num_containers,
     }
 
 
 def route_code(state: OverallState) -> Literal["Stop Testing", "Revise Code"]:
     """Route back to fix the code or terminate the graph"""
-    print(f"\nRouting test (docker_runs = {state.milestones.docker_runs}, code_hard_version = {state.milestones.code_hard_version}, test_iteration = {state.test_iteration})")
-    if state.milestones.docker_runs or state.milestones.code_hard_version or state.test_iteration >= 10:
-        if state.test_iteration >= 10:
+    print(f"\nRouting test (docker_builds={state.milestones.docker_builds}, docker_runs = {state.milestones.docker_runs}, code_hard_version = {state.milestones.code_hard_version}, test_iteration = {state.stats.test_iteration})")
+    if (state.milestones.docker_builds and state.milestones.docker_runs and state.milestones.code_hard_version) or (state.stats.test_iteration + 1) >= 10:
+        if (state.stats.test_iteration + 1) >= 10:
             print("\tMax Iterations Reached!")
         if state.debug == "benchmark_code":
             print("\t[BENCHMARK] Code benchmark terminated!")
             
-        stats = {
-            "test_iterations": state.test_iteration + 1,
-            "num_containers": state.num_containers,
-        } 
+        state.stats.test_iteration += 1        
         stats_file = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/logs/stats.json")
         with builtins.open(stats_file, "w") as f:
-            json.dump(stats, f, indent=4)
+            json.dump(state.stats.model_dump(), f, indent=4)
         
         return "Stop Testing"
-    else:
-        final_report_file = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/logs/final_report.txt")
-        output_string = f"\nTest iteration #{state.test_iteration} failed!"
-        print(f"\t{output_string}")
-        output_string += f" See 'log{state.test_iteration}.txt' for details."
-        with builtins.open(final_report_file, "a") as f:
-            f.write(f"{output_string}\n")
-            
+    else:            
         return "Revise Code"
     
     
 def revise_code(state: OverallState):
     """The agent is tasked with revising the Docker's code to fix the errors"""
     print("\nRevising code...")
+    state.milestones.docker_builds = False
     state.milestones.docker_runs = False
     state.milestones.code_hard_version = False
     state.milestones.services_ok = False
@@ -687,8 +697,13 @@ def revise_code(state: OverallState):
     final_report_file = code_dir_path / "logs/final_report.txt"        
     down_docker(code_dir_path=code_dir_path)
     
-    if state.revision_type == "Not Success":
-        query = NOT_SUCCESS_PROMPT.format(
+    if state.revision_type == "Image Not Built":
+        state.stats.image_build_failures += 1
+        if state.stats.test_iteration == 0:
+            state.stats.starting_image_builds = False
+            
+        query = IMAGE_NOT_BUILT_PROMPT.format(
+            fail_explanation=state.fail_explanation,
             # Passing just the last 100 lines of logs to mitigate ContextWindow saturation
             logs="\n".join(state.logs.splitlines()[-100:]),
             fixes=state.fixes,
@@ -697,15 +712,11 @@ def revise_code(state: OverallState):
         )
         
     elif state.revision_type == "Container Not Running":
+        state.stats.container_run_failures += 1
+        if state.stats.test_iteration == 0:
+            state.stats.starting_container_runs = False
+            
         query = CONTAINER_NOT_RUN_PROMPT.format(
-            fail_explanation=state.fail_explanation,
-            fixes=state.fixes,
-            cve_id=state.cve_id,
-            mode=state.web_search_tool,
-        )
-        
-    elif state.revision_type == "Docker Not Running":
-        query = NOT_DOCKER_RUNS.format(
             fail_explanation=state.fail_explanation,
             fixes=state.fixes,
             cve_id=state.cve_id,
@@ -713,6 +724,7 @@ def revise_code(state: OverallState):
         )
     
     elif state.revision_type == "Not Vulnerable Version":
+        state.stats.not_vuln_version_fail += 1
         query = NOT_VULNERABLE_VERSION_PROMPT.format(
             fail_explanation=state.fail_explanation,
             cve_id=state.cve_id,
@@ -728,14 +740,15 @@ def revise_code(state: OverallState):
         config={"callbacks": [langfuse_handler]}
     )
 
-    output_string = f"\t- ERROR: {revise_code_results.error}\n"
-    output_string += f"\t- FIX: {revise_code_results.fix}"
+    output_string = f"\t- ERROR: {revise_code_results.error}"
+    output_string += f"\n\t- FIX: {revise_code_results.fix}"
     print(output_string)
     with builtins.open(final_report_file, "a") as f:
-        f.write(f"{output_string}\n")
+        f.write(f"\n{output_string}\n")
 
+    state.stats.test_iteration += 1
     return {
-        "test_iteration": state.test_iteration + 1,
+        "stats": state.stats,
         "milestones": state.milestones,
         "code": revise_code_results.fixed_code,
         "fixes": state.fixes + [revise_code_results.fix],
