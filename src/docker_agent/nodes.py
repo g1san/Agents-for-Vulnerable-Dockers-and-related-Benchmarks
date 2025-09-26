@@ -39,15 +39,16 @@ from configuration import (
 )
 
 # Initialize the LLM with OpenAI's GPT-4o model
-llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+# llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
 # Initialize the LLM with OpenAI's GPT-5 model
 # llm = ChatOpenAI(model="gpt-5", max_retries=2)
 # Initialize the LLM with SmartData cluster's local model
-# llm = ChatOpenAI(
-#     model="mistralai/Mistral-7B-Instruct-v0.1",
-#     base_url="https://kubernetes.polito.it/vllm/v1",
-#     api_key=os.getenv("SDC_API_KEY"),
-# )
+llm = ChatOpenAI(
+    model="mistralai/Mistral-7B-Instruct-v0.1",
+    base_url="https://kubernetes.polito.it/vllm/v1",
+    api_key=os.getenv("SDC_API_KEY"),
+    max_tokens=2048,
+)
 llm_openai_web_search_tool = llm.bind_tools([openai_web_search])
 llm_custom_web_search_tool = llm.bind_tools([web_search])
 web_search_llm = llm.with_structured_output(WebSearchResult)
@@ -76,6 +77,19 @@ def get_cve_id(state: OverallState):
     
     """Checks if the CVE ID is correctly retrieved from the initialized state"""
     print(f"The provided CVE ID is {state.cve_id.upper()}!")
+    
+    updated_final_report = "="*10 + f" {state.cve_id} Final Report "  + "="*10
+    updated_final_report += "\n\n" + "-"*10 + f" Initial Parameters " + "-"*10 
+    updated_final_report += f"\n'cve_id': {state.cve_id}\n'web_search_tool': {state.web_search_tool}\n'web_search_result': {state.web_search_result}"
+    updated_final_report += f"\n'code': {state.code}\n'messages': {state.messages}\n'milestones': {state.milestones}\n'debug': {state.debug}\n"
+    updated_final_report += "-"*40 + "\n\n"
+    
+    logs_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/logs")
+    final_report_file = logs_dir_path / "final_report.txt"
+    with builtins.open(final_report_file, "w") as f:
+        f.write(updated_final_report)
+    
+    
     return {"cve_id": state.cve_id.upper()}
 
 
@@ -86,26 +100,17 @@ def assess_cve_id(state: OverallState):
     """The agent checks if the CVE ID exists in the MITRE CVE database"""
     print("\nChecking if the CVE ID exists...")
     response = requests.get(f"https://cveawg.mitre.org/api/cve/{state.cve_id}")
+    
+    logs_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/logs")
+    final_report_file = logs_dir_path / "final_report.txt"
 
     if response.status_code == 200:
         print(f"\t{state.cve_id} exists!")
         
-        logs_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/logs")
         if not logs_dir_path.exists():
             create_dir(dir_path=logs_dir_path)
         
-        state.milestones.cve_id_ok = True
-        
-        updated_final_report = "="*10 + f" {state.cve_id} Final Report "  + "="*10
-        updated_final_report += "\n\n" + "-"*10 + f" Initial Parameters " + "-"*10 
-        updated_final_report += f"\n'cve_id': {state.cve_id}\n'web_search_tool': {state.web_search_tool}\n'web_search_result': {state.web_search_result}"
-        updated_final_report += f"\n'code': {state.code}\n'messages': {state.messages}\n'milestones': {state.milestones}\n'debug': {state.debug}\n"
-        updated_final_report += "-"*40 + "\n\n"
-        
-        final_report_file = logs_dir_path / "final_report.txt"
-        with builtins.open(final_report_file, "w") as f:
-            f.write(updated_final_report)
-        
+        state.milestones.cve_id_ok = True        
         return {"milestones": state.milestones}
 
     elif response.status_code == 404:
@@ -155,7 +160,7 @@ def get_services(state: OverallState):
         response = f"CVE description: {state.web_search_result.desc}\nAttack Type: {state.web_search_result.attack_type}\nServices (format: [SERVICE-DEPENDENCY-TYPE][SERVICE-NAME][SERVICE-VERSIONS] SERVICE-DESCRIPTION):"
         for service in state.web_search_result.services:
             response += f"\n- [{service.dependency_type}][{service.name}][{service.version}] {service.description}"
-            
+        
         final_report_file = logs_dir_path / "final_report.txt"
         with builtins.open(final_report_file, "a") as f:
             f.write(response)
@@ -562,11 +567,17 @@ def test_code(state: OverallState):
         log_file=log_file
     )  
     if not success:
+        state.stats.image_build_failures += 1
+        if state.stats.test_iteration == 0:
+            state.stats.starting_image_builds = False
+        
         test_fail_output_string += f"\n\t- IMAGE BUILDING FAILURE"
         print(f"{test_fail_output_string}")
         with builtins.open(final_report_file, "a") as f:
             f.write(test_fail_output_string)
+            
         return {
+            "stats": state.stats,
             "logs": logs,
             "fail_explanation": "",
             "revision_type": "Image Not Built",
@@ -577,11 +588,17 @@ def test_code(state: OverallState):
         log_file=log_file
     )
     if not assessment:
+        state.stats.container_run_failures += 1
+        if state.stats.test_iteration == 0:
+            state.stats.starting_container_runs = False
+        
         test_fail_output_string += f"\n\t- CONTAINER FAILURE: {fail_explanation}"
         print(f"{test_fail_output_string}")
         with builtins.open(final_report_file, "a") as f:
             f.write(test_fail_output_string)
+            
         return {
+            "stats": state.stats,
             "logs": logs,
             "fail_explanation": fail_explanation,
             "revision_type": "Container Not Running",
@@ -613,33 +630,49 @@ def test_code(state: OverallState):
     print(llm_aaj)
             
     if not result.docker_builds:
+        state.stats.image_build_failures += 1
+        if state.stats.test_iteration == 0:
+            state.stats.starting_image_builds = False
+        
         test_fail_output_string += f"\n\t- MILESTONE CHECK FAILURE (IMAGE BUILDING FAILURE): {result.fail_explanation}"
         print(f"{test_fail_output_string}")
         with builtins.open(final_report_file, "a") as f:
             f.write(test_fail_output_string)
+            
         return {
-            "logs": '\n'.join(inspect_logs),
+            "stats": state.stats,
+            "logs": '\n'.join(str(log) for log in inspect_logs),
             "fail_explanation": result.fail_explanation,
             "revision_type": "Image Not Built",
         }
     
     if not result.docker_runs:
+        state.stats.container_run_failures += 1
+        if state.stats.test_iteration == 0:
+            state.stats.starting_container_runs = False
+        
         test_fail_output_string += f"\n\t- MILESTONE CHECK FAILURE (CONTAINER FAILURE): {result.fail_explanation}"
         print(f"{test_fail_output_string}")
         with builtins.open(final_report_file, "a") as f:
             f.write(test_fail_output_string)
+            
         return {
-            "logs": '\n'.join(inspect_logs),
+            "stats": state.stats,
+            "logs": '\n'.join(str(log) for log in inspect_logs),
             "fail_explanation": result.fail_explanation,
             "revision_type": "Container Not Running",
         }
         
     if not result.code_hard_version:
+        state.stats.not_vuln_version_fail += 1
+        
         test_fail_output_string += f"\n\t- MILESTONE CHECK FAILURE (NOT VULNERABLE VERSION): {result.fail_explanation}"
         print(f"{test_fail_output_string}")
         with builtins.open(final_report_file, "a") as f:
             f.write(test_fail_output_string)
+            
         return {
+            "stats": state.stats,
             "logs": "",
             "fail_explanation": result.fail_explanation,
             "revision_type": "Not Vulnerable Version",
@@ -697,11 +730,7 @@ def revise_code(state: OverallState):
     final_report_file = code_dir_path / "logs/final_report.txt"        
     down_docker(code_dir_path=code_dir_path)
     
-    if state.revision_type == "Image Not Built":
-        state.stats.image_build_failures += 1
-        if state.stats.test_iteration == 0:
-            state.stats.starting_image_builds = False
-            
+    if state.revision_type == "Image Not Built":            
         query = IMAGE_NOT_BUILT_PROMPT.format(
             fail_explanation=state.fail_explanation,
             # Passing just the last 100 lines of logs to mitigate ContextWindow saturation
@@ -711,11 +740,7 @@ def revise_code(state: OverallState):
             mode=state.web_search_tool,
         )
         
-    elif state.revision_type == "Container Not Running":
-        state.stats.container_run_failures += 1
-        if state.stats.test_iteration == 0:
-            state.stats.starting_container_runs = False
-            
+    elif state.revision_type == "Container Not Running":            
         query = CONTAINER_NOT_RUN_PROMPT.format(
             fail_explanation=state.fail_explanation,
             fixes=state.fixes,
@@ -724,7 +749,6 @@ def revise_code(state: OverallState):
         )
     
     elif state.revision_type == "Not Vulnerable Version":
-        state.stats.not_vuln_version_fail += 1
         query = NOT_VULNERABLE_VERSION_PROMPT.format(
             fail_explanation=state.fail_explanation,
             cve_id=state.cve_id,

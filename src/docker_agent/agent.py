@@ -50,8 +50,7 @@ def test_workflow():
         with builtins.open('services.json', "r") as f:
             jsonServices = json.load(f)
         
-        cve_list = list(jsonServices.keys())[2:20]   # Limit to first 20 CVEs for benchmarking
-        # cve_list = ["CVE-2021-42013"]
+        cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
 
         web_search_mode = "custom_no_tool"
         
@@ -61,13 +60,19 @@ def test_workflow():
             # with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:
             with builtins.open(f'./../../benchmark_logs/GPT-4o/3rd-benchmark-session/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:   
                 web_search_data = json.load(f)
+            
+            Path(f'./../../dockers/{cve}/{web_search_mode}/logs').mkdir(parents=True, exist_ok=False)
+            web_search_file = Path(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json')
+            with builtins.open(web_search_file, 'w') as fp:
+                json.dump(web_search_data, fp, indent=4)    
+            
 
             # with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/code.json', 'r') as f:
             #     code_data = json.load(f)
 
             result = compiled_workflow.invoke(
                 input={                 #! The model must be also manually initialized in the 'nodes.py' file !#
-                    "model": "gpt-4o",  #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                    "model": "mistralai/Mistral-7B-Instruct-v0.1",  #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
                     "cve_id": cve,
                     "web_search_tool": web_search_mode,
                     "verbose_web_search": False,
@@ -254,7 +259,7 @@ def generate_excel_csv_mono_mode(model, logs_set, mode):
     return df
 
 
-def get_cve_df(model: str, logs_set: str, mode: str):
+def get_cve_df(model: str, logs_set: str, iteration: str, mode: str):
     # CVE identifiers
     with builtins.open('services.json', "r") as f:
         jsonServices = json.load(f)
@@ -266,8 +271,12 @@ def get_cve_df(model: str, logs_set: str, mode: str):
         cve_data['cve_id'] = cve
         cve_data['web_search_mode'] = mode
         
-        with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{mode}-milestones.json', 'r') as f:
-            mode_milestones = json.load(f)
+        if iteration != "":
+            with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{iteration}-iteration/{mode}-milestones.json', 'r') as f:
+                mode_milestones = json.load(f)
+        else:
+            with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{mode}-milestones.json', 'r') as f:
+                mode_milestones = json.load(f)
 
         for milestone, value in mode_milestones[cve].items():
             if milestone != 'exploitable':
@@ -486,11 +495,80 @@ def best_cve_runs(model: str, logs_set: str, mode: str):
     plt.show()
         
 
+def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
+    if mode == "":
+        df = pd.concat([
+            get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode='custom_no_tool'), 
+            get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode='openai'),
+        ])
+    else:
+        df = get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode=mode)
+    grouped_df = df.drop(columns='web_search_mode', axis=1).groupby('cve_id')
+
+
+    best_cve_run = {}
+    for cve, group in grouped_df:
+        best_result = 0
+        for index, row in group.iterrows():
+            result = 0
+            milestones = row.iloc[1:]
+            for m, val in milestones.items():
+                if val:
+                    result += 1
+                else:
+                    break
+
+            if result > best_result:
+                best_result = result
+        best_cve_run[cve] = best_result
+
+    sorted(best_cve_run.items(), key=lambda x:x[1])
+    milestone_list = df.columns[1:].tolist()
+    milestone_list[0] = ""
+
+    cves, values = zip(*sorted(best_cve_run.items(), key=lambda x:x[1]))
+    colors = ['orange', 'purple', 'yellow']
+    # Plot
+    plt.figure(figsize=(8, 10))
+
+    for cve, val in zip(cves, values):
+        start = 0
+
+        # First segment: up to min(val, 4)
+        seg1 = min(val, 4) - start
+        if seg1 > 0:
+            plt.barh(cve, seg1, left=start, color=colors[0])
+            start += seg1
+
+        # Second segment: from 4 to min(val, 7)
+        seg2 = min(val, 8) - start
+        if seg2 > 0:
+            plt.barh(cve, seg2, left=start, color=colors[1])
+            start += seg2
+
+        # Third segment: from 7 to val (max 8)
+        seg3 = val - start
+        if seg3 > 0:
+            plt.barh(cve, seg3, left=start, color=colors[2])
+
+
+
+    plt.yticks(fontsize=10)
+    plt.xticks(range(len(milestone_list)), milestone_list, rotation=30)
+    plt.xlabel("Milestones")
+    plt.ylabel("CVE-ID")
+    plt.title("Best run for each CVE")
+    plt.tight_layout()
+    plt.grid(axis='x')
+    plt.show()
+
+
 # draw_graph()
 result = test_workflow()
-# milestones = benchmark("openai")
+# milestones = benchmark("custom_no_tool")
 # df = generate_excel_csv()
 # df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
 # data = extract_milestones_stats(model="GPT-5", logs_set="1st", mode='custom_no_tool')
 # web_search_mode_stats(model="GPT-5", logs_set="1st")
-# best_cve_runs(model="GPT-4o", logs_set="3rd", mode="")      # Leave mode="" to consider all web search modes
+# best_cve_runs(model="GPT-4o", logs_set="4th", mode="custom_no_tool")      # Leave mode="" to consider all web search modes
+# best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="3rd", mode="custom_no_tool")      # Leave mode="" to consider all web search modes
