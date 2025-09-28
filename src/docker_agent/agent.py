@@ -51,20 +51,21 @@ def test_workflow():
             jsonServices = json.load(f)
         
         cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
-
+        # cve_list = [cve for cve in cve_list if cve not in ["CVE-2018-12613", "CVE-2020-11652", "CVE-2021-3129", "CVE-2021-44228", "CVE-2023-23752", "CVE-2021-28164", "CVE-2021-34429", "CVE-2021-43798", "CVE-2022-22947", "CVE-2022-24706", "CVE-2022-46169", "CVE-2023-42793", "CVE-2024-23897"]]
+        print(len(cve_list), cve_list)
         web_search_mode = "custom_no_tool"
         
         for cve in cve_list:
             # cve = "CVE-2020-11651"
 
             # with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:
-            with builtins.open(f'./../../benchmark_logs/GPT-4o/3rd-benchmark-session/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:   
-                web_search_data = json.load(f)
+            # with builtins.open(f'./../../benchmark_logs/GPT-4o/3rd-benchmark-session/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:   
+            #     web_search_data = json.load(f)
             
-            Path(f'./../../dockers/{cve}/{web_search_mode}/logs').mkdir(parents=True, exist_ok=False)
-            web_search_file = Path(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json')
-            with builtins.open(web_search_file, 'w') as fp:
-                json.dump(web_search_data, fp, indent=4)    
+            # Path(f'./../../dockers/{cve}/{web_search_mode}/logs').mkdir(parents=True, exist_ok=False)
+            # web_search_file = Path(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json')
+            # with builtins.open(web_search_file, 'w') as fp:
+            #     json.dump(web_search_data, fp, indent=4)    
             
 
             # with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/code.json', 'r') as f:
@@ -72,11 +73,11 @@ def test_workflow():
 
             result = compiled_workflow.invoke(
                 input={                 #! The model must be also manually initialized in the 'nodes.py' file !#
-                    "model": "mistralai/Mistral-7B-Instruct-v0.1",  #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                    "model": "gpt-5",   #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
                     "cve_id": cve,
                     "web_search_tool": web_search_mode,
-                    "verbose_web_search": False,
-                    "web_search_result": web_search_data,
+                    "verbose_web_search": True,
+                    # "web_search_result": web_search_data,
                     # "code": code_data,
                     "messages": [SystemMessage(content=SYSTEM_PROMPT)]
                 },
@@ -571,4 +572,4 @@ result = test_workflow()
 # data = extract_milestones_stats(model="GPT-5", logs_set="1st", mode='custom_no_tool')
 # web_search_mode_stats(model="GPT-5", logs_set="1st")
 # best_cve_runs(model="GPT-4o", logs_set="4th", mode="custom_no_tool")      # Leave mode="" to consider all web search modes
-# best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="3rd", mode="custom_no_tool")      # Leave mode="" to consider all web search modes
+# best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="3rd", mode="openai")      # Leave mode="" to consider all web search modes

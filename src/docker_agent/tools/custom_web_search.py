@@ -156,7 +156,13 @@ class ContextGenerator:
             if self.model.lower() == "gpt-4o":
                 llm_model = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
             elif self.model.lower() == "gpt-5":
-                llm_model = ChatOpenAI(model="gpt-5", max_retries=2)
+                llm_model = ChatOpenAI(
+                    model="gpt-5", 
+                    max_retries=2, 
+                    reasoning_effort="low", 
+                    # use_responses_api=True, 
+                    # verbosity="low",
+                )
             elif self.model == "mistralai/Mistral-7B-Instruct-v0.1":
                 llm_model = ChatOpenAI(
                     model="mistralai/Mistral-7B-Instruct-v0.1",
@@ -168,6 +174,7 @@ class ContextGenerator:
             
             # Invoke the LLM to summarize the web page content
             response = llm_model.invoke(messages, config={"callbacks": [langfuse_handler]})
+            print(response)
             if self.verbose:
                 print(f"\tSummary: {response.content.strip()}")
                 
@@ -202,7 +209,12 @@ class ContextGenerator:
             if self.model.lower() == "gpt-4o":
                 llm_model = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
             elif self.model.lower() == "gpt-5":
-                llm_model = ChatOpenAI(model="gpt-5", max_retries=2)
+                llm_model = ChatOpenAI(model="gpt-5",
+                    max_retries=2, 
+                    reasoning_effort="low", 
+                    use_responses_api=True,
+                    # verbosity="low",
+                )
             elif self.model == "mistralai/Mistral-7B-Instruct-v0.1":
                 llm_model = ChatOpenAI(
                     model="mistralai/Mistral-7B-Instruct-v0.1",

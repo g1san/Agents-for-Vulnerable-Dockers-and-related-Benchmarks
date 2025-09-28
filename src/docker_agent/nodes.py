@@ -41,14 +41,20 @@ from configuration import (
 # Initialize the LLM with OpenAI's GPT-4o model
 # llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
 # Initialize the LLM with OpenAI's GPT-5 model
-# llm = ChatOpenAI(model="gpt-5", max_retries=2)
-# Initialize the LLM with SmartData cluster's local model
 llm = ChatOpenAI(
-    model="mistralai/Mistral-7B-Instruct-v0.1",
-    base_url="https://kubernetes.polito.it/vllm/v1",
-    api_key=os.getenv("SDC_API_KEY"),
-    max_tokens=2048,
+    model="gpt-5", 
+    max_retries=2, 
+    reasoning_effort="high", 
+    use_responses_api=True, 
+    # verbosity="low",
 )
+# Initialize the LLM with SmartData cluster's local model
+# llm = ChatOpenAI(
+#     model="mistralai/Mistral-7B-Instruct-v0.1",
+#     base_url="https://kubernetes.polito.it/vllm/v1",
+#     api_key=os.getenv("SDC_API_KEY"),
+#     max_tokens=16000,
+# )
 llm_openai_web_search_tool = llm.bind_tools([openai_web_search])
 llm_custom_web_search_tool = llm.bind_tools([web_search])
 web_search_llm = llm.with_structured_output(WebSearchResult)
@@ -78,17 +84,19 @@ def get_cve_id(state: OverallState):
     """Checks if the CVE ID is correctly retrieved from the initialized state"""
     print(f"The provided CVE ID is {state.cve_id.upper()}!")
     
+    logs_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/logs")
+    if not logs_dir_path.exists():
+        create_dir(dir_path=logs_dir_path)
+        
     updated_final_report = "="*10 + f" {state.cve_id} Final Report "  + "="*10
     updated_final_report += "\n\n" + "-"*10 + f" Initial Parameters " + "-"*10 
     updated_final_report += f"\n'cve_id': {state.cve_id}\n'web_search_tool': {state.web_search_tool}\n'web_search_result': {state.web_search_result}"
     updated_final_report += f"\n'code': {state.code}\n'messages': {state.messages}\n'milestones': {state.milestones}\n'debug': {state.debug}\n"
     updated_final_report += "-"*40 + "\n\n"
     
-    logs_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/logs")
     final_report_file = logs_dir_path / "final_report.txt"
     with builtins.open(final_report_file, "w") as f:
         f.write(updated_final_report)
-    
     
     return {"cve_id": state.cve_id.upper()}
 
