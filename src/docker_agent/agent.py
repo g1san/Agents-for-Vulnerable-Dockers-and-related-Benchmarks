@@ -53,21 +53,24 @@ def test_workflow():
         cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
         # cve_list = [cve for cve in cve_list if cve not in ["CVE-2018-12613", "CVE-2020-11652", "CVE-2021-3129", "CVE-2021-44228", "CVE-2023-23752", "CVE-2021-28164", "CVE-2021-34429", "CVE-2021-43798", "CVE-2022-22947", "CVE-2022-24706", "CVE-2022-46169", "CVE-2023-42793", "CVE-2024-23897"]]
         print(len(cve_list), cve_list)
-        web_search_mode = "custom_no_tool"
-        
+        web_search_mode = "openai"
+
         for cve in cve_list:
             # cve = "CVE-2020-11651"
 
+            #! Uncomment this to reuse the web_search_results file from the 'docker' folder !#
             # with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:
-            # with builtins.open(f'./../../benchmark_logs/GPT-4o/3rd-benchmark-session/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:   
             #     web_search_data = json.load(f)
-            
-            # Path(f'./../../dockers/{cve}/{web_search_mode}/logs').mkdir(parents=True, exist_ok=False)
-            # web_search_file = Path(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json')
+            #! Uncomment this to reuse the web_search_results file from the 'benchmark_logs' folder !#
+            # with builtins.open(f'./../../benchmark_logs/GPT-5/1st-benchmark-session/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:   
+            #     web_search_data = json.load(f)
+            # logs_dir_path = Path(f"./../../dockers/{cve}/{web_search_mode}/logs")
+            # logs_dir_path.mkdir(parents=True, exist_ok=True)
+            # web_search_file = logs_dir_path / 'web_search_results.json'
             # with builtins.open(web_search_file, 'w') as fp:
             #     json.dump(web_search_data, fp, indent=4)    
             
-
+            #! Uncomment this to reuse the code files from the 'docker' folder !#
             # with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/code.json', 'r') as f:
             #     code_data = json.load(f)
 
@@ -76,7 +79,7 @@ def test_workflow():
                     "model": "gpt-5",   #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
                     "cve_id": cve,
                     "web_search_tool": web_search_mode,
-                    "verbose_web_search": True,
+                    "verbose_web_search": False,
                     # "web_search_result": web_search_data,
                     # "code": code_data,
                     "messages": [SystemMessage(content=SYSTEM_PROMPT)]
@@ -565,8 +568,8 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 
 
 # draw_graph()
-result = test_workflow()
-# milestones = benchmark("custom_no_tool")
+# result = test_workflow()
+# milestones = benchmark("openai")
 # df = generate_excel_csv()
 # df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
 # data = extract_milestones_stats(model="GPT-5", logs_set="1st", mode='custom_no_tool')

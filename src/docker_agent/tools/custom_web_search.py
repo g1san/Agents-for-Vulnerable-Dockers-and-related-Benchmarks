@@ -174,7 +174,6 @@ class ContextGenerator:
             
             # Invoke the LLM to summarize the web page content
             response = llm_model.invoke(messages, config={"callbacks": [langfuse_handler]})
-            print(response)
             if self.verbose:
                 print(f"\tSummary: {response.content.strip()}")
                 
@@ -212,7 +211,7 @@ class ContextGenerator:
                 llm_model = ChatOpenAI(model="gpt-5",
                     max_retries=2, 
                     reasoning_effort="low", 
-                    use_responses_api=True,
+                    # use_responses_api=True,
                     # verbosity="low",
                 )
             elif self.model == "mistralai/Mistral-7B-Instruct-v0.1":

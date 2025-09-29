@@ -43,9 +43,9 @@ from configuration import (
 # Initialize the LLM with OpenAI's GPT-5 model
 llm = ChatOpenAI(
     model="gpt-5", 
-    max_retries=2, 
-    reasoning_effort="high", 
-    use_responses_api=True, 
+    max_retries=2,
+    reasoning_effort="low", 
+    # use_responses_api=True, 
     # verbosity="low",
 )
 # Initialize the LLM with SmartData cluster's local model
@@ -404,25 +404,25 @@ def save_code(state: OverallState):
     code_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/")
     if not code_dir_path.exists():
         create_dir(dir_path=code_dir_path)
-
-    for file_rel_path, file_content in zip(state.code.file_name, state.code.file_code):
-        full_path = code_dir_path / file_rel_path
-        if not full_path.exists():
-            # Different from create_dir()
-            try:
-                full_path.parent.mkdir(parents=True, exist_ok=True)
-            except PermissionError:
-                raise ValueError(f"Permission denied: Unable to create '{full_path}'.")
-            except Exception as e:
-                raise ValueError(f"An error occurred: {e}")
         
-        with builtins.open(full_path, "w", encoding="utf-8") as f:
-            f.write(file_content)
-        print(f"\tSaved file: {full_path}")
-
     code_file = code_dir_path / "logs/code.json"
     with builtins.open(code_file, "w") as f:
         json.dump(state.code.model_dump(), f, indent=4)
+    
+    for file_path, file_content in zip(state.code.file_name, state.code.file_code):
+        file_path = Path(file_path)
+        if not file_path.exists():
+            # Different from create_dir()
+            try:
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+            except PermissionError:
+                raise ValueError(f"Permission denied: Unable to create '{file_path}'.")
+            except Exception as e:
+                raise ValueError(f"An error occurred: {e}")
+
+        with builtins.open(file_path, "w", encoding="utf-8") as f:
+            f.write(file_content)
+        print(f"\tSaved file: {file_path}")
 
     print("\tCode saved!")
     return {}
@@ -751,6 +751,8 @@ def revise_code(state: OverallState):
     elif state.revision_type == "Container Not Running":            
         query = CONTAINER_NOT_RUN_PROMPT.format(
             fail_explanation=state.fail_explanation,
+            # Passing just the last 100 lines of logs to mitigate ContextWindow saturation
+            logs="\n".join(state.logs.splitlines()[-100:]),
             fixes=state.fixes,
             cve_id=state.cve_id,
             mode=state.web_search_tool,
@@ -797,7 +799,6 @@ def assess_vuln(state: OverallState):
         if check_docker_vulnerability(cve_id=state.cve_id, code_dir_path=code_dir_path):
             output_string = f"The Docker is vulnerable to {state.cve_id}!"
             print(f"\t{output_string}")
-            state.milestones.code_hard_version = True
             state.milestones.docker_vulnerable = True
             with builtins.open(final_report_file, "a") as f:
                 f.write(output_string)

@@ -102,8 +102,8 @@ GUIDELINES:
     - You must not use versions of 'HARD' services that are not listed in the message about {cve_id} and its services
 - Always write enough files to make the system work and exploitable
 - The system must be immediately deployable using the "docker compose up" command.
-- The directory tree where the files will be stored must be rooted it in the "./../../dockers/{cve_id}/{mode}" folder.
-- The file names must indicate the relative path from the "./../../dockers/{cve_id}/{mode}" folder.
+- All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
+- There is no need to specify the file name in the file content
 """
 
 
@@ -120,8 +120,8 @@ GOALS:
 GUIDELINES:
 - The system must be immediately deployable using the "docker compose up" command
 - Your answer must include all files, both the updated ones and the unchanged ones
-- The directory tree where the files will be stored must be rooted it in the "./../../dockers/{cve_id}/{mode}" folder
-- The file names must indicate the relative path from the "./../../dockers/{cve_id}/{mode}" folder
+- All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
+- There is no need to specify the file name in the file content
 - The Docker code was generated using the data in the message about {cve_id} and its services
     - You must use all and only the services that are listed in the message that describes {cve_id}
     - If a service requires a dedicated container write the code for it
@@ -138,6 +138,7 @@ CONTEXT: the logs are obtained with the command 'sudo docker logs [CONTAINER ID]
 
 CONTAINER_NOT_RUN_PROMPT = """CONTEXT: one of the containers of my Docker terminates its execution because of an error.
 {fail_explanation}
+{logs}
 
 GOAL: fix the Docker system problems by modifying its code, which is available in my previous message. Here is the list of previous fixes that you attempted but did not work, my suggestion is to try something different from these:
 {fixes}
@@ -145,8 +146,8 @@ GOAL: fix the Docker system problems by modifying its code, which is available i
 GUIDELINES:
 - The system must be immediately deployable using the "docker compose up" command
 - Your answer must include all files, both the updated ones and the unchanged ones
-- The directory tree where the files will be stored must be rooted it in the "./../../dockers/{cve_id}/{mode}" folder
-- The file names must indicate the relative path from the "./../../dockers/{cve_id}/{mode}" folder
+- All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
+- There is no need to specify the file name in the file content
 - The Docker code was generated using the data in the message about {cve_id} and its services
     - You must use all and only the services that are listed in the message that describes {cve_id}
     - If a service requires a dedicated container write the code for it
@@ -179,8 +180,8 @@ GOAL: fix the Docker system by ensuring a vulnerable version of the 'HARD' servi
 GUIDELINES:
 - The system must be immediately deployable using the "docker compose up" command
 - Your answer must include all files, both the updated ones and the unchanged ones
-- The directory tree where the files will be stored must be rooted it in the "./../../dockers/{cve_id}/{mode}" folder
-- The file names must indicate the relative path from the "./../../dockers/{cve_id}/{mode}" folder
+- All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
+- There is no need to specify the file name in the file content
 - The Docker code was generated using the data in the message about {cve_id} and its services
     - You must use all and only the services that are listed in the message that describes {cve_id}
     - If a service requires a dedicated container write the code for it
