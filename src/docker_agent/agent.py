@@ -507,8 +507,8 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
         ])
     else:
         df = get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode=mode)
+    
     grouped_df = df.drop(columns='web_search_mode', axis=1).groupby('cve_id')
-
 
     best_cve_run = {}
     for cve, group in grouped_df:
@@ -526,14 +526,13 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
                 best_result = result
         best_cve_run[cve] = best_result
 
-    sorted(best_cve_run.items(), key=lambda x:x[1])
     milestone_list = df.columns[1:].tolist()
     milestone_list[0] = ""
 
+    # Prints the graph ordered by best run
     cves, values = zip(*sorted(best_cve_run.items(), key=lambda x:x[1]))
     colors = ['orange', 'purple', 'yellow']
-    # Plot
-    plt.figure(figsize=(8, 10))
+    plt.figure(figsize=(len(milestone_list) - 2, len(best_cve_run)/2))
 
     for cve, val in zip(cves, values):
         start = 0
@@ -555,7 +554,40 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
         if seg3 > 0:
             plt.barh(cve, seg3, left=start, color=colors[2])
 
+    plt.yticks(fontsize=10)
+    plt.xticks(range(len(milestone_list)), milestone_list, rotation=30)
+    plt.xlabel("Milestones")
+    plt.ylabel("CVE-ID")
+    plt.title("Best run for each CVE")
+    plt.tight_layout()
+    plt.grid(axis='x')
+    plt.show()
+    
+    
+    # Prints the graph ordered by CVE-ID
+    cves, values = zip(*sorted(best_cve_run.items(), key=lambda x:x[0]))
+    colors = ['orange', 'purple', 'yellow']
+    plt.figure(figsize=(len(milestone_list) - 2, len(best_cve_run)/2))
 
+    for cve, val in zip(cves, values):
+        start = 0
+
+        # First segment: up to min(val, 4)
+        seg1 = min(val, 4) - start
+        if seg1 > 0:
+            plt.barh(cve, seg1, left=start, color=colors[0])
+            start += seg1
+
+        # Second segment: from 4 to min(val, 7)
+        seg2 = min(val, 8) - start
+        if seg2 > 0:
+            plt.barh(cve, seg2, left=start, color=colors[1])
+            start += seg2
+
+        # Third segment: from 7 to val (max 8)
+        seg3 = val - start
+        if seg3 > 0:
+            plt.barh(cve, seg3, left=start, color=colors[2])
 
     plt.yticks(fontsize=10)
     plt.xticks(range(len(milestone_list)), milestone_list, rotation=30)
@@ -574,5 +606,6 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 # df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
 # data = extract_milestones_stats(model="GPT-5", logs_set="1st", mode='custom_no_tool')
 # web_search_mode_stats(model="GPT-5", logs_set="1st")
-# best_cve_runs(model="GPT-4o", logs_set="4th", mode="custom_no_tool")      # Leave mode="" to consider all web search modes
-# best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="3rd", mode="openai")      # Leave mode="" to consider all web search modes
+# best_cve_runs(model="GPT-4o", logs_set="4th", mode="custom_no_tool")              # Leave mode="" to consider all web search modes
+# best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="1st", mode="")     # Leave mode="" to consider all web search modes
+

@@ -578,6 +578,7 @@ def test_code(state: OverallState):
         state.stats.image_build_failures += 1
         if state.stats.test_iteration == 0:
             state.stats.starting_image_builds = False
+            state.stats.starting_container_runs = False
         
         test_fail_output_string += f"\n\t- IMAGE BUILDING FAILURE"
         print(f"{test_fail_output_string}")
@@ -641,6 +642,7 @@ def test_code(state: OverallState):
         state.stats.image_build_failures += 1
         if state.stats.test_iteration == 0:
             state.stats.starting_image_builds = False
+            state.stats.starting_container_runs = False
         
         test_fail_output_string += f"\n\t- MILESTONE CHECK FAILURE (IMAGE BUILDING FAILURE): {result.fail_explanation}"
         print(f"{test_fail_output_string}")
