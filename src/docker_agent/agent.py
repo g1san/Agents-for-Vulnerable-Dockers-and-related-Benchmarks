@@ -727,14 +727,14 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 
 
 # draw_graph()
-result = test_workflow()
+# result = test_workflow()
 # milestones = benchmark("openai")
 # df = generate_excel_csv()
 # df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
 # data = extract_milestones_stats(model="GPT-5", logs_set="1st", mode='custom_no_tool')
 # web_search_mode_stats(model="GPT-5", logs_set="1st")
 # best_cve_runs(model="GPT-4o", logs_set="4th", mode="custom_no_tool")              # Leave mode="" to consider all web search modes
-# best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="1st", mode="")     # Leave mode="" to consider all web search modes
+best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="", mode="custom")     # Leave mode="" to consider all web search modes
 
 
 
