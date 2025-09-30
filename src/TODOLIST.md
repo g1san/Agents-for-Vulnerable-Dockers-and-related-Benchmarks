@@ -6,7 +6,6 @@
 
 ### Better graphs
 - Add % values to the heatmap graph
-- The milestone graph for each CVE should be ordered by CVE not by milestone (make another version)
 
 ### More stats
 - Most frequently used services both HARD and SOFT dependencies &rarr; _web\_search\_result.json_ can be used to compute these stats

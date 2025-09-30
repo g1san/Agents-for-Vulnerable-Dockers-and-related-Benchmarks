@@ -39,15 +39,15 @@ from configuration import (
 )
 
 # Initialize the LLM with OpenAI's GPT-4o model
-# llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
 # Initialize the LLM with OpenAI's GPT-5 model
-llm = ChatOpenAI(
-    model="gpt-5", 
-    max_retries=2,
-    reasoning_effort="low", 
-    # use_responses_api=True, 
-    # verbosity="low",
-)
+# llm = ChatOpenAI(
+#     model="gpt-5", 
+#     max_retries=2,
+#     reasoning_effort="low", 
+#     # use_responses_api=True, 
+#     # verbosity="low",
+# )
 # Initialize the LLM with SmartData cluster's local model
 # llm = ChatOpenAI(
 #     model="mistralai/Mistral-7B-Instruct-v0.1",
@@ -90,7 +90,7 @@ def get_cve_id(state: OverallState):
         
     updated_final_report = "="*10 + f" {state.cve_id} Final Report "  + "="*10
     updated_final_report += "\n\n" + "-"*10 + f" Initial Parameters " + "-"*10 
-    updated_final_report += f"\n'cve_id': {state.cve_id}\n'web_search_tool': {state.web_search_tool}\n'web_search_result': {state.web_search_result}"
+    updated_final_report += f"\n'model': {state.model}\n'cve_id': {state.cve_id}\n'web_search_tool': {state.web_search_tool}\n'verbose_web_search': {state.verbose_web_search}\n'web_search_result': {state.web_search_result}"
     updated_final_report += f"\n'code': {state.code}\n'messages': {state.messages}\n'milestones': {state.milestones}\n'debug': {state.debug}\n"
     updated_final_report += "-"*40 + "\n\n"
     

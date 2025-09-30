@@ -53,7 +53,7 @@ def test_workflow():
         cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
         # cve_list = [cve for cve in cve_list if cve not in ["CVE-2018-12613", "CVE-2020-11652", "CVE-2021-3129", "CVE-2021-44228", "CVE-2023-23752", "CVE-2021-28164", "CVE-2021-34429", "CVE-2021-43798", "CVE-2022-22947", "CVE-2022-24706", "CVE-2022-46169", "CVE-2023-42793", "CVE-2024-23897"]]
         print(len(cve_list), cve_list)
-        web_search_mode = "openai"
+        web_search_mode = "custom"
 
         for cve in cve_list:
             # cve = "CVE-2020-11651"
@@ -76,7 +76,7 @@ def test_workflow():
 
             result = compiled_workflow.invoke(
                 input={                 #! The model must be also manually initialized in the 'nodes.py' file !#
-                    "model": "gpt-5",   #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                    "model": 'gpt-4o',   #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
                     "cve_id": cve,
                     "web_search_tool": web_search_mode,
                     "verbose_web_search": False,
@@ -235,17 +235,17 @@ def generate_excel_csv_mono_mode(model, logs_set, mode):
         try:
             with builtins.open(cve_logs_path / 'stats.json', 'r') as f:
                 code_stats = json.load(f) 
-            cve_data["Test Iterations"] = code_stats['test_iterations']
             cve_data["Number of Containers"] = code_stats['num_containers']
+            cve_data["Test Iterations"] = code_stats['test_iterations']
             cve_data["Starting Image Builds"] = code_stats['starting_image_builds']
             cve_data["Image Build Failures"] = code_stats['image_build_failures']
             cve_data["Starting Container Runs"] = code_stats['starting_container_runs']
             cve_data["Container Run Failures"] = code_stats['container_run_failures']
             cve_data["Not Vulnerable Version Failures"] = code_stats['not_vuln_version_fail']
             
-        except FileNotFoundError as e:
-            cve_data["Test Iterations"] = None
+        except:
             cve_data["Number of Containers"] = None
+            cve_data["Test Iterations"] = None
             cve_data["Starting Image Builds"] = None
             cve_data["Image Build Failures"] = None
             cve_data["Starting Container Runs"] = None
@@ -256,7 +256,7 @@ def generate_excel_csv_mono_mode(model, logs_set, mode):
 
     # Create DataFrame
     milestones = ['cve_id_ok', 'hard_service', 'hard_version', 'soft_services', 'docker_runs', 'code_hard_version', 'services_ok', 'docker_vulnerable', 'exploitable']
-    stats = ['Web Search Mode', 'Web Query', 'Attack Type', 'Number of Proposed Services', 'Input Tokens', 'Output Tokens', 'Web Search Costs', 'Test Iterations', 'Number of Containers', 'Starting Image Builds', 'Image Build Failures', 'Starting Container Runs', 'Container Run Failures', 'Not Vulnerable Version Failures']
+    stats = ['Web Search Mode', 'Web Query', 'Attack Type', 'Number of Proposed Services', 'Input Tokens', 'Output Tokens', 'Web Search Costs', 'Number of Containers', 'Test Iterations', 'Starting Image Builds', 'Image Build Failures', 'Starting Container Runs', 'Container Run Failures', 'Not Vulnerable Version Failures']
     df = pd.DataFrame(data=data, index=cve_list)
     df.to_excel(main_path / f'{mode}-benchmark.xlsx')
     df.to_csv(main_path / f'{mode}-benchmark.csv')
@@ -413,7 +413,134 @@ def web_search_mode_stats(model: str, logs_set: str):
     plt.tight_layout()
     plt.show()
     
-    # df.groupby(['cve_id'])
+    # df.groupby(['cve_id'])    
+
+
+def barh_mean_std(df, feature: str):
+    df_grouped_mean = df.groupby(feature).mean(numeric_only=True)
+    df_grouped_std = df.groupby(feature).std(numeric_only=True)
+    for col in df_grouped_mean.columns:
+        plt.figure(figsize=(int(max(df_grouped_mean[col].dropna()) + abs(max(df_grouped_std[col].dropna())) + 1), len(df_grouped_mean.index)))
+        plt.grid()
+        
+        plt.barh(
+            df_grouped_mean.index,
+            df_grouped_mean[col],
+            xerr=df_grouped_std[col],
+            capsize=5,
+            height=0.6,
+        )
+        plt.title(f"Mean and Std of '{col}' by '{feature}'")
+        plt.ylabel(feature)
+        plt.yticks(np.arange(len(df_grouped_mean.index)), df_grouped_mean.index)
+        plt.xlabel(col)
+        plt.tight_layout()
+        plt.show()
+        
+        
+def barh_service_wsm(df, unique_services):
+    x = np.arange(len(unique_services))
+    width = 0.3     # Bar tickness
+    plt.figure(figsize=(5, 15))
+    plt.grid()
+    
+    max_frequency = 0
+    grouped_df = df.groupby("web_search_mode")
+    for wsm, group in grouped_df:
+        service_occurrence_distribution = {}
+        for service in unique_services:
+            service_occurrence_distribution[service] = 0
+            
+        for service, occurrences in group['service_name'].value_counts().items():
+            service_occurrence_distribution[service] = occurrences
+            
+        if max_frequency < max(service_occurrence_distribution.values()):
+            max_frequency = max(service_occurrence_distribution.values())
+        
+        if wsm == 'custom_no_tool': 
+            color = 'steelblue'
+            new_x = x + width/2
+        elif wsm == 'openai':
+            color = 'darkorange'
+            new_x = x - width/2
+        plt.barh(y=new_x, width=[service_occurrence_distribution.get(service, 0) for service in unique_services], height=width, label=wsm, color=color)
+    
+    plt.xticks(range(0, max_frequency + 1, 1))
+    plt.xlabel("Frequency")
+    plt.yticks(x, unique_services)
+    plt.ylabel("Service Name")
+    plt.title("Most frequently Used Services by Web Search Mode")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+    
+
+def services_stats(cve_list: list[str], model: str, logs_set: str, iteration: str, web_search_mode: str, filtered_milestones: bool):
+    file_name = f"./../../benchmark_logs/{model}/{logs_set}-benchmark-session/"
+    if iteration != "": file_name += f"{iteration}-iteration/"
+    if web_search_mode != "": modes = [web_search_mode]
+    else: modes = ["custom", "custom_no_tool", "openai"]
+    
+    df, unique_services, unique_dep_types = [], set(), set()
+    print("="*10 + "START ERROR MESSAGES" + "="*10)
+    for cve in cve_list:
+        for wsm in modes: 
+            web_search_results = None
+            try:
+                with builtins.open(file_name + f"{cve}/{wsm}/logs/milestones.json", "r") as f:
+                    milestones = json.load(f)
+                
+                if filtered_milestones and (not milestones["cve_id_ok"] or not milestones["hard_service"] or not milestones["hard_version"] or not milestones["soft_services"]): continue
+
+                with builtins.open(file_name + f"{cve}/{wsm}/logs/web_search_results.json", "r") as f:
+                    web_search_results = json.load(f)
+                    
+                with builtins.open(file_name + f"{cve}/{wsm}/logs/stats.json", "r") as f:
+                    stats = json.load(f)
+
+                for service in web_search_results["services"]:
+                    unique_services.add(service["name"].split("/")[-1].lower())
+                    unique_dep_types.add(service["dependency_type"])
+                    df.append({
+                        "cve": cve,
+                        "web_search_mode": wsm,
+                        "service_name": service["name"].split("/")[-1].lower(),
+                        "service_dependency_type": service["dependency_type"],
+                        "service_name_dependency_type": f"{service["name"].split("/")[-1].lower()}-{service["dependency_type"]}",
+                        "num_containers": stats["num_containers"],
+                        "test_iteration": stats["test_iteration"],
+                        "starting_image_builds": stats["starting_image_builds"],
+                        "image_build_failures": stats["image_build_failures"],
+                        "starting_container_runs": stats["starting_container_runs"],
+                        "container_run_failures": stats["container_run_failures"],
+                        "not_vuln_version_fail": stats["not_vuln_version_fail"],
+                    })
+            except Exception as e: print(cve, wsm, f"does not exist\t({e})")
+    print("="*10 + "END ERROR MESSAGES" + "="*10 + "\n"*3)
+            
+    df = pd.DataFrame(df)
+
+    print("Most Common Services")
+    print(df['service_name'].value_counts())
+
+    print("\n\n\nMost Common Dependency Types")
+    print(df['service_dependency_type'].value_counts())
+        
+    print("\n\n\nMost Common (Service, Dependency Type) Combinations")
+    print(df['service_name_dependency_type'].value_counts())
+        
+    grouped_df = df.groupby("service_dependency_type")
+    for dep_type, group in grouped_df:
+        print(f"\n\n\nMost Common Services for Dependency Type '{dep_type}' (total={len(group)})")
+        print(group['service_name'].value_counts())   
+
+    # Most frequently Used Services by Web Search Mode
+    barh_service_wsm(df, unique_services)
+    
+    # Group by feature and compute mean & std
+    barh_mean_std(df, feature="web_search_mode")    #! Use either 'service_name' or 'web_search_mode'
+    
+    return df
 
 
 def extract_milestones_stats(model: str, logs_set: str, mode: str):    
@@ -600,7 +727,7 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 
 
 # draw_graph()
-# result = test_workflow()
+result = test_workflow()
 # milestones = benchmark("openai")
 # df = generate_excel_csv()
 # df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
@@ -609,3 +736,30 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 # best_cve_runs(model="GPT-4o", logs_set="4th", mode="custom_no_tool")              # Leave mode="" to consider all web search modes
 # best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="1st", mode="")     # Leave mode="" to consider all web search modes
 
+
+
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[:20]
+# df = services_stats(
+#     cve_list=cve_list, 
+#     model="GPT-5", 
+#     logs_set="2nd", 
+#     iteration="", 
+#     web_search_mode="",
+#     filtered_milestones=True,
+# )
+
+
+
+# from langchain_openai import ChatOpenAI
+# llm = ChatOpenAI(
+#     model="o3", 
+#     max_retries=2,
+#     reasoning_effort="low", 
+#     use_responses_api=True, 
+#     # verbosity="low",
+# )
+# 
+# response = llm.invoke("Hello")
+# print(response)
