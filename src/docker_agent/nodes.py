@@ -711,7 +711,7 @@ def test_code(state: OverallState):
 
 def route_code(state: OverallState) -> Literal["Stop Testing", "Revise Code"]:
     """Route back to fix the code or terminate the graph"""
-    print(f"\nRouting test (docker_builds={state.milestones.docker_builds}, docker_runs = {state.milestones.docker_runs}, code_hard_version = {state.milestones.code_hard_version}, test_iteration = {state.stats.test_iteration})")
+    print(f"\nRouting test (docker_builds = {state.milestones.docker_builds}, docker_runs = {state.milestones.docker_runs}, code_hard_version = {state.milestones.code_hard_version}, test_iteration = {state.stats.test_iteration})")
     if (state.milestones.docker_builds and state.milestones.docker_runs and state.milestones.code_hard_version) or (state.stats.test_iteration + 1) >= 10:
         if (state.stats.test_iteration + 1) >= 10:
             print("\tMax Iterations Reached!")
