@@ -50,7 +50,7 @@ def test_workflow():
         with builtins.open('services.json', "r") as f:
             jsonServices = json.load(f)
         
-        cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
+        cve_list = list(jsonServices.keys())[6:20]   # Limit to first 20 CVEs for benchmarking
         # cve_list = [cve for cve in cve_list if cve not in ["CVE-2018-12613", "CVE-2020-11652", "CVE-2021-3129", "CVE-2021-44228", "CVE-2023-23752", "CVE-2021-28164", "CVE-2021-34429", "CVE-2021-43798", "CVE-2022-22947", "CVE-2022-24706", "CVE-2022-46169", "CVE-2023-42793", "CVE-2024-23897"]]
         print(len(cve_list), cve_list)
         web_search_mode = "custom"
@@ -76,7 +76,7 @@ def test_workflow():
 
             result = compiled_workflow.invoke(
                 input={                 #! The model must be also manually initialized in the 'nodes.py' file !#
-                    "model": 'gpt-4o',   #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                    "model": 'gpt-5',   #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
                     "cve_id": cve,
                     "web_search_tool": web_search_mode,
                     "verbose_web_search": False,
@@ -440,7 +440,7 @@ def barh_mean_std(df, feature: str):
         
 def barh_service_wsm(df, unique_services):
     x = np.arange(len(unique_services))
-    width = 0.3     # Bar tickness
+    width = 0.2     # Bar tickness
     plt.figure(figsize=(5, 15))
     plt.grid()
     
@@ -457,12 +457,15 @@ def barh_service_wsm(df, unique_services):
         if max_frequency < max(service_occurrence_distribution.values()):
             max_frequency = max(service_occurrence_distribution.values())
         
+        if wsm == 'custom': 
+            color = 'green'
+            new_x = x + width
         if wsm == 'custom_no_tool': 
-            color = 'steelblue'
-            new_x = x + width/2
+            color = 'blue'
+            new_x = x
         elif wsm == 'openai':
-            color = 'darkorange'
-            new_x = x - width/2
+            color = 'red'
+            new_x = x - width
         plt.barh(y=new_x, width=[service_occurrence_distribution.get(service, 0) for service in unique_services], height=width, label=wsm, color=color)
     
     plt.xticks(range(0, max_frequency + 1, 1))
@@ -728,13 +731,13 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 
 # draw_graph()
 # result = test_workflow()
-# milestones = benchmark("openai")
+# milestones = benchmark("custom")
 # df = generate_excel_csv()
 # df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
 # data = extract_milestones_stats(model="GPT-5", logs_set="1st", mode='custom_no_tool')
 # web_search_mode_stats(model="GPT-5", logs_set="1st")
 # best_cve_runs(model="GPT-4o", logs_set="4th", mode="custom_no_tool")              # Leave mode="" to consider all web search modes
-best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="", mode="custom")     # Leave mode="" to consider all web search modes
+best_cve_runs_updated(model="GPT-5", logs_set="2nd", iteration="", mode="")     # Leave mode="" to consider all web search modes
 
 
 
@@ -743,8 +746,8 @@ best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="", mode="custom
 # cve_list = list(jsonServices.keys())[:20]
 # df = services_stats(
 #     cve_list=cve_list, 
-#     model="GPT-5", 
-#     logs_set="2nd", 
+#     model="GPT-4o", 
+#     logs_set="4th", 
 #     iteration="", 
 #     web_search_mode="",
 #     filtered_milestones=True,
