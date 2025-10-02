@@ -68,7 +68,7 @@ def assess_dockers(cve_list: list[str], model: str, logs_set: str, web_search_mo
 
             result = compiled_workflow.invoke(
                 input={                 #! The model must be also manually initialized in the 'nodes.py' file !#
-                    "model": model,     #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                    "model": "gpt-5",     #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
                     "cve_id": cve,
                     "web_search_tool": web_search_mode,
                     "verbose_web_search": False,
@@ -79,7 +79,7 @@ def assess_dockers(cve_list: list[str], model: str, logs_set: str, web_search_mo
                 config={"callbacks": [langfuse_handler], "recursion_limit": 100},
             )
             
-            for m, val in result.milestones.items():
+            for m, val in result["milestones"]:
                 if val != milestones[m]:
                     print(f"{cve} '{m}' {milestones[m]} --> {val}")
             print("\n\n\n")
@@ -97,7 +97,6 @@ def test_workflow():
         # cve_list = [cve for cve in cve_list if cve not in ["CVE-2018-12613", "CVE-2020-11652", "CVE-2021-3129", "CVE-2021-44228", "CVE-2023-23752", "CVE-2021-28164", "CVE-2021-34429", "CVE-2021-43798", "CVE-2022-22947", "CVE-2022-24706", "CVE-2022-46169", "CVE-2023-42793", "CVE-2024-23897"]]
         print(len(cve_list), cve_list)
         web_search_mode = "openai"
-        cve_list = ["CVE-2023-42793"]
         
         for cve in cve_list:
             #! Uncomment this to reuse the web_search_results file from the 'docker' folder !#
@@ -773,7 +772,7 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 
 
 # draw_graph()
-result = test_workflow()
+# result = test_workflow()
 # milestones = benchmark("custom")
 # df = generate_excel_csv()
 # df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
@@ -796,15 +795,16 @@ result = test_workflow()
 #     filtered_milestones=True,
 # )
 
-#* TO ASSESS DOCKERS COPY A 'benchmark-session' IN THE 'docker' FOLDER *#
-# with builtins.open('services.json', "r") as f:
-#     jsonServices = json.load(f)
-# cve_list = list(jsonServices.keys())[:20]
-# df = assess_dockers(
-#     cve_list=cve_list, 
-#     model="GPT-4o", 
-#     web_search_mode="", # MANDATORY #
-# )
+#* ASSESS DOCKERS *#
+with builtins.open('services.json', "r") as f:
+    jsonServices = json.load(f)
+cve_list = list(jsonServices.keys())[:20]
+df = assess_dockers(
+    cve_list=cve_list, 
+    model="GPT-5",     #! INSERT THIS MANUALLY IN THE 'assess_dockers' function body !#
+    logs_set="2nd",
+    web_search_mode="custom", #! MANDATORY !#
+)
 
 
 
