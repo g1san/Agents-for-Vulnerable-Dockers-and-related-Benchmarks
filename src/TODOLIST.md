@@ -4,7 +4,7 @@
 
 ## Useful for Thesis
 
-### 
+### Docker Validation with PoC
 - **Add node to graph to test PoC (get them from VDaaS)** &rarr; should have a folder 'exploits' with subfolders for each CVE containing all files of the exploit, handle case where there is no exploit for CVE 
 
 ### Better graphs
