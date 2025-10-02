@@ -1,0 +1,590 @@
+The provided CVE ID is CVE-2012-1823!
+	Directory '../../dockers/CVE-2012-1823/custom/logs' created successfully.
+
+Checking if the CVE ID exists...
+	CVE-2012-1823 exists!
+
+Routing CVE (cve_id_ok = True)
+
+Searching the web...
+	Web search results already provided!
+
+Checking the Docker services...
+	- 'hard_service'=True
+	- 'hard_version'=True
+	- 'soft_services'=True
+
+Routing services (hard_service=True, hard_version=True, soft_services=True)
+
+Generating the code...
+	Code already provided!
+
+Saving code...
+	Saved file: ../../dockers/CVE-2012-1823/custom/docker-compose.yml
+	Saved file: ../../dockers/CVE-2012-1823/custom/php-cgi/Dockerfile
+	Saved file: ../../dockers/CVE-2012-1823/custom/php-cgi/docker-entrypoint.sh
+	Saved file: ../../dockers/CVE-2012-1823/custom/apache/Dockerfile
+	Saved file: ../../dockers/CVE-2012-1823/custom/apache/httpd.conf
+	Saved file: ../../dockers/CVE-2012-1823/custom/apache/cgi-bin/php-cgi
+	Saved file: ../../dockers/CVE-2012-1823/custom/web/index.php
+	Code saved!
+
+Testing code...
+
+
+Test iteration #0 failed! See 'log0.txt' for details.
+	- CONTAINER FAILURE: No logs captured on STDOUT or STDERR. From logs alone, container health cannot be determined. This may indicate: (1) the container is running but the process is silent, (2) the process exited quickly, (3) a non-default logging driver or log destination is used, or (4) the app logs to files instead of stdout/stderr. Verify status with: docker ps --filter id=24e264559233; docker inspect -f '{{.State.Status}} {{.State.ExitCode}}' 24e264559233; docker inspect -f '{{json .State.Health}}' 24e264559233 (if HEALTHCHECK defined); check logging driver: docker inspect -f '{{.HostConfig.LogConfig.Type}}' 24e264559233; view recent logs window: docker logs --since=5m 24e264559233; check running processes: docker top 24e264559233 or exec in: docker exec -it 24e264559233 sh.
+
+Routing test (docker_builds = False, docker_runs = False, code_hard_version = False, test_iteration = 0)
+
+Revising code...
+	- ERROR: The Apache container likely exits immediately due to an invalid literal "\n" sequence being appended into httpd.conf. The original Dockerfile used echo with embedded \n which produces an invalid directive line starting with "\n#". Apache fails to parse httpd.conf and terminates quickly with no stdout/stderr in some environments. This matches the symptom where a container exits silently after start.
+	- FIX: Append the Include line using printf to ensure proper newlines, and guard module enabling with idempotent commands. No other runtime behavior is changed. All other components are kept as-is.
+
+Saving code...
+	Saved file: ../../dockers/CVE-2012-1823/custom/docker-compose.yml
+	Saved file: ../../dockers/CVE-2012-1823/custom/php-cgi/Dockerfile
+	Saved file: ../../dockers/CVE-2012-1823/custom/php-cgi/docker-entrypoint.sh
+	Saved file: ../../dockers/CVE-2012-1823/custom/apache/Dockerfile
+	Saved file: ../../dockers/CVE-2012-1823/custom/apache/httpd.conf
+	Saved file: ../../dockers/CVE-2012-1823/custom/apache/cgi-bin/php-cgi
+	Saved file: ../../dockers/CVE-2012-1823/custom/web/index.php
+	Code saved!
+
+Testing code...
+
+
+Test iteration #1 failed! See 'log1.txt' for details.
+	- CONTAINER FAILURE: The logs contain no stdout or stderr output. From logs alone we cannot confirm the container is running; it may be idle/quiet, detached, or may have exited. Check runtime state with `docker ps -a` and inspect `.State.Status`, `.State.ExitCode`, and any Health status to confirm.
+
+Routing test (docker_builds = False, docker_runs = False, code_hard_version = False, test_iteration = 1)
+
+Revising code...
+	- ERROR: One container exits quietly with no stdout/stderr. The most likely culprit is the php service’s command overriding behavior and startup race between httpd and the php-cgi binary export. In docker-compose, the php service sets command: ["/docker-entrypoint.sh"], while the image already defines ENTRYPOINT ["/docker-entrypoint.sh"]. This causes the entrypoint to receive an extra argument and can lead to unexpected behavior. Additionally, Apache may start before the shared volume has the php-cgi binary, leading to startup or runtime issues. With no output, it appears the service exits early or idles without logs.
+	- FIX: 1) Remove the php service command override so the Dockerfile’s ENTRYPOINT runs as intended. 2) Add a robust entrypoint to the Apache image that waits until the php-cgi binary appears in the shared volume before launching httpd-foreground. 3) Make module enabling idempotent and deterministic by removing any existing LoadModule lines for cgid and actions, then appending a single load each time. 4) Minor improvement to php-cgi entrypoint to emit a readiness message so logs show that the exporter is running. This resolves the premature/quiet termination and inter-container race without altering service versions or architecture.
+
+Saving code...
+	Saved file: ../../dockers/CVE-2012-1823/custom/docker-compose.yml
+	Saved file: ../../dockers/CVE-2012-1823/custom/php-cgi/Dockerfile
+	Saved file: ../../dockers/CVE-2012-1823/custom/php-cgi/docker-entrypoint.sh
+	Saved file: ../../dockers/CVE-2012-1823/custom/apache/Dockerfile
+	Saved file: ../../dockers/CVE-2012-1823/custom/apache/httpd.conf
+	Saved file: ../../dockers/CVE-2012-1823/custom/apache/cgi-bin/php-cgi
+	Saved file: ../../dockers/CVE-2012-1823/custom/apache/docker-entrypoint.sh
+	Saved file: ../../dockers/CVE-2012-1823/custom/web/index.php
+	Code saved!
+
+Testing code...
+	LLM-as-a-Judge Milestone Check Values:
+	- docker_builds=True
+	- docker_runs=True
+	- code_hard_version=True
+	- services_ok=True
+	Docker is running correctly with 2 containers!
+
+Routing test (docker_builds = True, docker_runs = True, code_hard_version = True, test_iteration = 2)
+
+Assessing Docker vulnerability...
+	CVE List file saved to: ../../dockers/CVE-2012-1823/custom/logs/cves.json
+
+Execution Terminated!
+
+
+
+
+
+
+
+The provided CVE ID is CVE-2020-11651!
+	Directory '../../dockers/CVE-2020-11651/custom/logs' created successfully.
+
+Checking if the CVE ID exists...
+	CVE-2020-11651 exists!
+
+Routing CVE (cve_id_ok = True)
+
+Searching the web...
+	Web search results already provided!
+
+Checking the Docker services...
+	- 'hard_service'=True
+	- 'hard_version'=True
+	- 'soft_services'=True
+
+Routing services (hard_service=True, hard_version=True, soft_services=True)
+
+Generating the code...
+	Code already provided!
+
+Saving code...
+	Saved file: ../../dockers/CVE-2020-11651/custom/docker-compose.yml
+	Saved file: ../../dockers/CVE-2020-11651/custom/master/master.conf
+	Saved file: ../../dockers/CVE-2020-11651/custom/minion/minion.conf
+	Code saved!
+
+Testing code...
+	LLM-as-a-Judge Milestone Check Values:
+	- docker_builds=True
+	- docker_runs=True
+	- code_hard_version=True
+	- services_ok=True
+	Docker is running correctly with 2 containers!
+
+Routing test (docker_builds = True, docker_runs = True, code_hard_version = True, test_iteration = 0)
+
+Assessing Docker vulnerability...
+	CVE List file saved to: ../../dockers/CVE-2020-11651/custom/logs/cves.json
+	The Docker is vulnerable to CVE-2020-11651!
+
+Execution Terminated!
+
+
+
+
+
+
+
+The provided CVE ID is CVE-2020-11652!
+	Directory '../../dockers/CVE-2020-11652/custom/logs' created successfully.
+
+Checking if the CVE ID exists...
+	CVE-2020-11652 exists!
+
+Routing CVE (cve_id_ok = True)
+
+Searching the web...
+	Web search results already provided!
+
+Checking the Docker services...
+	- 'hard_service'=True
+	- 'hard_version'=True
+	- 'soft_services'=True
+
+Routing services (hard_service=True, hard_version=True, soft_services=True)
+
+Generating the code...
+	Code already provided!
+
+Saving code...
+	Saved file: ../../dockers/CVE-2020-11652/custom/docker-compose.yml
+	Saved file: ../../dockers/CVE-2020-11652/custom/master/master.conf
+	Code saved!
+
+Testing code...
+	LLM-as-a-Judge Milestone Check Values:
+	- docker_builds=True
+	- docker_runs=True
+	- code_hard_version=True
+	- services_ok=True
+	Docker is running correctly with 1 containers!
+
+Routing test (docker_builds = True, docker_runs = True, code_hard_version = True, test_iteration = 0)
+
+Assessing Docker vulnerability...
+	CVE List file saved to: ../../dockers/CVE-2020-11652/custom/logs/cves.json
+	The Docker is vulnerable to CVE-2020-11652!
+
+Execution Terminated!
+
+
+
+
+
+
+
+The provided CVE ID is CVE-2021-28164!
+	Directory '../../dockers/CVE-2021-28164/custom/logs' created successfully.
+
+Checking if the CVE ID exists...
+	CVE-2021-28164 exists!
+
+Routing CVE (cve_id_ok = True)
+
+Searching the web...
+	Web search results already provided!
+
+Checking the Docker services...
+	- 'hard_service'=True
+	- 'hard_version'=True
+	- 'soft_services'=True
+
+Routing services (hard_service=True, hard_version=True, soft_services=True)
+
+Generating the code...
+	Code already provided!
+
+Saving code...
+	Saved file: ../../dockers/CVE-2021-28164/custom/docker-compose.yml
+	Saved file: ../../dockers/CVE-2021-28164/custom/jetty/Dockerfile
+	Saved file: ../../dockers/CVE-2021-28164/custom/jetty/webapps/root/index.html
+	Saved file: ../../dockers/CVE-2021-28164/custom/jetty/webapps/root/WEB-INF/web.xml
+	Saved file: ../../dockers/CVE-2021-28164/custom/jetty/webapps/root/WEB-INF/secret.txt
+	Code saved!
+
+Testing code...
+	LLM-as-a-Judge Milestone Check Values:
+	- docker_builds=True
+	- docker_runs=True
+	- code_hard_version=True
+	- services_ok=True
+	Docker is running correctly with 1 containers!
+
+Routing test (docker_builds = True, docker_runs = True, code_hard_version = True, test_iteration = 0)
+
+Assessing Docker vulnerability...
+	CVE List file saved to: ../../dockers/CVE-2021-28164/custom/logs/cves.json
+	The Docker is vulnerable to CVE-2021-28164!
+
+Execution Terminated!
+
+
+
+
+
+
+
+The provided CVE ID is CVE-2021-34429!
+	Directory '../../dockers/CVE-2021-34429/custom/logs' created successfully.
+
+Checking if the CVE ID exists...
+	CVE-2021-34429 exists!
+
+Routing CVE (cve_id_ok = True)
+
+Searching the web...
+	Web search results already provided!
+
+Checking the Docker services...
+	- 'hard_service'=True
+	- 'hard_version'=True
+	- 'soft_services'=True
+
+Routing services (hard_service=True, hard_version=True, soft_services=True)
+
+Generating the code...
+	Code already provided!
+
+Saving code...
+	Saved file: ../../dockers/CVE-2021-34429/custom/docker-compose.yml
+	Saved file: ../../dockers/CVE-2021-34429/custom/jetty/Dockerfile
+	Saved file: ../../dockers/CVE-2021-34429/custom/jetty/webapps/root/index.html
+	Saved file: ../../dockers/CVE-2021-34429/custom/jetty/webapps/root/private/secret.html
+	Saved file: ../../dockers/CVE-2021-34429/custom/jetty/webapps/root/WEB-INF/web.xml
+	Saved file: ../../dockers/CVE-2021-34429/custom/jetty/webapps/root/WEB-INF/secret/notes.txt
+	Saved file: ../../dockers/CVE-2021-34429/custom/jetty/etc/loginservice.xml
+	Saved file: ../../dockers/CVE-2021-34429/custom/jetty/etc/realm.properties
+	Saved file: ../../dockers/CVE-2021-34429/custom/jetty/start.d/loginservice.ini
+	Code saved!
+
+Testing code...
+	LLM-as-a-Judge Milestone Check Values:
+	- docker_builds=True
+	- docker_runs=True
+	- code_hard_version=True
+	- services_ok=True
+	Docker is running correctly with 1 containers!
+
+Routing test (docker_builds = True, docker_runs = True, code_hard_version = True, test_iteration = 0)
+
+Assessing Docker vulnerability...
+	CVE List file saved to: ../../dockers/CVE-2021-34429/custom/logs/cves.json
+	The Docker is vulnerable to CVE-2021-34429!
+
+Execution Terminated!
+
+
+
+
+
+
+
+The provided CVE ID is CVE-2021-41773!
+	Directory '../../dockers/CVE-2021-41773/custom/logs' created successfully.
+
+Checking if the CVE ID exists...
+	CVE-2021-41773 exists!
+
+Routing CVE (cve_id_ok = True)
+
+Searching the web...
+	Web search results already provided!
+
+Checking the Docker services...
+	- 'hard_service'=True
+	- 'hard_version'=True
+	- 'soft_services'=True
+
+Routing services (hard_service=True, hard_version=True, soft_services=True)
+
+Generating the code...
+	Code already provided!
+
+Saving code...
+	Saved file: ../../dockers/CVE-2021-41773/custom/docker-compose.yml
+	Saved file: ../../dockers/CVE-2021-41773/custom/httpd/Dockerfile
+	Saved file: ../../dockers/CVE-2021-41773/custom/httpd/conf/httpd.conf
+	Saved file: ../../dockers/CVE-2021-41773/custom/httpd/cgi-bin/test.cgi
+	Saved file: ../../dockers/CVE-2021-41773/custom/httpd/htdocs/index.html
+	Code saved!
+
+Testing code...
+	LLM-as-a-Judge Milestone Check Values:
+	- docker_builds=True
+	- docker_runs=True
+	- code_hard_version=True
+	- services_ok=True
+	Docker is running correctly with 1 containers!
+
+Routing test (docker_builds = True, docker_runs = True, code_hard_version = True, test_iteration = 0)
+
+Assessing Docker vulnerability...
+	CVE List file saved to: ../../dockers/CVE-2021-41773/custom/logs/cves.json
+
+Execution Terminated!
+
+
+
+
+
+
+
+The provided CVE ID is CVE-2021-42013!
+	Directory '../../dockers/CVE-2021-42013/custom/logs' created successfully.
+
+Checking if the CVE ID exists...
+	CVE-2021-42013 exists!
+
+Routing CVE (cve_id_ok = True)
+
+Searching the web...
+	Web search results already provided!
+
+Checking the Docker services...
+	- 'hard_service'=True
+	- 'hard_version'=True
+	- 'soft_services'=True
+
+Routing services (hard_service=True, hard_version=True, soft_services=True)
+
+Generating the code...
+	Code already provided!
+
+Saving code...
+	Saved file: ../../dockers/CVE-2021-42013/custom/docker-compose.yml
+	Saved file: ../../dockers/CVE-2021-42013/custom/httpd/Dockerfile
+	Saved file: ../../dockers/CVE-2021-42013/custom/httpd/conf/httpd.conf
+	Saved file: ../../dockers/CVE-2021-42013/custom/httpd/htdocs/index.html
+	Saved file: ../../dockers/CVE-2021-42013/custom/httpd/cgi-bin/test.cgi
+	Code saved!
+
+Testing code...
+	LLM-as-a-Judge Milestone Check Values:
+	- docker_builds=True
+	- docker_runs=True
+	- code_hard_version=True
+	- services_ok=True
+	Docker is running correctly with 1 containers!
+
+Routing test (docker_builds = True, docker_runs = True, code_hard_version = True, test_iteration = 0)
+
+Assessing Docker vulnerability...
+	CVE List file saved to: ../../dockers/CVE-2021-42013/custom/logs/cves.json
+
+Execution Terminated!
+
+
+
+
+
+
+
+The provided CVE ID is CVE-2021-43798!
+	Directory '../../dockers/CVE-2021-43798/custom/logs' created successfully.
+
+Checking if the CVE ID exists...
+	CVE-2021-43798 exists!
+
+Routing CVE (cve_id_ok = True)
+
+Searching the web...
+	Web search results already provided!
+
+Checking the Docker services...
+	- 'hard_service'=True
+	- 'hard_version'=True
+	- 'soft_services'=True
+
+Routing services (hard_service=True, hard_version=True, soft_services=True)
+
+Generating the code...
+	Code already provided!
+
+Saving code...
+	Saved file: ../../dockers/CVE-2021-43798/custom/docker-compose.yml
+	Saved file: ../../dockers/CVE-2021-43798/custom/grafana/config/grafana.ini
+	Code saved!
+
+Testing code...
+	LLM-as-a-Judge Milestone Check Values:
+	- docker_builds=True
+	- docker_runs=True
+	- code_hard_version=True
+	- services_ok=True
+	Docker is running correctly with 1 containers!
+
+Routing test (docker_builds = True, docker_runs = True, code_hard_version = True, test_iteration = 0)
+
+Assessing Docker vulnerability...
+	CVE List file saved to: ../../dockers/CVE-2021-43798/custom/logs/cves.json
+
+Execution Terminated!
+
+
+
+
+
+
+
+The provided CVE ID is CVE-2022-24706!
+	Directory '../../dockers/CVE-2022-24706/custom/logs' created successfully.
+
+Checking if the CVE ID exists...
+	CVE-2022-24706 exists!
+
+Routing CVE (cve_id_ok = True)
+
+Searching the web...
+	Web search results already provided!
+
+Checking the Docker services...
+	- 'hard_service'=True
+	- 'hard_version'=True
+	- 'soft_services'=True
+
+Routing services (hard_service=True, hard_version=True, soft_services=True)
+
+Generating the code...
+	Code already provided!
+
+Saving code...
+	Saved file: ../../dockers/CVE-2022-24706/custom/docker-compose.yml
+	Saved file: ../../dockers/CVE-2022-24706/custom/couchdb/Dockerfile
+	Saved file: ../../dockers/CVE-2022-24706/custom/couchdb/local.ini
+	Code saved!
+
+Testing code...
+	LLM-as-a-Judge Milestone Check Values:
+	- docker_builds=True
+	- docker_runs=True
+	- code_hard_version=True
+	- services_ok=True
+	Docker is running correctly with 1 containers!
+
+Routing test (docker_builds = True, docker_runs = True, code_hard_version = True, test_iteration = 0)
+
+Assessing Docker vulnerability...
+	CVE List file saved to: ../../dockers/CVE-2022-24706/custom/logs/cves.json
+
+Execution Terminated!
+
+
+
+
+
+
+
+The provided CVE ID is CVE-2023-42793!
+	Directory '../../dockers/CVE-2023-42793/custom/logs' created successfully.
+
+Checking if the CVE ID exists...
+	CVE-2023-42793 exists!
+
+Routing CVE (cve_id_ok = True)
+
+Searching the web...
+	Web search results already provided!
+
+Checking the Docker services...
+	- 'hard_service'=True
+	- 'hard_version'=True
+	- 'soft_services'=True
+
+Routing services (hard_service=True, hard_version=True, soft_services=True)
+
+Generating the code...
+	Code already provided!
+
+Saving code...
+	Saved file: ../../dockers/CVE-2023-42793/custom/docker-compose.yml
+	Saved file: ../../dockers/CVE-2023-42793/custom/config/internal.properties
+	Code saved!
+
+Testing code...
+	LLM-as-a-Judge Milestone Check Values:
+	- docker_builds=True
+	- docker_runs=True
+	- code_hard_version=True
+	- services_ok=True
+	Docker is running correctly with 1 containers!
+
+Routing test (docker_builds = True, docker_runs = True, code_hard_version = True, test_iteration = 0)
+
+Assessing Docker vulnerability...
+	CVE List file saved to: ../../dockers/CVE-2023-42793/custom/logs/cves.json
+
+Execution Terminated!
+
+
+
+
+
+
+
+The provided CVE ID is CVE-2024-23897!
+	Directory '../../dockers/CVE-2024-23897/custom/logs' created successfully.
+
+Checking if the CVE ID exists...
+	CVE-2024-23897 exists!
+
+Routing CVE (cve_id_ok = True)
+
+Searching the web...
+	Web search results already provided!
+
+Checking the Docker services...
+	- 'hard_service'=True
+	- 'hard_version'=True
+	- 'soft_services'=True
+
+Routing services (hard_service=True, hard_version=True, soft_services=True)
+
+Generating the code...
+	Code already provided!
+
+Saving code...
+	Saved file: ../../dockers/CVE-2024-23897/custom/docker-compose.yml
+	Saved file: ../../dockers/CVE-2024-23897/custom/jenkins/Dockerfile
+	Saved file: ../../dockers/CVE-2024-23897/custom/jenkins/init.groovy.d/disable-security.groovy
+	Code saved!
+
+Testing code...
+	LLM-as-a-Judge Milestone Check Values:
+	- docker_builds=True
+	- docker_runs=True
+	- code_hard_version=True
+	- services_ok=True
+	Docker is running correctly with 1 containers!
+
+Routing test (docker_builds = True, docker_runs = True, code_hard_version = True, test_iteration = 0)
+
+Assessing Docker vulnerability...
+	CVE List file saved to: ../../dockers/CVE-2024-23897/custom/logs/cves.json
+	The Docker is vulnerable to CVE-2024-23897!
+
+Execution Terminated!
+
+
+
+
+
+

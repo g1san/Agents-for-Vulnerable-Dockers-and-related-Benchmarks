@@ -95,7 +95,7 @@
         "docker_builds": true,
         "docker_runs": true,
         "code_hard_version": true,
-        "services_ok": false,
+        "services_ok": true,
         "docker_vulnerable": true
     },
     "CVE-2021-41773": {

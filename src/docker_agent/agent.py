@@ -47,12 +47,6 @@ def benchmark(web_search_mode: str):
 
 def assess_dockers(cve_list: list[str], model: str, logs_set: str, web_search_mode: str):
     try:
-        with builtins.open('services.json', "r") as f:
-            jsonServices = json.load(f)
-        
-        cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
-        print(len(cve_list), cve_list)
-        
         for cve in cve_list: 
             with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{web_search_mode}/logs/milestones.json', 'r') as f:
                 milestones = json.load(f)
@@ -67,8 +61,8 @@ def assess_dockers(cve_list: list[str], model: str, logs_set: str, web_search_mo
                 code_data = json.load(f)
 
             result = compiled_workflow.invoke(
-                input={                 #! The model must be also manually initialized in the 'nodes.py' file !#
-                    "model": "gpt-5",     #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                input={                   #! The model must be also manually initialized in the 'nodes.py' file !#
+                    "model": "gpt-5",     #* Models allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
                     "cve_id": cve,
                     "web_search_tool": web_search_mode,
                     "verbose_web_search": False,
@@ -803,7 +797,7 @@ df = assess_dockers(
     cve_list=cve_list, 
     model="GPT-5",     #! INSERT THIS MANUALLY IN THE 'assess_dockers' function body !#
     logs_set="2nd",
-    web_search_mode="custom", #! MANDATORY !#
+    web_search_mode="openai", #! MANDATORY !#
 )
 
 

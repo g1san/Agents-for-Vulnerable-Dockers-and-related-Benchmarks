@@ -4,6 +4,9 @@
 
 ## Useful for Thesis
 
+### 
+- **Add node to graph to test PoC (get them from VDaaS)** &rarr; should have a folder 'exploits' with subfolders for each CVE containing all files of the exploit, handle case where there is no exploit for CVE 
+
 ### Better graphs
 - Add % values to the heatmap graph
 
@@ -24,11 +27,7 @@
     - https://platform.openai.com/docs/guides/reasoning
     - https://platform.openai.com/docs/guides/reasoning-best-practices
     - https://platform.openai.com/docs/guides/latest-model
-- Test o1, o3 and o4 models with:
-    reasoning={
-        "effort": "medium",  # can be "low", "medium", or "high"
-        "summary": "auto",  # can be "auto", "concise", or "detailed"
-    }
+
 
 
 ## Future Works

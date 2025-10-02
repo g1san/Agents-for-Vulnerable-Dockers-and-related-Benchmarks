@@ -73,7 +73,7 @@
         "docker_builds": true,
         "docker_runs": true,
         "code_hard_version": true,
-        "services_ok": true,
+        "services_ok": false,
         "docker_vulnerable": false
     },
     "CVE-2021-28164": {
@@ -117,7 +117,7 @@
         "docker_builds": true,
         "docker_runs": true,
         "code_hard_version": true,
-        "services_ok": true,
+        "services_ok": false,
         "docker_vulnerable": false
     },
     "CVE-2021-43798": {
