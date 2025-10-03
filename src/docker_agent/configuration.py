@@ -58,6 +58,7 @@ class CodeMilestonesAssessment(BaseModel):
     docker_runs: bool = Field(description="Does the Docker system run correctly?")
     services_ok: bool = Field(description="Does the generated code contain the services provided by the web search?")
     code_hard_version: bool = Field(description="Does the generated code use vulnerable version of the 'HARD' services?")
+    network_setup: bool = Field(description="Are all services/containers setup to be accessible from the right network ports?")
     fail_explanation: Optional[str] = Field(description="Detailed explanation of why one or more milestones have failed")
 
 
@@ -69,6 +70,10 @@ class Stats(BaseModel):
     starting_container_runs: bool = Field(default=True, description="Checks if the LLM is able to generate working Docker container in the first test iteration")
     container_run_failures: int = Field(default=0, description="Number of times the Docker container fails to run")
     not_vuln_version_fail: int = Field(default=0, description="Number of times the Docker builds and runs correctly but uses a not vulnerable version of the 'HARD' service")
+    docker_misconfigured: int = Field(default=0, description="Number of times the Docker builds and runs correctly but uses a wrong network setup")
+    docker_scout_vulnerable: bool = Field(default=False, description="Is the Docker environment vulnerable to the specified CVE?")
+    exploitable: bool = Field(default=False, description="Does the exploit return the expected result?")
+    
     
     
 class Milestones(BaseModel):
@@ -82,6 +87,5 @@ class Milestones(BaseModel):
     docker_builds: bool = Field(default=False, description="Do all Docker images get built correctly?")
     docker_runs: bool = Field(default=False, description="Do all Docker containers run correctly?")
     code_hard_version: bool = Field(default=False, description="Does the generated code use vulnerable version of the 'HARD' services?")
+    network_setup: bool = Field(default=False, description="Are all services/containers setup to be accessible from the right network ports?")
     services_ok: bool = Field(default=False, description="Does the generated code contain the services provided by the web search?")
-    # Exploitability Milestones
-    docker_vulnerable: bool = Field(default=False, description="Is the Docker environment vulnerable to the specified CVE?")

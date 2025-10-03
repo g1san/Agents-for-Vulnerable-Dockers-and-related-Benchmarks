@@ -47,36 +47,41 @@ def benchmark(web_search_mode: str):
 
 def assess_dockers(cve_list: list[str], model: str, logs_set: str, web_search_mode: str):
     try:
-        for cve in cve_list: 
-            with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{web_search_mode}/logs/milestones.json', 'r') as f:
-                milestones = json.load(f)
-            
-            if not milestones["docker_builds"] or not milestones["docker_runs"]:
-                continue
+        if web_search_mode == "all": web_search_mode = ["custom", "custom_no_tool", "openai"]
+        else: web_search_mode = [f"{web_search_mode}"]
+        
+        for wsm in web_search_mode:
+            for cve in cve_list: 
+                with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{wsm}/logs/milestones.json', 'r') as f:
+                    milestones = json.load(f)
 
-            with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:
-                web_search_data = json.load(f)
-            
-            with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{web_search_mode}/logs/code.json', 'r') as f:
-                code_data = json.load(f)
+                if not milestones["docker_builds"] or not milestones["docker_runs"]:
+                    continue
 
-            result = compiled_workflow.invoke(
-                input={                   #! The model must be also manually initialized in the 'nodes.py' file !#
-                    "model": "gpt-5",     #* Models allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
-                    "cve_id": cve,
-                    "web_search_tool": web_search_mode,
-                    "verbose_web_search": False,
-                    "web_search_result": web_search_data,
-                    "code": code_data,
-                    "messages": [SystemMessage(content=SYSTEM_PROMPT)]
-                },
-                config={"callbacks": [langfuse_handler], "recursion_limit": 100},
-            )
-            
-            for m, val in result["milestones"]:
-                if val != milestones[m]:
-                    print(f"{cve} '{m}' {milestones[m]} --> {val}")
-            print("\n\n\n")
+                with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:
+                    web_search_data = json.load(f)
+
+                with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{wsm}/logs/code.json', 'r') as f:
+                    code_data = json.load(f)
+
+                result = compiled_workflow.invoke(
+                    input={                   #! The model must be also manually initialized in the 'nodes.py' file !#
+                        "model": "gpt-5",     #* Models allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                        "cve_id": cve,
+                        "web_search_tool": wsm,
+                        "verbose_web_search": False,
+                        "web_search_result": web_search_data,
+                        "code": code_data,
+                        "messages": [SystemMessage(content=SYSTEM_PROMPT)]
+                    },
+                    config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+                )
+
+                for m, val in result["milestones"]:
+                    if m == "network_setup": continue
+                    if val != milestones[m]:
+                        print(f"{cve} '{m}' {milestones[m]} --> {val}")
+                print("\n\n\n")
     
     except Exception as e:
         print(f"Workflow invocation failed: {e}")
@@ -668,6 +673,7 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
     print(f"model: {model}, logs_set: {logs_set}, iteration: {iteration}, mode: {mode}")
     if mode == "":
         df = pd.concat([
+            get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode='custom'), 
             get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode='custom_no_tool'), 
             get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode='openai'),
         ])
@@ -773,7 +779,7 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 # data = extract_milestones_stats(model="GPT-5", logs_set="1st", mode='custom_no_tool')
 # web_search_mode_stats(model="GPT-5", logs_set="1st")
 # best_cve_runs(model="GPT-4o", logs_set="4th", mode="custom_no_tool")              # Leave mode="" to consider all web search modes
-# best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="", mode="custom")     # Leave mode="" to consider all web search modes
+best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="", mode="")     # Leave mode="" to consider all web search modes
 
 
 
@@ -790,15 +796,15 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 # )
 
 #* ASSESS DOCKERS *#
-with builtins.open('services.json', "r") as f:
-    jsonServices = json.load(f)
-cve_list = list(jsonServices.keys())[:20]
-df = assess_dockers(
-    cve_list=cve_list, 
-    model="GPT-5",     #! INSERT THIS MANUALLY IN THE 'assess_dockers' function body !#
-    logs_set="2nd",
-    web_search_mode="openai", #! MANDATORY !#
-)
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[:20]
+# df = assess_dockers(
+#     cve_list=cve_list, 
+#     model="GPT-5",     #! INSERT THIS MANUALLY IN THE 'assess_dockers' function body !#
+#     logs_set="2nd",
+#     web_search_mode="all", #! MANDATORY !#
+# )
 
 
 

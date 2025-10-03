@@ -3,9 +3,11 @@
 
 
 ## Useful for Thesis
+_Suggestion_: split CHECKs of test milestones into multiple interactions with the LLM (use list to with all questions to format a single prompt)
+**MANDATORY**: check all files of all dockers to assess LLM-as-a-Judge reliability
 
 ### Docker Validation with PoC
-- **Add node to graph to test PoC (get them from VDaaS)** &rarr; should have a folder 'exploits' with subfolders for each CVE containing all files of the exploit, handle case where there is no exploit for CVE 
+- Ultimate goal of the **_run\_exploit_** node function is to launch the PoC for the specific CVE, extract the output, pass it to an LLM-as-a-Judge and evaluate if the output is the desired one (might want to pass the code of the exploit) or if there is a problem with either the docker or the exploit code.
 
 ### Better graphs
 - Add % values to the heatmap graph

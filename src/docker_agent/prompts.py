@@ -101,7 +101,8 @@ GUIDELINES:
     - If a service requires a dedicated container write the code for it
     - You must not use versions of 'HARD' services that are not listed in the message about {cve_id} and its services
 - Always write enough files to make the system work and exploitable
-- The system must be immediately deployable using the "docker compose up" command.
+- The system must be immediately deployable using the "docker compose up" command
+- All services and related containers must be properly configured and be immediately accessible from the service's default network ports
 - All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
 - There is no need to specify the file name in the file content
 """
@@ -119,6 +120,7 @@ GOALS:
 
 GUIDELINES:
 - The system must be immediately deployable using the "docker compose up" command
+- All services and related containers must be properly configured and be immediately accessible from the service's default network ports
 - Your answer must include all files, both the updated ones and the unchanged ones
 - All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
 - There is no need to specify the file name in the file content
@@ -145,6 +147,7 @@ GOAL: fix the Docker system problems by modifying its code, which is available i
 
 GUIDELINES:
 - The system must be immediately deployable using the "docker compose up" command
+- All services and related containers must be properly configured and be immediately accessible from the service's default network ports
 - Your answer must include all files, both the updated ones and the unchanged ones
 - All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
 - There is no need to specify the file name in the file content
@@ -159,6 +162,7 @@ CHECK_SERVICES_PROMPT = """GOALS: analyse the output of the command 'sudo docker
 - Check if all Docker images are built correctly ('docker_builds' milestone)
 - Check if all Docker containers are running correctly ('docker_runs' milestone)
 - Check if the following services are using one of the versions listed to their side ('code_hard_version' milestone):{hard_service_versions}
+- Check if all Docker containers are using the right network port ('network_setup' milestone)
 - Check if the Docker uses the following services: {service_list} ('services_ok' milestone)
 ----- START OF INSPECT LOGS -----
 {inspect_logs}
@@ -174,11 +178,32 @@ GUIDELINES: if any of the milestones is not achieved, you must explain why the D
 
 NOT_VULNERABLE_VERSION_PROMPT = """CONTEXT: my Docker is not using a vulnerable version of the 'HARD' service(s) listed in the previous message
 {fail_explanation}
+{logs}
 
 GOAL: fix the Docker system by ensuring a vulnerable version of the 'HARD' service is used. Modify its code, which is available in my previous message
 
 GUIDELINES:
 - The system must be immediately deployable using the "docker compose up" command
+- All services and related containers must be properly configured and be immediately accessible from the service's default network ports
+- Your answer must include all files, both the updated ones and the unchanged ones
+- All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
+- There is no need to specify the file name in the file content
+- The Docker code was generated using the data in the message about {cve_id} and its services
+    - You must use all and only the services that are listed in the message that describes {cve_id}
+    - If a service requires a dedicated container write the code for it
+    - You must not use versions of 'HARD' services that are not listed in the message about {cve_id} and its services
+"""
+
+
+WRONG_NETWORK_SETUP_PROMPT = """CONTEXT: one or more of my Docker containers are not using the right network setup
+{fail_explanation}
+{logs}
+
+GOAL: fix the Docker system by ensuring its network configuration is setup correctly and that all services are available on their respective default network ports
+
+GUIDELINES:
+- The system must be immediately deployable using the "docker compose up" command
+- All services and related containers must be properly configured and be immediately accessible from the service's default network ports
 - Your answer must include all files, both the updated ones and the unchanged ones
 - All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
 - There is no need to specify the file name in the file content
