@@ -23,32 +23,35 @@ from prompts import (
     HARD_SERV_VERS_ASSESSMENT_PROMPT, 
     CODING_PROMPT,
     IMAGE_NOT_BUILT_PROMPT,
-    ASSERT_CONTAINER_STATE_PROMPT,
+    CHECK_CONTAINER_PROMPT,
     CONTAINER_NOT_RUN_PROMPT,
-    CHECK_SERVICES_PROMPT,
+    CHECK_SERVICES_VERSIONS_PROMPT,
+    CHECK_DOCKER_PROMPT,
+    TEST_FAIL_PROMPT,
     NOT_VULNERABLE_VERSION_PROMPT,
     WRONG_NETWORK_SETUP_PROMPT,
 )
 from configuration import (
     langfuse_handler,
-    WebSearchResult,
+    WebSearch,
     HARDServiceVersionAssessment,
-    CodeGenerationResult,
-    TestCodeResult,
+    Code,
+    CodeRevision,
     ContainerLogsAssessment,
-    CodeMilestonesAssessment,
+    DockerMilestonesAssessment,
+    ServiceMilestonesAssessment,
 )
 
 # Initialize the LLM with OpenAI's GPT-4o model
-# llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
 # Initialize the LLM with OpenAI's GPT-5 model
-llm = ChatOpenAI(
-    model="gpt-5", 
-    max_retries=2,
-    reasoning_effort="low", 
-    # use_responses_api=True, 
-    # verbosity="low",
-)
+# llm = ChatOpenAI(
+#     model="gpt-5", 
+#     max_retries=2,
+#     reasoning_effort="low", 
+#     # use_responses_api=True, 
+#     # verbosity="low",
+# )
 # Initialize the LLM with SmartData cluster's local model
 # llm = ChatOpenAI(
 #     model="mistralai/Mistral-7B-Instruct-v0.1",
@@ -58,12 +61,13 @@ llm = ChatOpenAI(
 # )
 llm_openai_web_search_tool = llm.bind_tools([openai_web_search])
 llm_custom_web_search_tool = llm.bind_tools([web_search])
-web_search_llm = llm.with_structured_output(WebSearchResult)
+web_search_llm = llm.with_structured_output(WebSearch)
 ver_ass_llm = llm.with_structured_output(HARDServiceVersionAssessment)
-code_generation_llm = llm.with_structured_output(CodeGenerationResult)
-code_ass_llm = llm.with_structured_output(CodeMilestonesAssessment)
+code_generation_llm = llm.with_structured_output(Code)
 container_ass_llm = llm.with_structured_output(ContainerLogsAssessment)
-revise_code_llm = llm.with_structured_output(TestCodeResult)
+serv_ver_ass_llm = llm.with_structured_output(ServiceMilestonesAssessment)
+docker_ass_llm = llm.with_structured_output(DockerMilestonesAssessment)
+revise_code_llm = llm.with_structured_output(CodeRevision)
 
 
 def create_dir(dir_path):
@@ -182,11 +186,11 @@ def get_services(state: OverallState):
         tool_call_args = json.loads(tool_call.additional_kwargs['tool_calls'][0]['function']['arguments'])
         query, cve_id = tool_call_args['query'], tool_call_args['cve_id']
         print(f"\tThe LLM invoked the 'web search' tool with parameters: query={query}, cve_id={cve_id}")
-        #NOTE: 'web_search_tool_func' internally formats the response into a WebSearchResult Pydantic class
+        #NOTE: 'web_search_tool_func' internally formats the response into a WebSearch Pydantic class
         formatted_response, in_token, out_token = web_search_tool_func(query=query, cve_id=cve_id, n_documents=5, verbose=state.verbose_web_search, model=state.model)
     
     elif state.web_search_tool == "custom_no_tool":
-        #NOTE: 'web_search_func' internally formats the response into a WebSearchResult Pydantic class
+        #NOTE: 'web_search_func' internally formats the response into a WebSearch Pydantic class
         formatted_response, in_token, out_token = web_search_func(cve_id=state.cve_id, n_documents=5, verbose=state.verbose_web_search, model=state.model)
     
     elif state.web_search_tool == "openai":
@@ -276,7 +280,7 @@ def assess_services(state: OverallState):
                 expected_hard[serv.split("/")[-1].lower()] += ver
         elif dep_type != "SOFT":
             expected_soft_roles.add(dep_type)
-            
+    
     proposed_hard = {}
     proposed_soft_roles = set()
     for service in state.web_search_result.services:
@@ -289,6 +293,7 @@ def assess_services(state: OverallState):
             proposed_soft_roles.add(service.dependency_type)
     
     # Check if all expected 'HARD' services were proposed
+    print("\tChecking if all 'HARD' services were proposed...")
     if set(expected_hard.keys()).issubset(set(proposed_hard.keys())):
         state.milestones.hard_service = True
         print("\t- 'hard_service'=True")
@@ -300,19 +305,28 @@ def assess_services(state: OverallState):
         
 
     # Check if the vulnerable version of all expected 'HARD' services was proposed
-    response_list = []
+    response_list = {}
     for service, version_list, version in zip(proposed_hard.keys(), proposed_hard.values(), expected_hard.values()):
-        ver_ass_query = HARD_SERV_VERS_ASSESSMENT_PROMPT.format(
-            version=version,
-            service=service,
-            version_list=version_list,
-        )
+        print(f"\tChecking if version {version} of service '{service}' was proposed...")
+        response_list[service] = False
+        for ver in version_list:
+            if ver == version:
+                response_list[service] = True
+                break
+        
+        if not response_list[service]:   
+            print(f"\tManual check failed! Switching to LLM-as-a-Judge...")
+            ver_ass_query = HARD_SERV_VERS_ASSESSMENT_PROMPT.format(
+                version=version,
+                service=service,
+                version_list=version_list,
+            )
 
-        response = ver_ass_llm.invoke(
-            [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=ver_ass_query)], 
-            config={"callbacks": [langfuse_handler]}
-        )
-        response_list.append(response.hard_version)
+            response = ver_ass_llm.invoke(
+                [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=ver_ass_query)], 
+                config={"callbacks": [langfuse_handler]}
+            )
+            response_list[service] = response.hard_version
         
     if False not in response_list:
         state.milestones.hard_version = True
@@ -325,6 +339,7 @@ def assess_services(state: OverallState):
             f.write(f"{output_string}\n")
             
     # Check if all expected 'SOFT' roles were proposed
+    print("\tChecking if all 'SOFT' dependencies were proposed...")
     if set(expected_soft_roles).issubset(set(proposed_soft_roles)):
         state.milestones.soft_services = True
         print("\t- 'soft_services'=True")
@@ -371,8 +386,8 @@ def generate_code(state: OverallState):
     )
     
     response = f"Directory tree:\n{generated_code.directory_tree}\n\n"
-    for name, code in zip(generated_code.file_name, generated_code.file_code):
-        response += "-" * 10 + f" {name} " + "-" * 10 + f"\n{code}\n\n"
+    for f in generated_code.files:
+        response += "-" * 10 + f" {f.location} " + "-" * 10 + f"\n{f.content}\n\n"
         
     output_string = f"\nThis is the first version of the generated code:\n\n{response}\n\n"
     with builtins.open(final_report_file, "a") as f:
@@ -393,8 +408,8 @@ def save_code(state: OverallState):
     with builtins.open(code_file, "w") as f:
         json.dump(state.code.model_dump(), f, indent=4)
     
-    for file_path, file_content in zip(state.code.file_name, state.code.file_code):
-        file_path = Path(file_path)
+    for f in state.code.files:
+        file_path = Path(f.location)
         if not file_path.exists():
             # Different from create_dir()
             try:
@@ -404,8 +419,8 @@ def save_code(state: OverallState):
             except Exception as e:
                 raise ValueError(f"An error occurred: {e}")
 
-        with builtins.open(file_path, "w", encoding="utf-8") as f:
-            f.write(file_content)
+        with builtins.open(file_path, "w", encoding="utf-8") as fp:
+            fp.write(f.content)
         print(f"\tSaved file: {file_path}")
 
     print("\tCode saved!")
@@ -414,19 +429,34 @@ def save_code(state: OverallState):
 
 #* Support Functions for the 'test_code' node *#
 def launch_docker(code_dir_path, log_file):
+    try: 
+        result = subprocess.run(
+            ["sudo", "docker", "compose", "up", "--build", "--detach"],
+            cwd=code_dir_path,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=600,  # Timeout in seconds
+        )
+        logs = result.stdout
+        success = (result.returncode == 0)
+        with builtins.open(log_file, "w") as f:
+            f.write(logs)
+            
+        return success, logs
+
+    except subprocess.TimeoutExpired as e:
+        print(f"\t{e}")
+        return False, e
+
+def get_image_ids():
     result = subprocess.run(
-        ["sudo", "docker", "compose", "up", "--build", "--detach"],
-        cwd=code_dir_path,
+        ["sudo", "docker", "images", "-q"],
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stderr=subprocess.DEVNULL,
         text=True,
     )
-    logs = result.stdout
-    with builtins.open(log_file, "w") as f:
-        f.write(logs)
-    
-    success = (result.returncode == 0)
-    return success, logs
+    return result.stdout.splitlines()
 
 
 def get_container_ids(code_dir_path):
@@ -439,63 +469,57 @@ def get_container_ids(code_dir_path):
     return result.stdout.strip().splitlines()
 
 
-def assert_container_state(code_dir_path, log_file):
-    container_ids = get_container_ids(code_dir_path=code_dir_path)
-    time.sleep(10)
-    for cid in container_ids:
-        result = subprocess.run(
-            ["sudo", "docker", "logs", cid, "--details"],
-            capture_output=True,
-            text=True
-        )
-        
-        logs = f"\n\nsudo docker logs {cid} --details\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}\n\n"
+def get_container_logs(cid, log_file):
+    result = subprocess.run(
+        ["sudo", "docker", "logs", cid, "--details"],
+        capture_output=True,
+        text=True
+    )
+    
+    log = f"\n\nsudo docker logs {cid} --details\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}\n\n"
+    with builtins.open(log_file, "a") as f:
+        f.write(log)
+    
+    log = f"\n\nsudo docker logs {cid} --details\nSTDOUT: {result.stdout.splitlines()[-100:]}\nSTDERR: {result.stderr.splitlines()[-100:]}\n\n"
+    return log
+
+
+def inspect_image(iid, log_file):
+    result = subprocess.run(
+        ["sudo", "docker", "inspect", iid],
+        capture_output=True,
+        text=True
+    )
+    
+    try:
+        log = json.loads(result.stdout)        
         with builtins.open(log_file, "a") as f:
-            f.write(logs)
+            f.write(f"\n\nsudo docker inspect {iid}")
+            json.dump(log, f, indent=4)
+            
+    except json.JSONDecodeError:
+        raise ValueError(f"Failed to parse JSON for container {iid}")
         
-        query = ASSERT_CONTAINER_STATE_PROMPT.format(logs=logs)
-        result = container_ass_llm.invoke(
-            [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=query)], 
-            config={"callbacks": [langfuse_handler]}
-        )
-        
-        if not result.container_ok:
-            return logs, result.fail_explanation, False
-    
-    return "", "", True
+    return log
 
 
-def check_services(code, services, hard_service_versions, code_dir_path, log_file):
-    container_ids = get_container_ids(code_dir_path=code_dir_path)
-
-    inspect_logs = []
-    for cid in container_ids:
-        result = subprocess.run(
-            ["sudo", "docker", "inspect", cid],
-            capture_output=True,
-            text=True
-        )
-        
-        try:
-            data = json.loads(result.stdout)
-            inspect_logs.append(data)            
-            with builtins.open(log_file, "a") as f:
-                f.write(f"\n\nsudo docker inspect {cid}")
-                json.dump(data, f, indent=4)
-                
-        except json.JSONDecodeError:
-            raise ValueError(f"Failed to parse JSON for container {cid}")
-    
-    query = CHECK_SERVICES_PROMPT.format(
-        inspect_logs=inspect_logs,
-        service_list=services,
-        hard_service_versions=hard_service_versions,
+def inspect_container(cid, log_file):
+    result = subprocess.run(
+        ["sudo", "docker", "inspect", cid],
+        capture_output=True,
+        text=True
     )
     
-    return inspect_logs, len(container_ids), code_ass_llm.invoke(
-        [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=code), HumanMessage(content=query)], 
-        config={"callbacks": [langfuse_handler]}
-    )
+    try:
+        log = json.loads(result.stdout)        
+        with builtins.open(log_file, "a") as f:
+            f.write(f"\n\nsudo docker inspect {cid}")
+            json.dump(log, f, indent=4)
+            
+    except json.JSONDecodeError:
+        raise ValueError(f"Failed to parse JSON for container {cid}")
+        
+    return log
     
 
 def get_cve_list(code_dir_path):
@@ -544,10 +568,10 @@ def test_code(state: OverallState):
     
     test_fail_output_string = f"\n\nTest iteration #{state.stats.test_iteration} failed! See 'log{state.stats.test_iteration}.txt' for details."
     
-    success, logs = launch_docker(
-        code_dir_path=code_dir_path, 
-        log_file=log_file
-    )  
+    
+    #* IMAGE ASSESSMENT *#
+    print("\tLaunching Docker...")
+    success, logs = launch_docker(code_dir_path=code_dir_path, log_file=log_file)  
     if not success:
         state.stats.image_build_failures += 1
         if state.stats.test_iteration == 0:
@@ -558,35 +582,52 @@ def test_code(state: OverallState):
         print(f"{test_fail_output_string}")
         with builtins.open(final_report_file, "a") as f:
             f.write(test_fail_output_string)
-            
+        
+        fail_explanation = "my Docker systems terminates its execution because of an error while building one of its images."
+        fail_explanation += f"\nThese are the last 100 lines of the logs generated by the 'sudo docker compose up --build --detach' command:\n{logs.splitlines()[-100:]}"
         return {
             "stats": state.stats,
-            "logs": logs,
-            "fail_explanation": "",
+            "fail_explanation": fail_explanation,
             "revision_type": "Image Not Built",
         }
-        
-    logs, fail_explanation, assessment = assert_container_state(
-        code_dir_path=code_dir_path, 
-        log_file=log_file
-    )
-    if not assessment:
-        state.stats.container_run_failures += 1
-        if state.stats.test_iteration == 0:
-            state.stats.starting_container_runs = False
-        
-        test_fail_output_string += f"\n\t- CONTAINER FAILURE: {fail_explanation}"
-        print(f"{test_fail_output_string}")
-        with builtins.open(final_report_file, "a") as f:
-            f.write(test_fail_output_string)
-            
-        return {
-            "stats": state.stats,
-            "logs": logs,
-            "fail_explanation": fail_explanation,
-            "revision_type": "Container Not Running",
-        }
     
+    print("\tImages built! Containers are setting up...")
+    time.sleep(30)      # Waiting 30 seconds (arbitrary) to allow container to launch, setup and produce logs
+    image_ids = get_image_ids()
+    container_ids = get_container_ids(code_dir_path=code_dir_path)    
+    num_containers = len(container_ids)
+    
+    #* CONTAINER(s) ASSESSMENT *#
+    for index, cid in enumerate(container_ids):
+        print(f"\tTesting container ({index + 1}/{num_containers})...")
+        log = get_container_logs(cid=cid, log_file=log_file)
+    
+        # Each container log is sent to the LLM to be analyzed and check if it is running correctly
+        query = CHECK_CONTAINER_PROMPT.format(log=log)
+        result = container_ass_llm.invoke(
+            [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=query)], 
+            config={"callbacks": [langfuse_handler]}
+        )
+    
+        if not result.container_ok:
+            state.stats.container_run_failures += 1
+            if state.stats.test_iteration == 0:
+                state.stats.starting_container_runs = False
+
+            test_fail_output_string += f"\n\t- CONTAINER FAILURE: {result.fail_explanation}"
+            print(f"{test_fail_output_string}")
+            with builtins.open(final_report_file, "a") as f:
+                f.write(test_fail_output_string)
+
+            return {
+                "stats": state.stats,
+                "fail_explanation": result.fail_explanation,
+                "revision_type": "Container Not Running",
+            }
+    
+    
+    #* SERVICE(s) and VERSION ASSESSMENT *#
+    print("\t(LLM-as-a-Judge) Containers are running! Checking services and versions...")
     service_list = []
     hard_service_versions = ""
     for service in state.web_search_result.services:
@@ -595,38 +636,73 @@ def test_code(state: OverallState):
             hard_service_versions += f"\n\t\t- {service.name}: {service.version}"
     
     code = "This is the Docker code:\n"
-    for name, content in zip(state.code.file_name, state.code.file_code):
-        code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{content}\n\n"
+    for f in state.code.files:
+        code += "-" * 10 + f" {f.location} " + "-" * 10 + f"\n{f.content}\n\n"
     
-    inspect_logs, num_containers, result = check_services(
-        code=code,
-        services=service_list, 
+    image_inspect_logs = "These are the output of the docker inspect command of each Docker Image:\n"
+    for iid in image_ids:
+        image_inspect_logs += f"{inspect_image(iid=iid, log_file=log_file)}\n\n"
+    
+    container_inspect_logs = "These are the output of the docker inspect command of each Docker Container:\n"
+    for cid in container_ids:
+        container_inspect_logs += f"{inspect_container(cid=cid, log_file=log_file)}\n\n"
+    
+    query = CHECK_SERVICES_VERSIONS_PROMPT.format(
         hard_service_versions=hard_service_versions,
-        code_dir_path=code_dir_path,
-        log_file=log_file,
+        service_list=service_list,
     )
-    llm_aaj = f"\tLLM-as-a-Judge Milestone Check Values:"
-    llm_aaj += f"\n\t- docker_builds={result.docker_builds}"
-    llm_aaj += f"\n\t- docker_runs={result.docker_runs}"
-    llm_aaj += f"\n\t- code_hard_version={result.code_hard_version}"
-    llm_aaj += f"\n\t- network_setup={result.network_setup}"
-    llm_aaj += f"\n\t- services_ok={result.services_ok}"
-    print(llm_aaj)
-            
-    if not result.docker_builds:
-        state.stats.image_build_failures += 1
-        if state.stats.test_iteration == 0:
-            state.stats.starting_image_builds = False
-            state.stats.starting_container_runs = False
+    
+    result = serv_ver_ass_llm.invoke(
+        [SystemMessage(content=SYSTEM_PROMPT), 
+         HumanMessage(content=code),
+         HumanMessage(content=image_inspect_logs),
+         HumanMessage(content=container_inspect_logs),
+         HumanMessage(content=query)], 
+        config={"callbacks": [langfuse_handler]}
+    )
+    
+    services_ok = result.services_ok
+    if not result.code_hard_version:
+        state.stats.not_vuln_version_fail += 1
         
-        test_fail_output_string += f"\n\t- MILESTONE CHECK FAILURE (IMAGE BUILDING FAILURE): {result.fail_explanation}"
+        test_fail_output_string += f"\n\t- NOT VULNERABLE VERSION: {result.fail_explanation}"
         print(f"{test_fail_output_string}")
         with builtins.open(final_report_file, "a") as f:
             f.write(test_fail_output_string)
             
         return {
             "stats": state.stats,
-            "logs": '\n'.join(str(log) for log in inspect_logs),
+            "fail_explanation": result.fail_explanation,
+            "revision_type": "Not Vulnerable Version",
+        }    
+    
+    
+    #* LLM-as-a-Judge: NETWORK SETUP ASSESSMENT, CHECK for IMAGE and CONTAINER *#
+    print("\t(LLM-as-a-Judge) Vulnerable version is used! Checking network setup...")
+    query = CHECK_DOCKER_PROMPT.format()
+    
+    result = docker_ass_llm.invoke(
+        [SystemMessage(content=SYSTEM_PROMPT), 
+         HumanMessage(content=code),
+         HumanMessage(content=image_inspect_logs),
+         HumanMessage(content=container_inspect_logs),
+         HumanMessage(content=query)], 
+        config={"callbacks": [langfuse_handler]}
+    )
+      
+    if not result.docker_builds:
+        state.stats.image_build_failures += 1
+        if state.stats.test_iteration == 0:
+            state.stats.starting_image_builds = False
+            state.stats.starting_container_runs = False
+        
+        test_fail_output_string += f"\n\t- IMAGE BUILDING FAILURE: {result.fail_explanation}"
+        print(f"{test_fail_output_string}")
+        with builtins.open(final_report_file, "a") as f:
+            f.write(test_fail_output_string)
+            
+        return {
+            "stats": state.stats,
             "fail_explanation": result.fail_explanation,
             "revision_type": "Image Not Built",
         }
@@ -636,58 +712,41 @@ def test_code(state: OverallState):
         if state.stats.test_iteration == 0:
             state.stats.starting_container_runs = False
         
-        test_fail_output_string += f"\n\t- MILESTONE CHECK FAILURE (CONTAINER FAILURE): {result.fail_explanation}"
+        test_fail_output_string += f"\n\t- CONTAINER FAILURE: {result.fail_explanation}"
         print(f"{test_fail_output_string}")
         with builtins.open(final_report_file, "a") as f:
             f.write(test_fail_output_string)
             
         return {
             "stats": state.stats,
-            "logs": '\n'.join(str(log) for log in inspect_logs),
             "fail_explanation": result.fail_explanation,
             "revision_type": "Container Not Running",
-        }
-        
-    if not result.code_hard_version:
-        state.stats.not_vuln_version_fail += 1
-        
-        test_fail_output_string += f"\n\t- MILESTONE CHECK FAILURE (NOT VULNERABLE VERSION): {result.fail_explanation}"
-        print(f"{test_fail_output_string}")
-        with builtins.open(final_report_file, "a") as f:
-            f.write(test_fail_output_string)
-            
-        return {
-            "stats": state.stats,
-            "logs": "",
-            "fail_explanation": result.fail_explanation,
-            "revision_type": "Not Vulnerable Version",
         }
         
     if not result.network_setup:
         state.stats.docker_misconfigured += 1
         
-        test_fail_output_string += f"\n\t- MILESTONE CHECK FAILURE (WRONG NETWORK SETUP): {result.fail_explanation}"
+        test_fail_output_string += f"\n\t- WRONG NETWORK SETUP: {result.fail_explanation}"
         print(f"{test_fail_output_string}")
         with builtins.open(final_report_file, "a") as f:
             f.write(test_fail_output_string)
             
         return {
             "stats": state.stats,
-            "logs": '\n'.join(str(log) for log in inspect_logs),
             "fail_explanation": result.fail_explanation,
             "revision_type": "Wrong Network Setup",
         }
 
     print(f"\tDocker is running correctly with {num_containers} containers!")
-    state.milestones.docker_builds = result.docker_builds
-    state.milestones.docker_runs = result.docker_runs
-    state.milestones.code_hard_version = result.code_hard_version
-    state.milestones.network_setup = result.network_setup
-    state.milestones.services_ok = result.services_ok
+    state.milestones.docker_builds = True
+    state.milestones.docker_runs = True
+    state.milestones.code_hard_version = True
+    state.milestones.network_setup = True
+    state.stats.services_ok = services_ok
     
     formatted_code = f"Directory tree:\n{state.code.directory_tree}\n\n"
-    for name, code in zip(state.code.file_name, state.code.file_code):
-        formatted_code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{code}\n\n"
+    for f in state.code.files:
+        formatted_code += "-" * 10 + f" {f.location} " + "-" * 10 + f"\n{f.content}\n\n"
         
     output_string = f"\n\nDocker is running correctly with {num_containers} containers!\n\nThis is the final version of the generated code:\n\n{formatted_code}\n\n"
     with builtins.open(final_report_file, "a") as f:
@@ -731,54 +790,64 @@ def revise_code(state: OverallState):
     final_report_file = code_dir_path / "logs/final_report.txt"
     down_docker(code_dir_path=code_dir_path)
     
-    if state.revision_type == "Image Not Built":
-        query = IMAGE_NOT_BUILT_PROMPT.format(
-            fail_explanation=state.fail_explanation,
-            # Passing just the last 100 lines of logs to mitigate ContextWindow saturation
-            logs="\n".join(state.logs.splitlines()[-100:]),
-            fixes=state.fixes,
-            cve_id=state.cve_id,
-            mode=state.web_search_tool,
-        )
-        
-    elif state.revision_type == "Container Not Running":
-        query = CONTAINER_NOT_RUN_PROMPT.format(
-            fail_explanation=state.fail_explanation,
-            # Passing just the last 100 lines of logs to mitigate ContextWindow saturation
-            logs="\n".join(state.logs.splitlines()[-100:]),
-            fixes=state.fixes,
-            cve_id=state.cve_id,
-            mode=state.web_search_tool,
-        )
-    
-    elif state.revision_type == "Not Vulnerable Version":
-        query = NOT_VULNERABLE_VERSION_PROMPT.format(
-            fail_explanation=state.fail_explanation,
-            logs="",
-            cve_id=state.cve_id,
-            mode=state.web_search_tool,
-        )
-        
-    elif state.revision_type == "Wrong Network Setup":
-        query = WRONG_NETWORK_SETUP_PROMPT.format(
-            fail_explanation=state.fail_explanation,
-            # Passing just the last 100 lines of logs to mitigate ContextWindow saturation
-            logs="\n".join(state.logs.splitlines()[-100:]),
-            cve_id=state.cve_id,
-            mode=state.web_search_tool,
-        )
-        
     code = "This is the code you have to revise:\n"
-    for name, content in zip(state.code.file_name, state.code.file_code):
-        code += "-" * 10 + f" {name} " + "-" * 10 + f"\n{content}\n\n"
+    for f in state.code.files:
+        code += "-" * 10 + f" {f.location} " + "-" * 10 + f"\n{f.content}\n\n"
     
-    revise_code_results = revise_code_llm.invoke(
+    # if state.revision_type == "Image Not Built":
+    #     query = IMAGE_NOT_BUILT_PROMPT.format(
+    #         fail_explanation=state.fail_explanation,
+    #         # Passing just the last 100 lines of logs to mitigate ContextWindow saturation
+    #         logs="\n".join(state.logs.splitlines()[-100:]),
+    #         fixes=state.fixes,
+    #         cve_id=state.cve_id,
+    #         mode=state.web_search_tool,
+    #     )
+    #     
+    # elif state.revision_type == "Container Not Running":
+    #     query = CONTAINER_NOT_RUN_PROMPT.format(
+    #         fail_explanation=state.fail_explanation,
+    #         # Passing just the last 100 lines of logs to mitigate ContextWindow saturation
+    #         logs="\n".join(state.logs.splitlines()[-100:]),
+    #         fixes=state.fixes,
+    #         cve_id=state.cve_id,
+    #         mode=state.web_search_tool,
+    #     )
+    # 
+    if state.revision_type == "Not Vulnerable Version":
+        hard_service_versions = ""
+        for service in state.web_search_result.services:
+            if service.dependency_type == "HARD":
+                hard_service_versions += f"\n\t\t- {service.name}: {service.version}"
+        query = NOT_VULNERABLE_VERSION_PROMPT.format(
+            hard_service_versions=hard_service_versions,
+            cve_id=state.cve_id,
+            mode=state.web_search_tool,
+        )
+    #     
+    # elif state.revision_type == "Wrong Network Setup":
+    #     query = WRONG_NETWORK_SETUP_PROMPT.format(
+    #         fail_explanation=state.fail_explanation,
+    #         # Passing just the last 100 lines of logs to mitigate ContextWindow saturation
+    #         logs="\n".join(state.logs.splitlines()[-100:]),
+    #         cve_id=state.cve_id,
+    #         mode=state.web_search_tool,
+    #     )
+    else:
+        query = TEST_FAIL_PROMPT.format(
+            fail_explanation=state.fail_explanation,
+            fixes=state.fixes,
+            cve_id=state.cve_id,
+            mode=state.web_search_tool,
+        )
+    
+    result = revise_code_llm.invoke(
         state.messages + [HumanMessage(content=code), HumanMessage(content=query)],
         config={"callbacks": [langfuse_handler]}
     )
 
-    output_string = f"\t- ERROR: {revise_code_results.error}"
-    output_string += f"\n\t- FIX: {revise_code_results.fix}"
+    output_string = f"\t- ERROR: {result.error}"
+    output_string += f"\n\t- FIX: {result.fix}"
     print(output_string)
     with builtins.open(final_report_file, "a") as f:
         f.write(f"\n{output_string}\n")
@@ -787,8 +856,8 @@ def revise_code(state: OverallState):
     return {
         "stats": state.stats,
         "milestones": state.milestones,
-        "code": revise_code_results.fixed_code,
-        "fixes": state.fixes + [revise_code_results.fix],
+        "code": result.fixed_code,
+        "fixes": state.fixes + [result.fix],
     }
 
 

@@ -4,7 +4,7 @@ from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
 
 # My modules
-from configuration import CodeGenerationResult, WebSearchResult, Stats, Milestones
+from configuration import Code, WebSearch, Stats, Milestones
 
 
 class OverallState(BaseModel):
@@ -28,19 +28,14 @@ class OverallState(BaseModel):
         description="Choose if the web search will be verbose or not"
     )
 
-    web_search_result: WebSearchResult = Field(
-        default=WebSearchResult(desc="", attack_type="", services=[]), 
+    web_search_result: WebSearch = Field(
+        default=WebSearch(desc="", attack_type="", services=[]), 
         description="The result of the web search"
     )
 
-    code: CodeGenerationResult = Field(
-        default=CodeGenerationResult(file_name=[], file_code=[], directory_tree=""),
+    code: Code = Field(
+        default=Code(files=[], directory_tree=""),
         description="The generated file name, code and associated directory tree"
-    )
-    
-    logs: str = Field(
-        default="",
-        description="Logs obtained while testing the Docker code"
     )
     
     fail_explanation: str = Field(

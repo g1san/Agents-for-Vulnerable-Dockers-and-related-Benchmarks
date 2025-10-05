@@ -87,46 +87,44 @@ def assess_dockers(cve_list: list[str], model: str, logs_set: str, web_search_mo
         print(f"Workflow invocation failed: {e}")
 
 
-def test_workflow():
+def run_agent(cve_list: list[str], web_search_mode: str):
     try:
-        with builtins.open('services.json', "r") as f:
-            jsonServices = json.load(f)
+        if web_search_mode == "all": web_search_mode = ["custom", "custom_no_tool", "openai"]
+        else: web_search_mode = [f"{web_search_mode}"]
         
-        cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
-        # cve_list = [cve for cve in cve_list if cve not in ["CVE-2018-12613", "CVE-2020-11652", "CVE-2021-3129", "CVE-2021-44228", "CVE-2023-23752", "CVE-2021-28164", "CVE-2021-34429", "CVE-2021-43798", "CVE-2022-22947", "CVE-2022-24706", "CVE-2022-46169", "CVE-2023-42793", "CVE-2024-23897"]]
-        print(len(cve_list), cve_list)
-        web_search_mode = "openai"
-        
-        for cve in cve_list:
-            #! Uncomment this to reuse the web_search_results file from the 'docker' folder !#
-            # with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:
-            #     web_search_data = json.load(f)
-            #! Uncomment this to reuse the web_search_results file from the 'benchmark_logs' folder !#
-            # with builtins.open(f'./../../benchmark_logs/GPT-5/1st-benchmark-session/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:   
-            #     web_search_data = json.load(f)
-            # logs_dir_path = Path(f"./../../dockers/{cve}/{web_search_mode}/logs")
-            # logs_dir_path.mkdir(parents=True, exist_ok=True)
-            # web_search_file = logs_dir_path / 'web_search_results.json'
-            # with builtins.open(web_search_file, 'w') as fp:
-            #     json.dump(web_search_data, fp, indent=4)    
-            
-            #! Uncomment this to reuse the code files from the 'docker' folder !#
-            # with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/code.json', 'r') as f:
-            #     code_data = json.load(f)
+        for wsm in web_search_mode:        
+            for cve in cve_list:
+                #! Uncomment this to reuse the web_search_results file from the 'docker' folder !#
+                # with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:
+                #     web_search_data = json.load(f)
+                #! Uncomment this to reuse the web_search_results file from the 'benchmark_logs' folder !#
+                # with builtins.open(f'./../../benchmark_logs/GPT-5/1st-benchmark-session/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:   
+                #     web_search_data = json.load(f)
+                # logs_dir_path = Path(f"./../../dockers/{cve}/{wsm}/logs")
+                # logs_dir_path.mkdir(parents=True, exist_ok=True)
+                # web_search_file = logs_dir_path / 'web_search_results.json'
+                # with builtins.open(web_search_file, 'w') as fp:
+                #     json.dump(web_search_data, fp, indent=4)    
 
-            result = compiled_workflow.invoke(
-                input={                 #! The model must be also manually initialized in the 'nodes.py' file !#
-                    "model": 'gpt-5',   #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
-                    "cve_id": cve,
-                    "web_search_tool": web_search_mode,
-                    "verbose_web_search": False,
-                    # "web_search_result": web_search_data,
-                    # "code": code_data,
-                    "messages": [SystemMessage(content=SYSTEM_PROMPT)]
-                },
-                config={"callbacks": [langfuse_handler], "recursion_limit": 100},
-            )
-            # return result
+                #! Uncomment this to reuse the code files from the 'docker' folder !#
+                # with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/code.json', 'r') as f:
+                #     code_data = json.load(f)
+
+                result = compiled_workflow.invoke(
+                    input={                 #! The model must be also manually initialized in the 'nodes.py' file !#
+                        "model": 'gpt-4o',   #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                        "cve_id": cve,
+                        "web_search_tool": wsm,
+                        "verbose_web_search": False,
+                        # "web_search_result": web_search_data,
+                        # "code": code_data,
+                        "messages": [SystemMessage(content=SYSTEM_PROMPT)]
+                    },
+                    config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+                )
+                
+                if len(cve_list) == 1 and len(web_search_mode) == 1:
+                    return result
     
     except Exception as e:
         print(f"Workflow invocation failed: {e}")
@@ -282,6 +280,10 @@ def generate_excel_csv_mono_mode(model, logs_set, mode):
             cve_data["Starting Container Runs"] = code_stats['starting_container_runs']
             cve_data["Container Run Failures"] = code_stats['container_run_failures']
             cve_data["Not Vulnerable Version Failures"] = code_stats['not_vuln_version_fail']
+            cve_data["Docker Misconfigured"] = code_stats['docker_misconfigured']
+            cve_data["Docker Scout Vulnerable"] = code_stats['docker_scout_vulnerable']
+            cve_data["Exploitable"] = code_stats['exploitable']
+            cve_data["Requires Manual Setup"] = code_stats['requires_manual_setup']
             
         except:
             cve_data["Number of Containers"] = None
@@ -291,6 +293,10 @@ def generate_excel_csv_mono_mode(model, logs_set, mode):
             cve_data["Starting Container Runs"] = None
             cve_data["Container Run Failures"] = None
             cve_data["Not Vulnerable Version Failures"] = None
+            cve_data["Docker Misconfigured"] = None
+            cve_data["Docker Scout Vulnerable"] = None
+            cve_data["Exploitable"] = None
+            cve_data["Requires Manual Setup"] = None
             
         data.append(cve_data)
 
@@ -331,8 +337,8 @@ def get_cve_df(model: str, logs_set: str, iteration: str, mode: str):
     # Create DataFrame
     df = pd.DataFrame(data)
     return df 
-        
-            
+
+
 def is_achieved(x):
     if pd.isna(x):
         return False
@@ -476,8 +482,8 @@ def barh_mean_std(df, feature: str):
         plt.xlabel(col)
         plt.tight_layout()
         plt.show()
-        
-        
+
+
 def barh_service_wsm(df, unique_services):
     x = np.arange(len(unique_services))
     width = 0.2     # Bar tickness
@@ -557,6 +563,9 @@ def services_stats(cve_list: list[str], model: str, logs_set: str, iteration: st
                         "starting_container_runs": stats["starting_container_runs"],
                         "container_run_failures": stats["container_run_failures"],
                         "not_vuln_version_fail": stats["not_vuln_version_fail"],
+                        "docker_misconfigured": stats["docker_misconfigured"],
+                        "docker_scout_vulnerable": stats["docker_scout_vulnerable"],
+                        "exploitable": stats["exploitable"],
                     })
             except Exception as e: print(cve, wsm, f"does not exist\t({e})")
     print("="*10 + "END ERROR MESSAGES" + "="*10 + "\n"*3)
@@ -772,17 +781,25 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 
 
 # draw_graph()
-# result = test_workflow()
-# milestones = benchmark("custom")
+# milestones = benchmark("openai")
 # df = generate_excel_csv()
 # df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
 # data = extract_milestones_stats(model="GPT-5", logs_set="1st", mode='custom_no_tool')
 # web_search_mode_stats(model="GPT-5", logs_set="1st")
 # best_cve_runs(model="GPT-4o", logs_set="4th", mode="custom_no_tool")              # Leave mode="" to consider all web search modes
-best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="", mode="")     # Leave mode="" to consider all web search modes
+# best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="", mode="")     # Leave mode="" to consider all web search modes
 
+#* RUN AGENT *#
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[:20]
+# print(len(cve_list), cve_list)
+# result = run_agent(
+#     cve_list=cve_list,
+#     web_search_mode="openai",
+# )
 
-
+#* SOME STATS *#
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]

@@ -26,7 +26,7 @@ class Service(BaseModel):
     description: str = Field(description="Brief description of why the service is necessary in the Docker")
 
 
-class WebSearchResult(BaseModel):
+class WebSearch(BaseModel):
     desc: str = Field(description="Description of the CVE")
     attack_type: str = Field(description="Type of attack (e.g. DoS, RCE, etc.)")
     services: list[Service] = Field(description="List of services to be used in the Docker system vulnerable to the CVE-ID")
@@ -36,30 +36,38 @@ class HARDServiceVersionAssessment(BaseModel):
     hard_version: bool = Field("Does the 'HARD' service version range contain the expected version?")
 
 
-class CodeGenerationResult(BaseModel):
-    file_name: list[str] = Field(description="Name of the files needed to reproduce the CVE")
-    file_code: list[str] = Field(description="Name and code of the various files needed to reproduce the CVE")
+class File(BaseModel):
+    location: str = Field(description="Location of the file")
+    content: str = Field(description="Content of the file")
+    
+
+class Code(BaseModel):
+    files: list[File] = Field(description="Name and code of the various files needed to reproduce the CVE")
     directory_tree: str = Field(description="Directory tree where the files will be stored, rooted in the CVE-ID folder")
 
 
 class ContainerLogsAssessment(BaseModel):
-    container_ok: bool = Field(description="Does the Docker container run correctly?")
+    container_ok: bool = Field(description="Is the Docker container running correctly?")
     fail_explanation: Optional[str] = Field(description="Detailed explanation of the error presented by the logs")
     
     
-class TestCodeResult(BaseModel):
-    error: str = Field(description="Detailed description of the error presented by the logs")
-    fix: str = Field(description="Detailed description of fix applied to the code to solve the error")
-    fixed_code: CodeGenerationResult = Field(description="The fixed file names, code and associated directory tree")
-
-    
-class CodeMilestonesAssessment(BaseModel):
-    docker_builds: bool = Field(description="Do all Docker images get built correctly?")
-    docker_runs: bool = Field(description="Does the Docker system run correctly?")
+class ServiceMilestonesAssessment(BaseModel):
     services_ok: bool = Field(description="Does the generated code contain the services provided by the web search?")
     code_hard_version: bool = Field(description="Does the generated code use vulnerable version of the 'HARD' services?")
+    fail_explanation: Optional[str] = Field(description="Detailed explanation of why one or more milestones have failed")
+
+
+class DockerMilestonesAssessment(BaseModel):
+    docker_builds: bool = Field(description="Do all Docker images get built correctly?")
+    docker_runs: bool = Field(description="Does the Docker system run correctly?")
     network_setup: bool = Field(description="Are all services/containers setup to be accessible from the right network ports?")
     fail_explanation: Optional[str] = Field(description="Detailed explanation of why one or more milestones have failed")
+
+    
+class CodeRevision(BaseModel):
+    error: str = Field(description="Detailed description of the error presented by the logs")
+    fix: str = Field(description="Detailed description of fix applied to the code to solve the error")
+    fixed_code: Code = Field(description="The fixed file names, code and associated directory tree")
 
 
 class Stats(BaseModel):
@@ -73,7 +81,8 @@ class Stats(BaseModel):
     docker_misconfigured: int = Field(default=0, description="Number of times the Docker builds and runs correctly but uses a wrong network setup")
     docker_scout_vulnerable: bool = Field(default=False, description="Is the Docker environment vulnerable to the specified CVE?")
     exploitable: bool = Field(default=False, description="Does the exploit return the expected result?")
-    
+    services_ok: bool = Field(default=False, description="Does the Docker use all the services provided by the web search?")
+    requires_manual_setup: bool = Field(default=False, description="Does this service require the user to perform some sort of manual operation to make it work or does it work just by launching the Docker?")
     
     
 class Milestones(BaseModel):
@@ -88,4 +97,3 @@ class Milestones(BaseModel):
     docker_runs: bool = Field(default=False, description="Do all Docker containers run correctly?")
     code_hard_version: bool = Field(default=False, description="Does the generated code use vulnerable version of the 'HARD' services?")
     network_setup: bool = Field(default=False, description="Are all services/containers setup to be accessible from the right network ports?")
-    services_ok: bool = Field(default=False, description="Does the generated code contain the services provided by the web search?")

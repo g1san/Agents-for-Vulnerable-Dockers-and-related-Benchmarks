@@ -16,7 +16,7 @@ from prompts import (
     LLM_SUMMARIZE_WEBPAGE_PROMPT, 
     GET_DOCKER_SERVICES_PROMPT,
 )
-from configuration import langfuse_handler, WebSearchResult
+from configuration import langfuse_handler, WebSearch
 
 
 class ContextGenerator:
@@ -225,7 +225,7 @@ class ContextGenerator:
                 raise ValueError("Model not supported")
             
             # Set the LLM to return a structured output from web search
-            docker_services_llm = llm_model.with_structured_output(WebSearchResult)
+            docker_services_llm = llm_model.with_structured_output(WebSearch)
             
             # Invoke the LLM to summarize the web search content
             formatted_response = docker_services_llm.invoke(messages, config={"callbacks": [langfuse_handler]})

@@ -3,7 +3,6 @@
 
 
 ## Useful for Thesis
-_Suggestion_: split CHECKs of test milestones into multiple interactions with the LLM (use list to with all questions to format a single prompt)
 **MANDATORY**: check all files of all dockers to assess LLM-as-a-Judge reliability
 
 ### Docker Validation with PoC

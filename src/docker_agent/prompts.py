@@ -45,9 +45,7 @@ GUIDELINES:
         - 'SOFT-CACHE' for caching/key-value store/coordination services (e.g., Redis, etcd, ZooKeeper)
 - ABOUT SERVICE VERSIONS:
     - Service version must specified and valid for Docker Hub, do not be vague by citing just 'any compatible version'
-    - For 'HARD' services you must list all vulnerable versions cited by the most reliable sources such as MITRE and NIST
-        - You can specify version ranges (format "OLDEST-VERSION---NEWEST-VERSION")
-        - You can specify also specify unique vulnerable versions (format "VERSION")
+    - For 'HARD' services you must list all vulnerable versions cited by the most reliable sources such as MITRE and NIST. Do not use ranges, you must be very specific with version name and list all versions vulnerable to {cve_id}
     - For 'SOFT' services choose a versions compatible with the 'HARD' services
 """
 
@@ -73,9 +71,7 @@ GUIDELINES:
         - 'SOFT-CACHE' for caching/key-value store/coordination services (e.g., Redis, etcd, ZooKeeper)
 - ABOUT SERVICE VERSIONS:
     - Service version must specified and valid for Docker Hub, do not be vague by citing just 'any compatible version'
-    - For 'HARD' services you must list all vulnerable versions cited by the most reliable sources such as MITRE and NIST
-        - You can specify version ranges (format "OLDEST-VERSION---NEWEST-VERSION")
-        - You can specify also specify unique vulnerable versions (format "VERSION")
+    - For 'HARD' services you must list all vulnerable versions cited by the most reliable sources such as MITRE and NIST. Do not use ranges, you must be very specific with version name and list all versions vulnerable to {cve_id}
     - For 'SOFT' services choose a versions compatible with the 'HARD' services
 """
         
@@ -87,9 +83,7 @@ WEB_SEARCH_FORMAT_PROMPT = """GOAL: convert the following text in the provided s
 HARD_SERV_VERS_ASSESSMENT_PROMPT = """GOAL: check if version '{version}' of the '{service}' service is contained in the following list of versions
 {version_list}
 
-CONTEXT: the version list may contain multiple entries separated by ','. Each entry can be:
-- A specific version
-- A range of versions delineated by '---'
+CONTEXT: the version lists of each service may contain multiple entries separated by ','
 """
 
 
@@ -108,6 +102,49 @@ GUIDELINES:
 """
 
 
+CHECK_CONTAINER_PROMPT = """GOAL: check the contents of the command 'sudo docker logs [CONTAINER ID] --details' and check if it is running correctly
+{log}
+"""
+
+
+CHECK_SERVICES_VERSIONS_PROMPT = """GOALS: analyse the output of the command 'sudo docker inspect [IMAGE-ID/CONTAINED-ID]' and the code (all contained in the previous messages) to assert if
+- the following services are using one of the versions listed to their side ('code_hard_version' milestone):{hard_service_versions}
+- the Docker uses the following services: {service_list} ('services_ok' milestone)
+
+CONTEXT: the version lists of each service may contain multiple entries separated by ','
+
+GUIDELINES: if any of the milestones is not achieved, you must explain why the Docker fails to achieve them and set to false the corresponding flag
+"""
+
+
+CHECK_DOCKER_PROMPT = """GOALS: analyse the output of the command 'sudo docker inspect [IMAGE-ID/CONTAINED-ID]' and the code contained (all contained in the previous messages) to assert if
+- all Docker images are built correctly ('docker_builds' milestone)
+- all Docker containers are running correctly ('docker_runs' milestone)
+- all Docker containers are using the right network port ('network_setup' milestone)
+
+GUIDELINES: if any of the milestones is not achieved, you must explain why the Docker fails to achieve them and set to false the corresponding flag
+"""
+
+
+TEST_FAIL_PROMPT = """CONTEXT: {fail_explanation}
+
+GOALS: fix the Docker system problems by modifying its code, which is available in my previous message. Here is the list of previous fixes that you attempted but did not work, my suggestion is to try something different from these:
+{fixes}
+
+GUIDELINES:
+- The system must be immediately deployable using the "docker compose up" command
+- All services and related containers must be properly configured and be immediately accessible from the service's default network ports
+- Your answer must include all files, both the updated ones and the unchanged ones
+- All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
+- There is no need to specify the file name in the file content
+- The Docker code was generated using the data in the message about {cve_id} and its services
+    - You must use all and only the services that are listed in the message that describes {cve_id}
+    - If a service requires a dedicated container write the code for it
+    - You must not use versions of 'HARD' services that are not listed in the message about {cve_id} and its services
+"""
+
+
+#! NOT USED !#
 IMAGE_NOT_BUILT_PROMPT = """CONTEXT: my Docker systems terminates its execution because of an error while building one of its images
 {fail_explanation}
 
@@ -131,13 +168,7 @@ GUIDELINES:
 """
 
 
-ASSERT_CONTAINER_STATE_PROMPT = """GOAL: check the contents of the following logs and understand if the container is running correctly
-{logs}
-
-CONTEXT: the logs are obtained with the command 'sudo docker logs [CONTAINER ID] --details'
-"""
-
-
+#! NOT USED !#
 CONTAINER_NOT_RUN_PROMPT = """CONTEXT: one of the containers of my Docker terminates its execution because of an error.
 {fail_explanation}
 {logs}
@@ -158,29 +189,9 @@ GUIDELINES:
 """
 
 
-CHECK_SERVICES_PROMPT = """GOALS: analyse the output of the command 'sudo docker inspect [CONTAINED ID]' and the code contained in the previous message to:
-- Check if all Docker images are built correctly ('docker_builds' milestone)
-- Check if all Docker containers are running correctly ('docker_runs' milestone)
-- Check if the following services are using one of the versions listed to their side ('code_hard_version' milestone):{hard_service_versions}
-- Check if all Docker containers are using the right network port ('network_setup' milestone)
-- Check if the Docker uses the following services: {service_list} ('services_ok' milestone)
------ START OF INSPECT LOGS -----
-{inspect_logs}
------  END OF INSPECT LOGS  -----
+NOT_VULNERABLE_VERSION_PROMPT = """CONTEXT: my Docker is not using a vulnerable version of the 'HARD' service(s) listed in the previous message!
 
-CONTEXT: the version lists of each service may contain multiple entries separated by ','. Each entry can be:
-- A specific version
-- A range of versions delineated by '---'
-
-GUIDELINES: if any of the milestones is not achieved, you must explain why the Docker fails to achieve them
-"""
-
-
-NOT_VULNERABLE_VERSION_PROMPT = """CONTEXT: my Docker is not using a vulnerable version of the 'HARD' service(s) listed in the previous message
-{fail_explanation}
-{logs}
-
-GOAL: fix the Docker system by ensuring a vulnerable version of the 'HARD' service is used. Modify its code, which is available in my previous message
+GOAL: fix this by modifying the Docker's code (which is available in my previous message) to ensure that the 'HARD' service uses one of the vulnerable versions listed here:{hard_service_versions}
 
 GUIDELINES:
 - The system must be immediately deployable using the "docker compose up" command
@@ -195,6 +206,7 @@ GUIDELINES:
 """
 
 
+#! NOT USED !#
 WRONG_NETWORK_SETUP_PROMPT = """CONTEXT: one or more of my Docker containers are not using the right network setup
 {fail_explanation}
 {logs}

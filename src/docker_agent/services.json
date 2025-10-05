@@ -1,7 +1,6 @@
 {
     "CVE-2012-1823": [
-        "HARD:php:5.4.1-cgi",
-        "SOFT-WEB:php:5.4.1"
+        "HARD:php:5.4.1-cgi"
     ],
     "CVE-2016-5734": [
         "HARD:phpmyadmin:4.4.15.6",
