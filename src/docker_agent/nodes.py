@@ -306,9 +306,10 @@ def assess_services(state: OverallState):
 
     # Check if the vulnerable version of all expected 'HARD' services was proposed
     response_list = {}
-    for service, version_list, version in zip(proposed_hard.keys(), proposed_hard.values(), expected_hard.values()):
+    for service, version in expected_hard.items():
         print(f"\tChecking if version {version} of service '{service}' was proposed...")
         response_list[service] = False
+        version_list = proposed_hard[service]
         for ver in version_list:
             if ver == version:
                 response_list[service] = True
@@ -449,6 +450,7 @@ def launch_docker(code_dir_path, log_file):
         print(f"\t{e}")
         return False, e
 
+
 def get_image_ids():
     result = subprocess.run(
         ["sudo", "docker", "images", "-q"],
@@ -520,18 +522,6 @@ def inspect_container(cid, log_file):
         raise ValueError(f"Failed to parse JSON for container {cid}")
         
     return log
-    
-
-def get_cve_list(code_dir_path):
-    with builtins.open(f"{code_dir_path}/logs/cves.json", "w") as f:
-        subprocess.run(
-            ["docker", "scout", "cves", "--format", "gitlab"],
-            cwd=code_dir_path,
-            stdout=f,
-            stderr=subprocess.DEVNULL,
-            text=True,
-        )
-        print(f"\tCVE List file saved to: {code_dir_path}/logs/cves.json")
 
 
 def down_docker(code_dir_path):
@@ -908,15 +898,29 @@ def route_exploit(state: OverallState) -> Literal["Assess Vuln", "Revise Code"]:
         return "Revise Code"
 
 
+def get_cve_list(code_dir_path, index, iid):
+    with builtins.open(f"{code_dir_path}/logs/cves{index}.json", "w") as f:
+        subprocess.run(
+            ["docker", "scout", "cves", iid, "--format", "gitlab"],
+            cwd=code_dir_path,
+            stdout=f,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        print(f"\tCVE List file saved to: {code_dir_path}/logs/cves{index}.json")
+        
+
 def check_docker_vulnerability(cve_id, code_dir_path):
-    get_cve_list(code_dir_path=code_dir_path)
-    cves_file_path = code_dir_path / "logs/cves.json"
-    with builtins.open(cves_file_path, "r") as f:
-        cve_list = json.load(f)
-    cve_list = cve_list["vulnerabilities"]
-    for cve in cve_list:
-        if cve["cve"] == cve_id:
-            return True
+    image_ids = get_image_ids()
+    for index, iid in enumerate(image_ids):
+        get_cve_list(code_dir_path=code_dir_path, index=index, iid=iid)
+        cves_file_path = code_dir_path / f"logs/cves{index}.json"
+        with builtins.open(cves_file_path, "r") as f:
+            cve_list = json.load(f)
+        cve_list = cve_list["vulnerabilities"]
+        for cve in cve_list:
+            if cve["cve"] == cve_id:
+                return True
     return False
 
 

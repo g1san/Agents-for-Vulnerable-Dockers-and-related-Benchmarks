@@ -7,25 +7,26 @@ The web search shows the right version numbers just not the 'cgi' variant
 Web search results are ok, always fails to build image
 
 ## CVE-2018-12613
-There seems to be nothing wrong, correct services and versions are used, but Docker Scout does not find the CVE, **to test exploit**
+There seems to be nothing wrong, correct services and versions are used, but Docker Scout does not find the CVE.
+**Exploit** was tested with slight modifications to Docker files and it works, but Docker Scout does not find the CVE even when exploit works.
 
 ## CVE-2020-7247
-A vulnerable version of OpenSMTP is identified, but not the one of 'services.json'. CVE decription is correct and includes the version of 'services.json'
+A vulnerable version of OpenSMTP is identified, but not the one of 'services.json'. CVE description is correct and includes the version of 'services.json'
 
 ## CVE-2020-11651
-All ok, **to test exploit**
+All ok, **exploit works**
 
 ## CVE-2020-11652
-All ok, **to test exploit**
+All ok, **exploit works**
 
 ## CVE-2021-3129
-**Allucination** of LLM-as-a-Judge, the version of 'services.json' is included in the web search results. **Might want to make also a manual assessement now that the versioning prompt is changed**
+Web search results are ok, various containers manifest various issues that make them unstable
 
 ## CVE-2021-28164
-Typical problem of 'jetty' versions
+Typical problem of _jetty_ versions
 
 ## CVE-2021-34429
-All ok, **to test exploit**
+All ok, **exploit works**, there is just a misplaced folder that does not allow it to work instantly. To make it work just move WEB-INF folder inside ROOT folder
 
 ## CVE-2021-41773
 There seems to be nothing wrong, correct services and versions are used, but Docker Scout does not find the CVE, **to test exploit**. Moreover, as usual, 'SOFT' service 'ubuntu' is not included in the Docker
@@ -84,7 +85,7 @@ There seems to be nothing wrong, correct services and versions are used, but Doc
 There seems to be nothing wrong, correct services and versions are used, but Docker Scout does not find the CVE, **to test exploit**.
 
 ## CVE-2024-23897
-There seems to be nothing wrong, correct services and versions are used, but Docker Scout does not find the CVE, **to test exploit**.
+All ok, **exploit works**
 
 
 
@@ -98,16 +99,17 @@ The web search shows the right version numbers just not the 'cgi' variant
 Web search results are ok, always fails to build image
 
 ## CVE-2018-12613
-There seems to be nothing wrong, correct services and versions are used, but Docker Scout does not find the CVE, **to test exploit**
+There seems to be nothing wrong, correct services and versions are used, but Docker Scout does not find the CVE.
+**Exploit** was tested with slight modifications to Docker files it works, but Docker Scout does not find the CVE even when exploit works.
 
 ## CVE-2020-7247
 Web search results are ok, wrong version of OpenSMTP is used in the container (alpine:3.12 is not a vulnerable version). Moreover, OpenSMTP container cannot me stabilised and keeps showing errors
 
 ## CVE-2020-11651
-All ok, **to test exploit**
+All ok, **exploit works**
 
 ## CVE-2020-11652
-All ok, **to test exploit**
+All ok, **exploit works**
 
 ## CVE-2021-3129
 The version of 'services.json' is **not** included in the web search results. Other versions which are vulnerable are instead included. **Relaunch this with existing web search results**
@@ -116,7 +118,7 @@ The version of 'services.json' is **not** included in the web search results. Ot
 Typical problem of _jetty_ versions
 
 ## CVE-2021-34429
-Version of 'jetty' used is _9.4.42-jre11-slim_, not plain _9.4.42_, whihc might cause Docker SCout not to spot the CVE, **to test exploit**.
+All ok, **exploit works**, there is just no file to read in the desired path. To make it work just add ROOT/WEB-INF/something.xml file inside 'webapps' folder. Adding this also allows Docker Scout to spot the CVE
 
 ## CVE-2021-41773
 There seems to be nothing wrong, correct services and versions are used, but Docker Scout does not find the CVE, **to test exploit**. Moreover, as usual, 'SOFT' service _ubuntu_ is not included in the Docker
@@ -159,16 +161,18 @@ All ok, **to test exploit**
 Web search results are ok, always fails to build image
 
 ## CVE-2016-5734
-There seems to be nothing wrong, correct services and versions are used, but Docker Scout does not find the CVE, **to test exploit**
+There seems to be nothing wrong, correct services and versions are used, but Docker Scout does not find the CVE.
+**Exploit** does not work, probably because the Docker uses _php:7.4-apache_. Evaluate switch to 'HARD' dependency for _php_ to force lower version usage
 
 ## CVE-2018-12613
-There seems to be nothing wrong, correct services and versions are used, but Docker Scout does not find the CVE, **to test exploit**
+There seems to be nothing wrong, correct services and versions are used, but Docker Scout does not find the CVE.
+**Exploit** was tested with slight modifications to Docker files it works, but Docker Scout does not find the CVE even when exploit works.
 
 ## CVE-2020-7247
 Web search results are ok, an unspecified version of OpenSMTP is used in the container. Moreover, OpenSMTP container cannot be stabilised and keeps showing errors
 
 ## CVE-2020-11651
-All ok, **to test exploit**
+All ok, **exploit works**
 
 ## CVE-2020-11652
 Wrong 'HARD' service name, _salt-master_ instead of _salt_
@@ -177,10 +181,10 @@ Wrong 'HARD' service name, _salt-master_ instead of _salt_
 'HARD' service not identified (_laravel_)
 
 ## CVE-2021-28164
-Version of 'jetty' used is _9.4.38-jre11-slim_, not plain _9.4.38_, which might cause Docker Scout not to spot the CVE, **to test exploit**.
+All ok, **exploit works**
 
 ## CVE-2021-34429
-Version of 'jetty' used is _9.4.42-jre11_, not plain _9.4.42_, which might cause Docker Scout not to spot the CVE, **to test exploit**.
+All ok, **exploit works**, there is just a misplaced folder that does not allow it to work instantly. To make it work just move WEB-INF folder inside ROOT folder
 
 ## CVE-2021-41773
 There seems to be nothing wrong, correct services and versions are used, but Docker Scout does not find the CVE, **to test exploit**.

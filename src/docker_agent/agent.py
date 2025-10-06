@@ -55,30 +55,46 @@ def assess_dockers(cve_list: list[str], model: str, logs_set: str, web_search_mo
                 with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{wsm}/logs/milestones.json', 'r') as f:
                     milestones = json.load(f)
 
-                if not milestones["docker_builds"] or not milestones["docker_runs"]:
-                    continue
-
                 with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:
                     web_search_data = json.load(f)
-
-                with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{wsm}/logs/code.json', 'r') as f:
-                    code_data = json.load(f)
-
-                result = compiled_workflow.invoke(
-                    input={                   #! The model must be also manually initialized in the 'nodes.py' file !#
-                        "model": "gpt-5",     #* Models allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
-                        "cve_id": cve,
-                        "web_search_tool": wsm,
-                        "verbose_web_search": False,
-                        "web_search_result": web_search_data,
-                        "code": code_data,
-                        "messages": [SystemMessage(content=SYSTEM_PROMPT)]
-                    },
-                    config={"callbacks": [langfuse_handler], "recursion_limit": 100},
-                )
+                    
+                if milestones["docker_builds"] and milestones["docker_runs"]:
+                    with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{wsm}/logs/code.json', 'r') as f:
+                        code_data = json.load(f)
+                        
+                    with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{wsm}/logs/stats.json', 'r') as f:
+                        stats = json.load(f)
+                        
+                    result = compiled_workflow.invoke(
+                        input={                   #! The model must be also manually initialized in the 'nodes.py' file !#
+                            "model": "gpt-4o",     #* Models allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                            "cve_id": cve,
+                            "web_search_tool": wsm,
+                            "verbose_web_search": False,
+                            "web_search_result": web_search_data,
+                            "code": code_data,
+                            "messages": [SystemMessage(content=SYSTEM_PROMPT)]
+                        },
+                        config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+                    )
+                    
+                    if stats["docker_scout_vulnerable"] != result["stats"].docker_scout_vulnerable:
+                        print(f"{cve} 'docker_scout_vulnerable' {stats["docker_scout_vulnerable"]} --> {result["stats"].docker_scout_vulnerable}")
+                else:
+                    continue
+                    result = compiled_workflow.invoke(
+                        input={                   #! The model must be also manually initialized in the 'nodes.py' file !#
+                            "model": "gpt-4o",     #* Models allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                            "cve_id": cve,
+                            "web_search_tool": wsm,
+                            "verbose_web_search": False,
+                            "web_search_result": web_search_data,
+                            "messages": [SystemMessage(content=SYSTEM_PROMPT)]
+                        },
+                        config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+                    )
 
                 for m, val in result["milestones"]:
-                    if m == "network_setup": continue
                     if val != milestones[m]:
                         print(f"{cve} '{m}' {milestones[m]} --> {val}")
                 print("\n\n\n")
@@ -787,7 +803,7 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 # data = extract_milestones_stats(model="GPT-5", logs_set="1st", mode='custom_no_tool')
 # web_search_mode_stats(model="GPT-5", logs_set="1st")
 # best_cve_runs(model="GPT-4o", logs_set="4th", mode="custom_no_tool")              # Leave mode="" to consider all web search modes
-# best_cve_runs_updated(model="GPT-4o", logs_set="4th", iteration="", mode="")     # Leave mode="" to consider all web search modes
+# best_cve_runs_updated(model="GPT-4o", logs_set="5th", iteration="", mode="")     # Leave mode="" to consider all web search modes
 
 #* RUN AGENT *#
 # with builtins.open('services.json', "r") as f:
@@ -796,8 +812,20 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 # print(len(cve_list), cve_list)
 # result = run_agent(
 #     cve_list=cve_list,
-#     web_search_mode="openai",
+#     web_search_mode="custom",
 # )
+
+#* ASSESS DOCKERS *#
+with builtins.open('services.json', "r") as f:
+    jsonServices = json.load(f)
+cve_list = list(jsonServices.keys())[:20]
+print(len(cve_list), cve_list)
+df = assess_dockers(
+    cve_list=cve_list,#cve_list, 
+    model="GPT-4o",     #! INSERT THIS MANUALLY IN THE 'assess_dockers' function body !#
+    logs_set="5th",
+    web_search_mode="all", #! MANDATORY !#
+)
 
 #* SOME STATS *#
 # with builtins.open('services.json', "r") as f:
@@ -810,17 +838,6 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 #     iteration="", 
 #     web_search_mode="",
 #     filtered_milestones=True,
-# )
-
-#* ASSESS DOCKERS *#
-# with builtins.open('services.json', "r") as f:
-#     jsonServices = json.load(f)
-# cve_list = list(jsonServices.keys())[:20]
-# df = assess_dockers(
-#     cve_list=cve_list, 
-#     model="GPT-5",     #! INSERT THIS MANUALLY IN THE 'assess_dockers' function body !#
-#     logs_set="2nd",
-#     web_search_mode="all", #! MANDATORY !#
 # )
 
 

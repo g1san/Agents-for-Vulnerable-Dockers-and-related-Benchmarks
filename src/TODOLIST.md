@@ -3,10 +3,10 @@
 
 
 ## Useful for Thesis
-**MANDATORY**: check all files of all dockers to assess LLM-as-a-Judge reliability
 
 ### Docker Validation with PoC
 - Ultimate goal of the **_run\_exploit_** node function is to launch the PoC for the specific CVE, extract the output, pass it to an LLM-as-a-Judge and evaluate if the output is the desired one (might want to pass the code of the exploit) or if there is a problem with either the docker or the exploit code.
+- All exploits must be tested on a working Docker and adapted to the **_run\_exploit_** function, so that they can be launched after performing _chmod +x_
 
 ### Better graphs
 - Add % values to the heatmap graph
@@ -33,5 +33,3 @@
 
 ## Future Works
 - Implement MCP for Docker Desktop in another branch for future proofing
-- **Problems discovered with testing**:
-    - CVE-2020-7247 and CVE-2021-41773 repeatedly caused this error: Workflow invocation failed: Could not parse response content as the length limit was reached - CompletionUsage(completion_tokens=16384, prompt_tokens=3447, total_tokens=19831, completion_tokens_details=CompletionTokensDetails(accepted_prediction_tokens=0, audio_tokens=0, reasoning_tokens=0, rejected_prediction_tokens=0), prompt_tokens_details=PromptTokensDetails(audio_tokens=0, cached_tokens=0))
