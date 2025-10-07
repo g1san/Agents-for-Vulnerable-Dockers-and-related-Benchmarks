@@ -94,7 +94,8 @@ GUIDELINES:
     - You must use all and only the services that are listed in the message that describes {cve_id}
     - If a service requires a dedicated container write the code for it
     - You must not use versions of 'HARD' services that are not listed in the message about {cve_id} and its services
-- Always write enough files to make the system work and exploitable
+- Always write enough files to make the system work and to ensure that {cve_id} is exploitable
+- If a DB is needed, ensure it is properly setup and populated with some data
 - The system must be immediately deployable using the "docker compose up" command
 - All services and related containers must be properly configured and be immediately accessible from the service's default network ports
 - All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
@@ -132,9 +133,10 @@ GOALS: fix the Docker system problems by modifying its code, which is available 
 {fixes}
 
 GUIDELINES:
+- Ensure that all DBs are properly setup and populated with some data
 - The system must be immediately deployable using the "docker compose up" command
 - All services and related containers must be properly configured and be immediately accessible from the service's default network ports
-- Your answer must include all files, both the updated ones and the unchanged ones
+- Your answer must include all files (updated ones, unchanged ones and new ones)
 - All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
 - There is no need to specify the file name in the file content
 - The Docker code was generated using the data in the message about {cve_id} and its services
@@ -194,9 +196,10 @@ NOT_VULNERABLE_VERSION_PROMPT = """CONTEXT: my Docker is not using a vulnerable 
 GOAL: fix this by modifying the Docker's code (which is available in my previous message) to ensure that the 'HARD' service uses one of the vulnerable versions listed here:{hard_service_versions}
 
 GUIDELINES:
+- Ensure that all DBs are properly setup and populated with some data
 - The system must be immediately deployable using the "docker compose up" command
 - All services and related containers must be properly configured and be immediately accessible from the service's default network ports
-- Your answer must include all files, both the updated ones and the unchanged ones
+- Your answer must include all files (updated ones, unchanged ones and new ones)
 - All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
 - There is no need to specify the file name in the file content
 - The Docker code was generated using the data in the message about {cve_id} and its services
