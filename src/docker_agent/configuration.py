@@ -51,15 +51,15 @@ class ContainerLogsAssessment(BaseModel):
     fail_explanation: Optional[str] = Field(description="Detailed explanation of the error presented by the logs")
     
     
-class ServiceMilestonesAssessment(BaseModel):
-    services_ok: bool = Field(description="Does the generated code contain the services provided by the web search?")
+class ServiceAssessment(BaseModel):
     code_hard_version: bool = Field(description="Does the generated code use vulnerable version of the 'HARD' services?")
+    services_ok: bool = Field(description="Does the generated code contain the services provided by the web search?")
     fail_explanation: Optional[str] = Field(description="Detailed explanation of why one or more milestones have failed")
 
 
-class DockerMilestonesAssessment(BaseModel):
-    docker_builds: bool = Field(description="Do all Docker images get built correctly?")
-    docker_runs: bool = Field(description="Does the Docker system run correctly?")
+class NetworkAssessment(BaseModel):
+    # docker_builds: bool = Field(description="Do all Docker images get built correctly?")
+    # docker_runs: bool = Field(description="Does the Docker system run correctly?")
     network_setup: bool = Field(description="Are all services/containers setup to be accessible from the right network ports?")
     fail_explanation: Optional[str] = Field(description="Detailed explanation of why one or more milestones have failed")
 

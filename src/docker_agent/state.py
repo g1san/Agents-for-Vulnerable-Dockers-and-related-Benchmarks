@@ -48,6 +48,11 @@ class OverallState(BaseModel):
         description="Type of revision to be applied to the Docker code"
     )
     
+    revision_goal: str = Field(
+        default="",
+        description="Goal of the revision phase"
+    )
+    
     fixes: list[str] = Field(
         default=[],
         description="List of attempted fixes to the code"

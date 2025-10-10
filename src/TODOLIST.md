@@ -1,8 +1,9 @@
 # TODOLIST
-
+Fai una nuova run con GPT-5, poi prepara le slide
 
 
 ## Useful for Thesis
+
 
 ### Docker Validation with PoC
 - Ultimate goal of the **_run\_exploit_** node function is to launch the PoC for the specific CVE, extract the output, pass it to an LLM-as-a-Judge and evaluate if the output is the desired one (might want to pass the code of the exploit) or if there is a problem with either the docker or the exploit code.
@@ -33,3 +34,4 @@
 
 ## Future Works
 - Implement MCP for Docker Desktop in another branch for future proofing
+- Implement RAG for fixes, instead of passing entire list, ask LLM to summarise the fix list and pass summary instead

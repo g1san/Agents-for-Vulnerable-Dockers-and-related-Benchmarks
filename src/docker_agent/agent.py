@@ -110,11 +110,36 @@ def run_agent(cve_list: list[str], web_search_mode: str):
         
         for wsm in web_search_mode:        
             for cve in cve_list:
+                # with builtins.open(f'./../../benchmark_logs/GPT-4o/5th-benchmark-session/{cve}/{wsm}/logs/milestones.json', 'r') as f:
+                #     milestones = json.load(f)
+                #     if milestones["hard_service"] and milestones["hard_version"] and milestones["soft_services"]:
+                #         with builtins.open(f'./../../benchmark_logs/GPT-4o/5th-benchmark-session/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:   
+                #             web_search_data = json.load(f)
+                #         logs_dir_path = Path(f"./../../dockers/{cve}/{wsm}/logs")
+                #         logs_dir_path.mkdir(parents=True, exist_ok=True)
+                #         web_search_file = logs_dir_path / 'web_search_results.json'
+                #         with builtins.open(web_search_file, 'w') as fp:
+                #             json.dump(web_search_data, fp, indent=4) 
+                #             
+                #         result = compiled_workflow.invoke(
+                #             input={                 #! The model must be also manually initialized in the 'nodes.py' file !#
+                #                 "model": 'gpt-4o',   #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                #                 "cve_id": cve,
+                #                 "web_search_tool": wsm,
+                #                 "verbose_web_search": False,
+                #                 "web_search_result": web_search_data,
+                #                 # "code": code_data,
+                #                 "messages": [SystemMessage(content=SYSTEM_PROMPT)]
+                #             },
+                #             config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+                #         )
+                #         continue
+                
                 #! Uncomment this to reuse the web_search_results file from the 'docker' folder !#
                 # with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:
                 #     web_search_data = json.load(f)
                 #! Uncomment this to reuse the web_search_results file from the 'benchmark_logs' folder !#
-                # with builtins.open(f'./../../benchmark_logs/GPT-5/1st-benchmark-session/{cve}/{web_search_mode}/logs/web_search_results.json', 'r') as f:   
+                # with builtins.open(f'./../../benchmark_logs/GPT-5/1st-benchmark-session/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:   
                 #     web_search_data = json.load(f)
                 # logs_dir_path = Path(f"./../../dockers/{cve}/{wsm}/logs")
                 # logs_dir_path.mkdir(parents=True, exist_ok=True)
@@ -803,29 +828,31 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 # data = extract_milestones_stats(model="GPT-5", logs_set="1st", mode='custom_no_tool')
 # web_search_mode_stats(model="GPT-5", logs_set="1st")
 # best_cve_runs(model="GPT-4o", logs_set="4th", mode="custom_no_tool")              # Leave mode="" to consider all web search modes
-# best_cve_runs_updated(model="GPT-4o", logs_set="5th", iteration="", mode="")     # Leave mode="" to consider all web search modes
+best_cve_runs_updated(model="GPT-4o", logs_set="5th", iteration="", mode="")     # Leave mode="" to consider all web search modes
 
 #* RUN AGENT *#
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
+# for cve in ["CVE-2020-11651", "CVE-2020-11652", "CVE-2021-28164", "CVE-2021-34429", "CVE-2021-43798", "CVE-2023-42793", "CVE-2024-23897"]:
+#     if cve in cve_list: cve_list.remove(cve)
 # print(len(cve_list), cve_list)
 # result = run_agent(
 #     cve_list=cve_list,
-#     web_search_mode="custom",
+#     web_search_mode="openai",
 # )
 
 #* ASSESS DOCKERS *#
-with builtins.open('services.json', "r") as f:
-    jsonServices = json.load(f)
-cve_list = list(jsonServices.keys())[:20]
-print(len(cve_list), cve_list)
-df = assess_dockers(
-    cve_list=cve_list,#cve_list, 
-    model="GPT-4o",     #! INSERT THIS MANUALLY IN THE 'assess_dockers' function body !#
-    logs_set="5th",
-    web_search_mode="all", #! MANDATORY !#
-)
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[:20]
+# print(len(cve_list), cve_list)
+# df = assess_dockers(
+#     cve_list=cve_list,#cve_list, 
+#     model="GPT-4o",     #! INSERT THIS MANUALLY IN THE 'assess_dockers' function body !#
+#     logs_set="5th",
+#     web_search_mode="custom_no_tool", #! MANDATORY !#
+# )
 
 #* SOME STATS *#
 # with builtins.open('services.json', "r") as f:

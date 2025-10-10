@@ -9,4 +9,3 @@
     - (**_docker\_runs_**) Do all Docker containers run correctly? How many iterations took to make the containers run?
     - (**_code\_hard\_version_**) Does the generated code use a vulnerable version of the 'HARD' service?
     - (**_network\_setup_**) Are all services/containers setup to be accessible from the right network ports?
-    - (**_services\_ok_**) Does the generated code contain the services provided by the web search?

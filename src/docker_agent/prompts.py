@@ -94,21 +94,27 @@ GUIDELINES:
     - You must use all and only the services that are listed in the message that describes {cve_id}
     - If a service requires a dedicated container write the code for it
     - You must not use versions of 'HARD' services that are not listed in the message about {cve_id} and its services
-- Always write enough files to make the system work and to ensure that {cve_id} is exploitable
-- If a DB is needed, ensure it is properly setup and populated with some data
+- If a DB is needed, it must be properly setup and populated with some test data
 - The system must be immediately deployable using the "docker compose up" command
-- All services and related containers must be properly configured and be immediately accessible from the service's default network ports
+- Ensure that no service has to be setup manually by the user
+- All services and related containers must be properly configured on order to be immediately accessible from the service's default network ports
+- Always write enough files to make the all services work and to ensure that {cve_id} is exploitable for testing purposes
 - All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
 - There is no need to specify the file name in the file content
 """
 
 
-CHECK_CONTAINER_PROMPT = """GOAL: check the contents of the command 'sudo docker logs [CONTAINER ID] --details' and check if it is running correctly
-{log}
+CHECK_CONTAINER_PROMPT = """GOAL: check the following outputs and tell me if it the Docker container is running correctly ('container_ok' milestone)
+
+- Output of the 'sudo docker logs [CONTAINER ID] --details' command:
+{container_log}
+
+- Output of the 'sudo docker inspect [CONTAINED-ID]' command:
+{inspect_container_log}
 """
 
 
-CHECK_SERVICES_VERSIONS_PROMPT = """GOALS: analyse the output of the command 'sudo docker inspect [IMAGE-ID/CONTAINED-ID]' and the code (all contained in the previous messages) to assert if
+CHECK_SERVICES_VERSIONS_PROMPT = """GOALS: analyse the output of the command 'sudo docker inspect [IMAGE-ID]' and the Docker's code (all contained in the previous messages) to assert if
 - the following services are using one of the versions listed to their side ('code_hard_version' milestone):{hard_service_versions}
 - the Docker uses the following services: {service_list} ('services_ok' milestone)
 
@@ -118,10 +124,17 @@ GUIDELINES: if any of the milestones is not achieved, you must explain why the D
 """
 
 
-CHECK_DOCKER_PROMPT = """GOALS: analyse the output of the command 'sudo docker inspect [IMAGE-ID/CONTAINED-ID]' and the code contained (all contained in the previous messages) to assert if
+CHECK_NETWORK_PROMPT = """GOALS: analyse the output of the command 'sudo docker inspect [CONTAINED-ID]' and the Docker's code (all contained in the previous messages) to assert if all services are using their default network port ('network_setup' milestone)
+
+GUIDELINES: if the milestones is not achieved, you must explain why the Docker fails to achieve them and set to false the corresponding flag
+"""
+
+
+#! NOT USED !#
+CHECK_DOCKER_PROMPT = """GOALS: analyse the output of the command 'sudo docker inspect [CONTAINED-ID]' and the Docker's code (all contained in the previous messages) to assert if
 - all Docker images are built correctly ('docker_builds' milestone)
 - all Docker containers are running correctly ('docker_runs' milestone)
-- all Docker containers are using the right network port ('network_setup' milestone)
+- all services are using their default network port ('network_setup' milestone)
 
 GUIDELINES: if any of the milestones is not achieved, you must explain why the Docker fails to achieve them and set to false the corresponding flag
 """
@@ -129,13 +142,13 @@ GUIDELINES: if any of the milestones is not achieved, you must explain why the D
 
 TEST_FAIL_PROMPT = """CONTEXT: {fail_explanation}
 
-GOALS: fix the Docker system problems by modifying its code, which is available in my previous message. Here is the list of previous fixes that you attempted but did not work, my suggestion is to try something different from these:
-{fixes}
+GOALS: {revision_goal}.
 
 GUIDELINES:
-- Ensure that all DBs are properly setup and populated with some data
+- Any DB must are properly setup and populated with some test data
 - The system must be immediately deployable using the "docker compose up" command
-- All services and related containers must be properly configured and be immediately accessible from the service's default network ports
+- Ensure that no service has to be setup manually by the user
+- All services and related containers must be properly configured on order to be immediately accessible from the service's default network ports
 - Your answer must include all files (updated ones, unchanged ones and new ones)
 - All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
 - There is no need to specify the file name in the file content
@@ -143,6 +156,8 @@ GUIDELINES:
     - You must use all and only the services that are listed in the message that describes {cve_id}
     - If a service requires a dedicated container write the code for it
     - You must not use versions of 'HARD' services that are not listed in the message about {cve_id} and its services
+- Here is the list of previous fixes that you attempted but did not work, my suggestion is to try something different from these:
+{fixes}
 """
 
 
@@ -171,12 +186,11 @@ GUIDELINES:
 
 
 #! NOT USED !#
-CONTAINER_NOT_RUN_PROMPT = """CONTEXT: one of the containers of my Docker terminates its execution because of an error.
+CONTAINER_NOT_RUN_PROMPT = """CONTEXT: one of the containers of my Docker system is not running correctly.
 {fail_explanation}
 {logs}
 
-GOAL: fix the Docker system problems by modifying its code, which is available in my previous message. Here is the list of previous fixes that you attempted but did not work, my suggestion is to try something different from these:
-{fixes}
+GOAL: {goal}
 
 GUIDELINES:
 - The system must be immediately deployable using the "docker compose up" command
@@ -188,9 +202,12 @@ GUIDELINES:
     - You must use all and only the services that are listed in the message that describes {cve_id}
     - If a service requires a dedicated container write the code for it
     - You must not use versions of 'HARD' services that are not listed in the message about {cve_id} and its services
+- Here is the list of previous fixes that you attempted but did not work, my suggestion is to try something different from these:
+{fixes}
 """
 
 
+#! NOT USED !#
 NOT_VULNERABLE_VERSION_PROMPT = """CONTEXT: my Docker is not using a vulnerable version of the 'HARD' service(s) listed in the previous message!
 
 GOAL: fix this by modifying the Docker's code (which is available in my previous message) to ensure that the 'HARD' service uses one of the vulnerable versions listed here:{hard_service_versions}
