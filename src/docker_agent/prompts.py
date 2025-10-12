@@ -130,16 +130,6 @@ GUIDELINES: if the milestones is not achieved, you must explain why the Docker f
 """
 
 
-#! NOT USED !#
-CHECK_DOCKER_PROMPT = """GOALS: analyse the output of the command 'sudo docker inspect [CONTAINED-ID]' and the Docker's code (all contained in the previous messages) to assert if
-- all Docker images are built correctly ('docker_builds' milestone)
-- all Docker containers are running correctly ('docker_runs' milestone)
-- all services are using their default network port ('network_setup' milestone)
-
-GUIDELINES: if any of the milestones is not achieved, you must explain why the Docker fails to achieve them and set to false the corresponding flag
-"""
-
-
 TEST_FAIL_PROMPT = """CONTEXT: {fail_explanation}
 
 GOALS: {revision_goal}.

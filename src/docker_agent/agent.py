@@ -17,8 +17,8 @@ from graph import compiled_workflow
 
 def draw_graph():
     try:
-        # print(compiled_workflow.get_graph().draw_mermaid())
-        display(Image(compiled_workflow.get_graph().draw_mermaid_png(output_file_path="Mermaid Chart.png")))
+        print(compiled_workflow.get_graph().draw_mermaid())
+        # display(Image(compiled_workflow.get_graph().draw_mermaid_png(output_file_path="Mermaid Chart.png")))
         
     except Exception as e:
         print(f"Rendering failed with code {e}.\nHere's the Mermaid source:\n{compiled_workflow.get_graph().draw_mermaid()}")
@@ -153,7 +153,7 @@ def run_agent(cve_list: list[str], web_search_mode: str):
 
                 result = compiled_workflow.invoke(
                     input={                 #! The model must be also manually initialized in the 'nodes.py' file !#
-                        "model": 'gpt-4o',   #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                        "model": 'gpt-5',   #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
                         "cve_id": cve,
                         "web_search_tool": wsm,
                         "verbose_web_search": False,
@@ -649,78 +649,10 @@ def extract_milestones_stats(model: str, logs_set: str, mode: str):
     for milestone, value in data.items():
         print(f"{milestone} --> {value}%")
     return data  
-
-
-def best_cve_runs(model: str, logs_set: str, mode: str):
-    if mode == "":
-        df = pd.concat([
-            get_cve_df(model=model, logs_set=logs_set, mode='custom_no_tool'), 
-            get_cve_df(model=model, logs_set=logs_set, mode='openai'),
-        ])
-    else:
-        df = get_cve_df(model=model, logs_set=logs_set, mode=mode)
-    grouped_df = df.drop(columns='web_search_mode', axis=1).groupby('cve_id')
-
-
-    best_cve_run = {}
-    for cve, group in grouped_df:
-        best_result = 0
-        for index, row in group.iterrows():
-            result = 0
-            milestones = row.iloc[1:]
-            for m, val in milestones.items():
-                if val:
-                    result += 1
-                else:
-                    break
-
-            if result > best_result:
-                best_result = result
-        best_cve_run[cve] = best_result
-
-    sorted(best_cve_run.items(), key=lambda x:x[1])
-    milestone_list = df.columns[1:].tolist()
-    milestone_list[0] = ""
-
-    cves, values = zip(*sorted(best_cve_run.items(), key=lambda x:x[1]))
-    colors = ['orange', 'purple', 'yellow']
-    # Plot
-    plt.figure(figsize=(8, 10))
-
-    for cve, val in zip(cves, values):
-        start = 0
-
-        # First segment: up to min(val, 4)
-        seg1 = min(val, 4) - start
-        if seg1 > 0:
-            plt.barh(cve, seg1, left=start, color=colors[0])
-            start += seg1
-
-        # Second segment: from 4 to min(val, 7)
-        seg2 = min(val, 7) - start
-        if seg2 > 0:
-            plt.barh(cve, seg2, left=start, color=colors[1])
-            start += seg2
-
-        # Third segment: from 7 to val (max 8)
-        seg3 = val - start
-        if seg3 > 0:
-            plt.barh(cve, seg3, left=start, color=colors[2])
-
-
-
-    plt.yticks(fontsize=10)
-    plt.xticks(range(len(milestone_list)), milestone_list, rotation=30)
-    plt.xlabel("Milestones")
-    plt.ylabel("CVE-ID")
-    plt.title("Best run for each CVE")
-    plt.tight_layout()
-    plt.grid(axis='x')
-    plt.show()
         
 
-def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
-    print(f"model: {model}, logs_set: {logs_set}, iteration: {iteration}, mode: {mode}")
+def best_cve_runs(model: str, logs_set: str, iteration: str, mode: str):
+    print(f"model: {model}, logs_set: {logs_set}, iteration: {iteration if iteration else "none"}, mode: {mode if mode else "all"}")
     if mode == "":
         df = pd.concat([
             get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode='custom'), 
@@ -753,20 +685,20 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 
     # Prints the graph ordered by best run
     cves, values = zip(*sorted(best_cve_run.items(), key=lambda x:x[1]))
-    colors = ['orange', 'purple', 'yellow']
+    colors = ['royalblue', 'orange', 'purple']
     plt.figure(figsize=(len(milestone_list) - 2, len(best_cve_run)/2))
 
     for cve, val in zip(cves, values):
         start = 0
 
         # First segment: up to min(val, 4)
-        seg1 = min(val, 4) - start
+        seg1 = min(val, 1) - start
         if seg1 > 0:
             plt.barh(cve, seg1, left=start, color=colors[0])
             start += seg1
 
         # Second segment: from 4 to min(val, 7)
-        seg2 = min(val, 8) - start
+        seg2 = min(val, 4) - start
         if seg2 > 0:
             plt.barh(cve, seg2, left=start, color=colors[1])
             start += seg2
@@ -788,20 +720,20 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
     
     # Prints the graph ordered by CVE-ID
     cves, values = zip(*sorted(best_cve_run.items(), key=lambda x:x[0]))
-    colors = ['orange', 'purple', 'yellow']
+    colors = ['royalblue', 'orange', 'purple']
     plt.figure(figsize=(len(milestone_list) - 2, len(best_cve_run)/2))
 
     for cve, val in zip(cves, values):
         start = 0
 
         # First segment: up to min(val, 4)
-        seg1 = min(val, 4) - start
+        seg1 = min(val, 1) - start
         if seg1 > 0:
             plt.barh(cve, seg1, left=start, color=colors[0])
             start += seg1
 
         # Second segment: from 4 to min(val, 7)
-        seg2 = min(val, 8) - start
+        seg2 = min(val, 4) - start
         if seg2 > 0:
             plt.barh(cve, seg2, left=start, color=colors[1])
             start += seg2
@@ -822,20 +754,19 @@ def best_cve_runs_updated(model: str, logs_set: str, iteration: str, mode: str):
 
 
 # draw_graph()
-# milestones = benchmark("openai")
+# milestones = benchmark("custom_no_tool")
 # df = generate_excel_csv()
 # df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
 # data = extract_milestones_stats(model="GPT-5", logs_set="1st", mode='custom_no_tool')
 # web_search_mode_stats(model="GPT-5", logs_set="1st")
-# best_cve_runs(model="GPT-4o", logs_set="4th", mode="custom_no_tool")              # Leave mode="" to consider all web search modes
-best_cve_runs_updated(model="GPT-4o", logs_set="5th", iteration="", mode="")     # Leave mode="" to consider all web search modes
+best_cve_runs(model="GPT-4o", logs_set="5th", iteration="", mode="")     # Leave mode="" to consider all web search modes
 
 #* RUN AGENT *#
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
-# for cve in ["CVE-2020-11651", "CVE-2020-11652", "CVE-2021-28164", "CVE-2021-34429", "CVE-2021-43798", "CVE-2023-42793", "CVE-2024-23897"]:
-#     if cve in cve_list: cve_list.remove(cve)
+# # for cve in ["CVE-2020-11651", "CVE-2020-11652", "CVE-2021-28164", "CVE-2021-34429", "CVE-2021-43798", "CVE-2023-42793", "CVE-2024-23897"]:
+# #     if cve in cve_list: cve_list.remove(cve)
 # print(len(cve_list), cve_list)
 # result = run_agent(
 #     cve_list=cve_list,

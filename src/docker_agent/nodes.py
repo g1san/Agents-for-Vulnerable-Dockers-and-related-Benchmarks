@@ -27,7 +27,6 @@ from prompts import (
     CONTAINER_NOT_RUN_PROMPT,
     CHECK_SERVICES_VERSIONS_PROMPT,
     CHECK_NETWORK_PROMPT,
-    CHECK_DOCKER_PROMPT,
     TEST_FAIL_PROMPT,
     NOT_VULNERABLE_VERSION_PROMPT,
     WRONG_NETWORK_SETUP_PROMPT,
@@ -44,15 +43,15 @@ from configuration import (
 )
 
 # Initialize the LLM with OpenAI's GPT-4o model
-llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+# llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
 # Initialize the LLM with OpenAI's GPT-5 model
-# llm = ChatOpenAI(
-#     model="gpt-5", 
-#     max_retries=2,
-#     reasoning_effort="low", 
-#     # use_responses_api=True, 
-#     # verbosity="low",
-# )
+llm = ChatOpenAI(
+    model="gpt-5", 
+    max_retries=2,
+    reasoning_effort="low", 
+    # use_responses_api=True, 
+    # verbosity="low",
+)
 # Initialize the LLM with SmartData cluster's local model
 # llm = ChatOpenAI(
 #     model="mistralai/Mistral-7B-Instruct-v0.1",
@@ -827,24 +826,6 @@ def run_exploit(state: OverallState):
     
     if state.milestones.docker_builds and state.milestones.docker_runs:
         print("\nExploiting Docker vulnerability...")
-    #     code_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/")
-    #     final_report_file = code_dir_path / "logs/final_report.txt"        
-    #     exploit_file_path = Path(f"./../../exploits/{state.cve_id}")
-    #     
-    #     result = subprocess.run(
-    #         ["sudo", "docker", "logs", cid, "--details"],
-    #         cwd=exploit_file_path,
-    #         capture_output=True,
-    #         text=True
-    #     )
-    #     logs = f"\n\nsudo docker logs {cid} --details\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}\n\n"
-    #     
-    #     if check_docker_vulnerability(cve_id=state.cve_id, code_dir_path=code_dir_path):
-    #         output_string = f"The Docker is vulnerable to {state.cve_id}!"
-    #         print(f"\t{output_string}")
-    #         state.milestones.docker_vulnerable = True
-    #         with builtins.open(final_report_file, "a") as f:
-    #             f.write(output_string)
         
     return {"stats": state.stats}
 
@@ -868,29 +849,35 @@ def route_exploit(state: OverallState) -> Literal["Assess Vuln", "Revise Code"]:
         return "Revise Code"
 
 
-def get_cve_list(code_dir_path, index, iid):
-    with builtins.open(f"{code_dir_path}/logs/cves{index}.json", "w") as f:
-        subprocess.run(
-            ["docker", "scout", "cves", iid, "--format", "gitlab"],
-            cwd=code_dir_path,
-            stdout=f,
-            stderr=subprocess.DEVNULL,
-            text=True,
-        )
-        print(f"\tCVE List file saved to: {code_dir_path}/logs/cves{index}.json")
+def run_docker_scout(code_dir_path, index, iid):
+    try:
+        with builtins.open(f"{code_dir_path}/logs/cves{index}.json", "w") as f:
+            subprocess.run(
+                ["docker", "scout", "cves", iid, "--format", "gitlab"],
+                cwd=code_dir_path,
+                stdout=f,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=60,
+            )
+            print(f"\tCVE List file saved to: {code_dir_path}/logs/cves{index}.json")
+            return True
+    except subprocess.TimeoutExpired:
+        print(f"\tDocker Scout timed out after 60 seconds for image {iid}")
+        return False
         
 
 def check_docker_vulnerability(cve_id, code_dir_path):
     image_ids = get_image_ids()
     for index, iid in enumerate(image_ids):
-        get_cve_list(code_dir_path=code_dir_path, index=index, iid=iid)
-        cves_file_path = code_dir_path / f"logs/cves{index}.json"
-        with builtins.open(cves_file_path, "r") as f:
-            cve_list = json.load(f)
-        cve_list = cve_list["vulnerabilities"]
-        for cve in cve_list:
-            if cve["cve"] == cve_id:
-                return True
+        if run_docker_scout(code_dir_path=code_dir_path, index=index, iid=iid):
+            cves_file_path = code_dir_path / f"logs/cves{index}.json"
+            with builtins.open(cves_file_path, "r") as f:
+                cve_list = json.load(f)
+            cve_list = cve_list["vulnerabilities"]
+            for cve in cve_list:
+                if cve["cve"] == cve_id:
+                    return True
     return False
 
 
@@ -899,6 +886,7 @@ def assess_vuln(state: OverallState):
     code_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/")
     final_report_file = code_dir_path / "logs/final_report.txt"        
     
+    down_docker(code_dir_path=code_dir_path)
     if state.milestones.docker_builds and state.milestones.docker_runs:
         print("\nAssessing Docker vulnerability...")
         if check_docker_vulnerability(cve_id=state.cve_id, code_dir_path=code_dir_path):
@@ -907,8 +895,6 @@ def assess_vuln(state: OverallState):
             state.stats.docker_scout_vulnerable = True
             with builtins.open(final_report_file, "a") as f:
                 f.write(output_string)
-                
-    down_docker(code_dir_path=code_dir_path)
     remove_all_images()
     
     state.stats.test_iteration += 1     # Just to adjust the stats counter   
