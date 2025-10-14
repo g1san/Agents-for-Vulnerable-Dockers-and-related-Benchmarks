@@ -43,15 +43,15 @@ from configuration import (
 )
 
 # Initialize the LLM with OpenAI's GPT-4o model
-# llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
 # Initialize the LLM with OpenAI's GPT-5 model
-llm = ChatOpenAI(
-    model="gpt-5", 
-    max_retries=2,
-    reasoning_effort="low", 
-    # use_responses_api=True, 
-    # verbosity="low",
-)
+# llm = ChatOpenAI(
+#     model="gpt-5", 
+#     max_retries=2,
+#     reasoning_effort="low", 
+#     # use_responses_api=True, 
+#     # verbosity="low",
+# )
 # Initialize the LLM with SmartData cluster's local model
 # llm = ChatOpenAI(
 #     model="mistralai/Mistral-7B-Instruct-v0.1",

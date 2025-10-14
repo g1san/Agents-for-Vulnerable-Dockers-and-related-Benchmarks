@@ -139,7 +139,7 @@ def run_agent(cve_list: list[str], web_search_mode: str):
                 # with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:
                 #     web_search_data = json.load(f)
                 #! Uncomment this to reuse the web_search_results file from the 'benchmark_logs' folder !#
-                # with builtins.open(f'./../../benchmark_logs/GPT-5/1st-benchmark-session/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:   
+                # with builtins.open(f'./../../benchmark_logs/GPT-4o/5th-benchmark-session/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:   
                 #     web_search_data = json.load(f)
                 # logs_dir_path = Path(f"./../../dockers/{cve}/{wsm}/logs")
                 # logs_dir_path.mkdir(parents=True, exist_ok=True)
@@ -153,7 +153,7 @@ def run_agent(cve_list: list[str], web_search_mode: str):
 
                 result = compiled_workflow.invoke(
                     input={                 #! The model must be also manually initialized in the 'nodes.py' file !#
-                        "model": 'gpt-5',   #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                        "model": 'gpt-4o',   #* Models  allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
                         "cve_id": cve,
                         "web_search_tool": wsm,
                         "verbose_web_search": False,
@@ -380,6 +380,21 @@ def get_cve_df(model: str, logs_set: str, iteration: str, mode: str):
     return df 
 
 
+def extract_milestones_stats(model: str, logs_set: str, mode: str):    
+    data = {}
+    with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{mode}-milestones.json', 'r') as f:
+        mode_milestones = json.load(f)
+        
+    milestones = list(next(iter(mode_milestones.values())).keys())
+
+    for m in milestones:
+        data[m] = [1 if mode_milestones[cve][m] else 0 for cve in mode_milestones].count(1) * 100 /len(mode_milestones)
+    
+    for milestone, value in data.items():
+        print(f"{milestone} --> {value}%")
+    return data  
+
+
 def is_achieved(x):
     if pd.isna(x):
         return False
@@ -406,13 +421,16 @@ def is_achieved(x):
     return True
 
 
-def web_search_mode_stats(model: str, logs_set: str):
-    # df = pd.concat([get_cve_df(logs_set="1st"), get_cve_df(logs_set="2nd")])
-    df = pd.concat([
-        # get_cve_df(model=model, logs_set=logs_set, mode='custom'), 
-        get_cve_df(model=model, logs_set=logs_set, mode='custom_no_tool'),
-        # get_cve_df(model=model, logs_set=logs_set, mode='openai'),
-    ])
+def web_search_mode_stats(model: str, logs_set: str, iteration: str, mode: str):
+    print(f"model: {model}, logs_set: {logs_set}, iteration: {iteration if iteration else "none"}, mode: {mode if mode else "all"}")
+    if mode == "":
+        df = pd.concat([
+            get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode='custom'), 
+            get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode='custom_no_tool'), 
+            get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode='openai'),
+        ])
+    else:
+        df = get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode=mode)
     
     milestones = [c for c in df.columns if c not in ['cve_id','web_search_mode']]
     # interpret 'True'/'False' strings if necessary
@@ -500,6 +518,7 @@ def web_search_mode_stats(model: str, logs_set: str):
     plt.tight_layout()
     plt.show()
     
+    return df
     # df.groupby(['cve_id'])    
 
 
@@ -594,9 +613,20 @@ def services_stats(cve_list: list[str], model: str, logs_set: str, iteration: st
                     df.append({
                         "cve": cve,
                         "web_search_mode": wsm,
+                        
+                        "cve_id_ok": milestones["cve_id_ok"],
+                        "hard_service": milestones["hard_service"],
+                        "hard_version": milestones["hard_version"],
+                        "soft_services": milestones["soft_services"],
+                        "docker_builds": milestones["docker_builds"],
+                        "docker_runs": milestones["docker_runs"],
+                        "code_hard_version": milestones["code_hard_version"],
+                        "network_setup": milestones["network_setup"],
+                        
                         "service_name": service["name"].split("/")[-1].lower(),
                         "service_dependency_type": service["dependency_type"],
                         "service_name_dependency_type": f"{service["name"].split("/")[-1].lower()}-{service["dependency_type"]}",
+                        
                         "num_containers": stats["num_containers"],
                         "test_iteration": stats["test_iteration"],
                         "starting_image_builds": stats["starting_image_builds"],
@@ -607,6 +637,8 @@ def services_stats(cve_list: list[str], model: str, logs_set: str, iteration: st
                         "docker_misconfigured": stats["docker_misconfigured"],
                         "docker_scout_vulnerable": stats["docker_scout_vulnerable"],
                         "exploitable": stats["exploitable"],
+                        "services_ok": stats["services_ok"],
+                        "requires_manual_setup": stats["requires_manual_setup"],
                     })
             except Exception as e: print(cve, wsm, f"does not exist\t({e})")
     print("="*10 + "END ERROR MESSAGES" + "="*10 + "\n"*3)
@@ -628,28 +660,109 @@ def services_stats(cve_list: list[str], model: str, logs_set: str, iteration: st
         print(group['service_name'].value_counts())   
 
     # Most frequently Used Services by Web Search Mode
-    barh_service_wsm(df, unique_services)
+    # barh_service_wsm(df, unique_services)
     
     # Group by feature and compute mean & std
-    barh_mean_std(df, feature="web_search_mode")    #! Use either 'service_name' or 'web_search_mode'
+    # barh_mean_std(df, feature="web_search_mode")    #! Use either 'service_name' or 'web_search_mode'
     
     return df
 
 
-def extract_milestones_stats(model: str, logs_set: str, mode: str):    
-    data = {}
-    with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{mode}-milestones.json', 'r') as f:
-        mode_milestones = json.load(f)
-        
-    milestones = list(next(iter(mode_milestones.values())).keys())
-
-    for m in milestones:
-        data[m] = [1 if mode_milestones[cve][m] else 0 for cve in mode_milestones].count(1) * 100 /len(mode_milestones)
+def vuln_ass_stats(cve_list: list[str], model: str, logs_set: str, iteration: str, web_search_mode: str, correct_web_search_only: bool, correct_docker_only: bool):
+    file_name = f"./../../benchmark_logs/{model}/{logs_set}-benchmark-session/"
+    if iteration != "": file_name += f"{iteration}-iteration/"
+    if web_search_mode != "": modes = [web_search_mode]
+    else: modes = ["custom", "custom_no_tool", "openai"]
     
-    for milestone, value in data.items():
-        print(f"{milestone} --> {value}%")
-    return data  
-        
+    df = []
+    print("="*10 + "START ERROR MESSAGES" + "="*10)
+    for cve in cve_list:
+        for wsm in modes:
+            try:
+                with builtins.open(file_name + f"{cve}/{wsm}/logs/milestones.json", "r") as f:
+                    milestones = json.load(f)
+                
+                if correct_web_search_only and (not milestones["cve_id_ok"] or not milestones["hard_service"] or not milestones["hard_version"] or not milestones["soft_services"]): continue
+                if correct_docker_only and (not milestones["docker_builds"] or not milestones["docker_runs"] or not milestones["code_hard_version"] or not milestones["network_setup"]): continue
+                
+                try:
+                    with builtins.open(file_name + f"{cve}/{wsm}/logs/stats.json", "r") as f:
+                        stats = json.load(f)
+                except:
+                    stats = {
+                        "num_containers": np.nan,
+                        "test_iteration": np.nan,
+                        "starting_image_builds": np.nan,
+                        "image_build_failures": np.nan,
+                        "starting_container_runs": np.nan,
+                        "container_run_failures": np.nan,
+                        "not_vuln_version_fail": np.nan,
+                        "docker_misconfigured": np.nan,
+                        "docker_scout_vulnerable": np.nan,
+                        "exploitable": np.nan,
+                        "static_and_dynamic_va": np.nan,
+                        "services_ok": np.nan,
+                        "requires_manual_setup": np.nan,
+                    }
+
+                df.append({
+                    "cve": cve,
+                    "web_search_mode": wsm,
+
+                    "cve_id_ok": milestones["cve_id_ok"],
+                    "hard_service": milestones["hard_service"],
+                    "hard_version": milestones["hard_version"],
+                    "soft_services": milestones["soft_services"],
+                    "docker_builds": milestones["docker_builds"],
+                    "docker_runs": milestones["docker_runs"],
+                    "code_hard_version": milestones["code_hard_version"],
+                    "network_setup": milestones["network_setup"],
+
+                    "num_containers": stats["num_containers"],
+                    "test_iteration": stats["test_iteration"],
+                    "starting_image_builds": stats["starting_image_builds"],
+                    "image_build_failures": stats["image_build_failures"],
+                    "starting_container_runs": stats["starting_container_runs"],
+                    "container_run_failures": stats["container_run_failures"],
+                    "not_vuln_version_fail": stats["not_vuln_version_fail"],
+                    "docker_misconfigured": stats["docker_misconfigured"],
+                    "docker_scout_vulnerable": stats["docker_scout_vulnerable"],
+                    "exploitable": stats["exploitable"],
+                    "static_and_dynamic_va": stats["docker_scout_vulnerable"] and stats["exploitable"],
+                    "services_ok": stats["services_ok"],
+                    "requires_manual_setup": stats["requires_manual_setup"],
+                })
+                
+            except Exception as e: print(cve, wsm, f"does not exist\t({e})")
+    print("="*10 + "END ERROR MESSAGES" + "="*10 + "\n"*3)
+            
+    df = pd.DataFrame(df)
+    display(df)
+    print(df.mean(numeric_only=True))
+    
+    if correct_docker_only:
+        docker_ok_cves = set()
+        static_cves = set()
+        dynamic_cves = set()
+        stat_dyn_cves = set()
+        for index in range(0, len(df)):
+            row = df.iloc[index]
+            docker_ok_cves.add(row["cve"])
+            if row["docker_scout_vulnerable"]:
+                static_cves.add(row["cve"])
+            if row["exploitable"]:
+                dynamic_cves.add(row["cve"])
+            if row["static_and_dynamic_va"]:
+                stat_dyn_cves.add(row["cve"])
+
+        print("\n\n\n")
+        print(f"CVEs Docker OK ({len(docker_ok_cves)})\n{sorted(docker_ok_cves)}\n\n\n")
+        print(f"CVEs Static VA ({len(static_cves)})\n{sorted(static_cves)}\n\n\n")
+        print(f"CVEs Dynamic VA ({len(dynamic_cves)})\n{sorted(dynamic_cves)}\n\n\n")
+        print(f"CVEs Static + Dynamic VA ({len(stat_dyn_cves)})\n{sorted(stat_dyn_cves)}\n\n\n")
+
+    return df
+
 
 def best_cve_runs(model: str, logs_set: str, iteration: str, mode: str):
     print(f"model: {model}, logs_set: {logs_set}, iteration: {iteration if iteration else "none"}, mode: {mode if mode else "all"}")
@@ -757,20 +870,19 @@ def best_cve_runs(model: str, logs_set: str, iteration: str, mode: str):
 # milestones = benchmark("custom_no_tool")
 # df = generate_excel_csv()
 # df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
-# data = extract_milestones_stats(model="GPT-5", logs_set="1st", mode='custom_no_tool')
-# web_search_mode_stats(model="GPT-5", logs_set="1st")
-best_cve_runs(model="GPT-4o", logs_set="5th", iteration="", mode="")     # Leave mode="" to consider all web search modes
+# data = extract_milestones_stats(model="GPT-5", logs_set="3rd", mode='custom_no_tool')
+# df = web_search_mode_stats(model="GPT-4o", logs_set="5th", iteration="", mode="")
+# df = web_search_mode_stats(model="GPT-5", logs_set="3rd", iteration="", mode="")
+# best_cve_runs(model="GPT-4o", logs_set="5th", iteration="", mode="custom_no_tool")     # Leave mode="" to consider all web search modes
 
 #* RUN AGENT *#
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
-# # for cve in ["CVE-2020-11651", "CVE-2020-11652", "CVE-2021-28164", "CVE-2021-34429", "CVE-2021-43798", "CVE-2023-42793", "CVE-2024-23897"]:
-# #     if cve in cve_list: cve_list.remove(cve)
 # print(len(cve_list), cve_list)
 # result = run_agent(
 #     cve_list=cve_list,
-#     web_search_mode="openai",
+#     web_search_mode="custom_no_tool",
 # )
 
 #* ASSESS DOCKERS *#
@@ -785,18 +897,32 @@ best_cve_runs(model="GPT-4o", logs_set="5th", iteration="", mode="")     # Leave
 #     web_search_mode="custom_no_tool", #! MANDATORY !#
 # )
 
-#* SOME STATS *#
+#* SERVICE RELATED STATS *#
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
 # df = services_stats(
 #     cve_list=cve_list, 
 #     model="GPT-4o", 
-#     logs_set="4th", 
+#     logs_set="5th", 
 #     iteration="", 
 #     web_search_mode="",
 #     filtered_milestones=True,
 # )
+
+#* VULNERABILITY ASSESSMENT RELATED STATS *#
+with builtins.open('services.json', "r") as f:
+    jsonServices = json.load(f)
+cve_list = list(jsonServices.keys())[:20]
+df = vuln_ass_stats(
+    cve_list=cve_list, 
+    model="GPT-4o", 
+    logs_set="5th", 
+    iteration="", 
+    web_search_mode="",
+    correct_web_search_only=True,
+    correct_docker_only=False,
+)
 
 
 
