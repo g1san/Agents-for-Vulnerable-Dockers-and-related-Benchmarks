@@ -1,13 +1,10 @@
 # TODOLIST
-Fai una nuova run con GPT-5, poi prepara le slide
 
 
-## Useful for Thesis
+## 4 Thesis
+Benchmark hybrid agent with reusing GPT-4o web search results (maybe just for best web search mode) and GPT-5 reasoning for code development.
+Test the 4 models using local LLMs (wait for API to be up).
 
-
-### Docker Validation with PoC
-- Ultimate goal of the **_run\_exploit_** node function is to launch the PoC for the specific CVE, extract the output, pass it to an LLM-as-a-Judge and evaluate if the output is the desired one (might want to pass the code of the exploit) or if there is a problem with either the docker or the exploit code.
-- All exploits must be tested on a working Docker and adapted to the **_run\_exploit_** function, so that they can be launched after performing _chmod +x_
 
 ### Better graphs
 - Add % values to the heatmap graph
@@ -35,3 +32,4 @@ Fai una nuova run con GPT-5, poi prepara le slide
 ## Future Works
 - Implement MCP for Docker Desktop in another branch for future proofing
 - Implement RAG for fixes, instead of passing entire list, ask LLM to summarise the fix list and pass summary instead
+- Fully implement the **_run\_exploit_** node function: launch the PoC for the specific CVE, extract the output, pass it to an LLM-as-a-Judge and evaluate if the output is the desired one (might want to pass the code of the exploit) or if there is a problem with either the docker or the exploit code. All exploits must be tested on a working Docker and adapted to the **_run\_exploit_** function, so that they can be launched after performing _chmod +x_

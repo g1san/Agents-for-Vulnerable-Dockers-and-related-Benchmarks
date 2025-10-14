@@ -25,7 +25,6 @@ workflow.add_node("save_code", nodes.save_code)
 workflow.add_node("test_code", nodes.test_code)
 workflow.add_node("revise_code", nodes.revise_code)
 workflow.add_node("assess_vuln", nodes.assess_vuln)
-workflow.add_node("run_exploit", nodes.run_exploit)
 
 # Add edges to the workflow
 workflow.add_edge(START, "get_cve_id")
@@ -53,15 +52,7 @@ workflow.add_conditional_edges(
     "test_code",
     nodes.route_test,
     {
-        "Stop Testing": "run_exploit",
-        "Revise Code": "revise_code",
-    },
-)
-workflow.add_conditional_edges(
-    "run_exploit",
-    nodes.route_exploit,
-    {
-        "Assess Vuln": "assess_vuln",
+        "Stop Testing": "assess_vuln",
         "Revise Code": "revise_code",
     },
 )
