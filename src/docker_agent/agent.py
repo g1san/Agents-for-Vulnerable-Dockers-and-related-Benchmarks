@@ -17,8 +17,8 @@ from graph import compiled_workflow
 
 def draw_graph():
     try:
-        # print(compiled_workflow.get_graph().draw_mermaid())
-        display(Image(compiled_workflow.get_graph().draw_mermaid_png(output_file_path="Mermaid Chart.png")))
+        print(compiled_workflow.get_graph().draw_mermaid())
+        # display(Image(compiled_workflow.get_graph().draw_mermaid_png(output_file_path="Mermaid Chart.png")))
         
     except Exception as e:
         print(f"Rendering failed with code {e}.\nHere's the Mermaid source:\n{compiled_workflow.get_graph().draw_mermaid()}")
@@ -911,18 +911,18 @@ def best_cve_runs(model: str, logs_set: str, iteration: str, mode: str):
 # )
 
 #* VULNERABILITY ASSESSMENT RELATED STATS *#
-# with builtins.open('services.json', "r") as f:
-#     jsonServices = json.load(f)
-# cve_list = list(jsonServices.keys())[:20]
-# df = vuln_ass_stats(
-#     cve_list=cve_list, 
-#     model="GPT-4o", 
-#     logs_set="5th", 
-#     iteration="", 
-#     web_search_mode="",
-#     correct_web_search_only=True,
-#     correct_docker_only=False,
-# )
+with builtins.open('services.json', "r") as f:
+    jsonServices = json.load(f)
+cve_list = list(jsonServices.keys())[:20]
+df = vuln_ass_stats(
+    cve_list=cve_list, 
+    model="GPT-4o", 
+    logs_set="5th", 
+    iteration="", 
+    web_search_mode="",
+    correct_web_search_only=True,
+    correct_docker_only=False,
+)
 
 
 

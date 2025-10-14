@@ -820,6 +820,35 @@ def revise_code(state: OverallState):
     }
 
 
+#TODO: define this function
+def run_exploit(state: OverallState):
+    """A PoC is used to exploit the CVE and check if the Docker is vulnerable (but only if the Docker runs)"""
+    
+    if state.milestones.docker_builds and state.milestones.docker_runs:
+        print("\nExploiting Docker vulnerability...")
+        
+    return {"stats": state.stats}
+
+
+def route_exploit(state: OverallState) -> Literal["Assess Vuln", "Revise Code"]:
+    """Route back to fix the code or assess the vulnerability"""
+    output_string = "\nRouting exploit:\n"
+    output_string += f"\t- docker_builds={state.milestones.docker_builds}\n"
+    output_string += f"\t- docker_runs={state.milestones.docker_runs}\n"
+    output_string += f"\t- code_hard_version={state.milestones.code_hard_version}\n"
+    output_string += f"\t- network_setup={state.milestones.network_setup}\n"
+    output_string += f"\t- test_iteration={state.stats.test_iteration}"
+    print(output_string)
+    
+    if state.milestones.docker_builds and state.milestones.docker_runs and state.milestones.code_hard_version and state.milestones.network_setup:        
+        return "Assess Vuln"
+    elif state.stats.test_iteration + 1 >= 10:
+        print("\tMax Iterations Reached!")
+        return "Assess Vuln"
+    else:            
+        return "Revise Code"
+
+
 def run_docker_scout(code_dir_path, index, iid):
     try:
         with builtins.open(f"{code_dir_path}/logs/cves{index}.json", "w") as f:
