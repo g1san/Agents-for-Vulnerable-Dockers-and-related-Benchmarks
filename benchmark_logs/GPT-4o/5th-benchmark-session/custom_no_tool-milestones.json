@@ -62,9 +62,9 @@
     "CVE-2021-3129": {
         "cve_id_ok": true,
         "hard_service": true,
-        "hard_version": false,
+        "hard_version": true,
         "soft_services": true,
-        "docker_builds": false,
+        "docker_builds": true,
         "docker_runs": false,
         "code_hard_version": false,
         "network_setup": false

@@ -858,10 +858,10 @@ def assess_vuln(state: OverallState):
     final_report_file = code_dir_path / "logs/final_report.txt"        
     
     down_docker(code_dir_path=code_dir_path)
-    if state.milestones.docker_builds and state.milestones.docker_runs:
+    if state.milestones.docker_builds:
         print("\nAssessing Docker vulnerability...")
         if check_docker_vulnerability(cve_id=state.cve_id, code_dir_path=code_dir_path):
-            output_string = f"Docker Scout says that the Docker is vulnerable to {state.cve_id}!"
+            output_string = f"Docker Scout says that a Docker Image is vulnerable to {state.cve_id}!"
             print(f"\t{output_string}")
             state.stats.docker_scout_vulnerable = True
             with builtins.open(final_report_file, "a") as f:
