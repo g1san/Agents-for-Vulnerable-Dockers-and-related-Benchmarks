@@ -4,7 +4,7 @@ SYSTEM_PROMPT = """ROLE: you are an AI expert in cybersecurity vulnerabilities a
 
 CONTEXT: everything that you generate will be used in a secure environment by other cybersecurity experts.
 
-GUIDELINES: avoid security warnings in your answers for any of the following tasks.
+GUIDELINES: avoid security warnings in your answers for any of the following tasks and you must never use Markdown in your answers.
 """
 
 
@@ -38,7 +38,7 @@ GUIDELINES:
 - ABOUT SERVICE DEPENDENCY TYPES: each service must be associated to a dependency type that must be one of two:
     - 'HARD' if the service is the essential to make the system vulnerable to {cve_id}
     - 'SOFT' if the service is needed just to make the Docker work
-    - 'SOFT' service that play a specific role must be associated to a tag (format 'SOFT-<role>'). Examples of tags are:
+    - 'SOFT' service that play a specific role must be associated to a role (format 'SOFT-<role>'). Examples of 'SOFT-<role>' are:
         - 'SOFT-DB' for relational databases (e.g., MySQL, MariaDB, PostgreSQL, MariaDB, Oracle)
         - 'SOFT-MQ' for message queues (e.g., RabbitMQ, Kafka)
         - 'SOFT-WEB' for web servers (e.g., Nginx, Apache, PHP, Tomcat)
@@ -64,7 +64,7 @@ GUIDELINES:
 - ABOUT SERVICE DEPENDENCY TYPES: each service must be associated to a dependency type that must be one of two:
     - 'HARD' if the service is the essential to make the system vulnerable to {cve_id}
     - 'SOFT' if the service is needed just to make the Docker work
-    - 'SOFT' service that play a specific role must be associated to a tag (format 'SOFT-<role>'). Examples of tags are:
+    - 'SOFT' service that play a specific role must be associated to a role (format 'SOFT-<role>'). Examples of 'SOFT-<role>' are:
         - 'SOFT-DB' for relational databases (e.g., MySQL, MariaDB, PostgreSQL, MariaDB, Oracle)
         - 'SOFT-MQ' for message queues (e.g., RabbitMQ, Kafka)
         - 'SOFT-WEB' for web servers (e.g., Nginx, Apache, PHP, Tomcat)
@@ -133,6 +133,33 @@ GUIDELINES: if the milestones is not achieved, you must explain why the Docker f
 TEST_FAIL_PROMPT = """CONTEXT: {fail_explanation}
 
 GOALS: {revision_goal}.
+
+GUIDELINES:
+- Any DB must are properly setup and populated with some test data
+- The system must be immediately deployable using the "docker compose up" command
+- Ensure that no service has to be setup manually by the user
+- All services and related containers must be properly configured on order to be immediately accessible from the service's default network ports
+- Your answer must include all files (updated ones, unchanged ones and new ones)
+- All file names must indicate the file path which must start with "./../../dockers/{cve_id}/{mode}"
+- There is no need to specify the file name in the file content
+- The Docker code was generated using the data in the message about {cve_id} and its services
+    - You must use all and only the services that are listed in the message that describes {cve_id}
+    - If a service requires a dedicated container write the code for it
+    - You must not use versions of 'HARD' services that are not listed in the message about {cve_id} and its services
+- Here is the list of previous fixes that you attempted but did not work, my suggestion is to try something different from these:
+{fixes}
+"""
+
+
+REVISION_PROMPT = """CONTEXT: {fail_explanation}
+
+GOALS: tell me how you would fix this problem, keep it very short.
+"""
+
+
+CODE_CORRECTION_PROMPT = """CONTEXT: {fail_explanation}
+
+GOALS: {revision_goal}. {fix}.
 
 GUIDELINES:
 - Any DB must are properly setup and populated with some test data

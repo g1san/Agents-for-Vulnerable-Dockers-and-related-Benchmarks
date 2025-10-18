@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Literal
 from langchain_openai import ChatOpenAI
 from langchain.chat_models import init_chat_model
+from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 # My modules
@@ -28,6 +29,8 @@ from prompts import (
     CHECK_SERVICES_VERSIONS_PROMPT,
     CHECK_NETWORK_PROMPT,
     TEST_FAIL_PROMPT,
+    REVISION_PROMPT,
+    CODE_CORRECTION_PROMPT,
     NOT_VULNERABLE_VERSION_PROMPT,
     WRONG_NETWORK_SETUP_PROMPT,
 )
@@ -43,7 +46,7 @@ from configuration import (
 )
 
 # Initialize the LLM with OpenAI's GPT-4o model
-llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+# llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
 # Initialize the LLM with OpenAI's GPT-5 model
 # llm = ChatOpenAI(
 #     model="gpt-5", 
@@ -52,15 +55,25 @@ llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
 #     # use_responses_api=True, 
 #     # verbosity="low",
 # )
-# Initialize the LLM with SmartData cluster's local model
+# Initialize the LLM with SmartData cluster's local mistralai/Mistral-7B-Instruct-v0.1 model
 # llm = ChatOpenAI(
 #     model="mistralai/Mistral-7B-Instruct-v0.1",
 #     base_url="https://kubernetes.polito.it/vllm/v1",
 #     api_key=os.getenv("SDC_API_KEY"),
 #     max_tokens=16000,
 # )
-llm_openai_web_search_tool = llm.bind_tools([openai_web_search])
+# Initialize the LLM with SmartData cluster's local models #* gpt-oss:20b/gpt-oss:120b *#
+llm = ChatOpenAI(
+    model="gpt-oss:120b",
+    max_retries=2, 
+    reasoning_effort="medium", 
+    # use_responses_api=True,
+    # verbosity="low",
+    base_url="https://kubernetes.polito.it/vllm/v1",
+    api_key=os.getenv("SDC_API_KEY"),
+)
 llm_custom_web_search_tool = llm.bind_tools([web_search])
+llm_openai_web_search_tool = llm.bind_tools([openai_web_search])
 web_search_llm = llm.with_structured_output(WebSearch)
 ver_ass_llm = llm.with_structured_output(HARDServiceVersionAssessment)
 code_generation_llm = llm.with_structured_output(Code)
@@ -156,7 +169,7 @@ def get_services(state: OverallState):
     print("\nSearching the web...")
     code_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/")
     logs_dir_path = code_dir_path / "logs"
-    
+   
     if state.web_search_result.desc != "":
         print("\tWeb search results already provided!")
         response = f"CVE description: {state.web_search_result.desc}\nAttack Type: {state.web_search_result.attack_type}\nServices (format: [SERVICE-DEPENDENCY-TYPE][SERVICE-NAME][SERVICE-VERSIONS] SERVICE-DESCRIPTION):"
@@ -172,12 +185,11 @@ def get_services(state: OverallState):
     # Create the directory to save logs (if it does not exist)
     if not logs_dir_path.exists():
         create_dir(dir_path=logs_dir_path)
-        
+    
     # Invoking the LLM with the chosen web search mode 
     if state.web_search_tool == "custom":
         web_query = CUSTOM_WEB_SEARCH_PROMPT.format(cve_id=state.cve_id)
-        
-        # Invoke the LLM to generate the custom tool arguments
+        llm_custom_web_search_tool = llm.bind_tools([web_search])        
         tool_call = llm_custom_web_search_tool.invoke(
             [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=web_query)],
             config={"callbacks": [langfuse_handler]}
@@ -205,14 +217,22 @@ def get_services(state: OverallState):
         response_sourceless = web_search_result.content[0]["text"]
         
         # Invoke the LLM to convert the web search results into a structured output
-        formatted_response = web_search_llm.invoke(
-            WEB_SEARCH_FORMAT_PROMPT.format(web_search_result=response_sourceless), 
-            config={"callbacks": [langfuse_handler]}
-        )
+        if state.model.lower() in ["gpt-4o", "gpt-5"]:
+            formatted_response = web_search_llm.invoke(
+                WEB_SEARCH_FORMAT_PROMPT.format(web_search_result=response_sourceless), 
+                config={"callbacks": [langfuse_handler]}
+            )
+        else:
+            parser = PydanticOutputParser(pydantic_object=WebSearch)
+            messages = [
+                SystemMessage(content=SYSTEM_PROMPT + f"\n\n{parser.get_format_instructions()}"),
+                HumanMessage(content=WEB_SEARCH_FORMAT_PROMPT.format(web_search_result=response_sourceless)),
+            ]
+            response = llm.invoke(messages, config={"callbacks": [langfuse_handler]})
+            formatted_response = parser.parse(response.content)
         
     else:
         raise ValueError("Invalid web search tool specified. Use 'custom', 'custom_no_tool' or 'openai'.")
-    
     
     # Building response to be added to messages 
     response = f"\nCVE description: {formatted_response.desc}\nAttack Type: {formatted_response.attack_type}\nServices (format: [SERVICE-DEPENDENCY-TYPE][SERVICE-NAME][SERVICE-VERSIONS] SERVICE-DESCRIPTION):\n"
@@ -324,11 +344,21 @@ def assess_services(state: OverallState):
                 service=service,
                 version_list=version_list,
             )
-
-            response = ver_ass_llm.invoke(
-                [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=ver_ass_query)], 
-                config={"callbacks": [langfuse_handler]}
-            )
+            
+            if state.model.lower() in ["gpt-4o", "gpt-5"]:
+                response = ver_ass_llm.invoke(
+                    [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=ver_ass_query)], 
+                    config={"callbacks": [langfuse_handler]}
+                )
+            else:
+                parser = PydanticOutputParser(pydantic_object=HARDServiceVersionAssessment)
+                messages = [
+                    SystemMessage(content=SYSTEM_PROMPT + f"\n\n{parser.get_format_instructions()}"),
+                    HumanMessage(content=ver_ass_query),
+                ]
+                response = llm.invoke(messages, config={"callbacks": [langfuse_handler]})
+                response = parser.parse(response.content)
+            
             response_list[service] = response.hard_version
         
     if False not in response_list:
@@ -383,10 +413,19 @@ def generate_code(state: OverallState):
         mode=state.web_search_tool,
     )
     
-    generated_code = code_generation_llm.invoke(
-        state.messages + [HumanMessage(content=code_gen_query)], 
-        config={"callbacks": [langfuse_handler]}
-    )
+    if state.model.lower() in ["gpt-4o", "gpt-5"]:
+        generated_code = code_generation_llm.invoke(
+            state.messages + [HumanMessage(content=code_gen_query)], 
+            config={"callbacks": [langfuse_handler]}
+        )
+    else:
+        parser = PydanticOutputParser(pydantic_object=Code)
+        messages = [
+            SystemMessage(content=SYSTEM_PROMPT + f"\n\n{parser.get_format_instructions()}"),
+            HumanMessage(content=code_gen_query),
+        ]
+        generated_code = llm.invoke(messages, config={"callbacks": [langfuse_handler]})
+        generated_code = parser.parse(generated_code.content)
     
     response = f"Directory tree:\n{generated_code.directory_tree}\n\n"
     for f in generated_code.files:
@@ -624,11 +663,21 @@ def test_code(state: OverallState):
             container_log=container_log,
             inspect_container_log=inspect_container_log,
         )
-        result = container_ass_llm.invoke(
-            [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=query)], 
-            config={"callbacks": [langfuse_handler]}
-        )
-    
+        
+        if state.model.lower() in ["gpt-4o", "gpt-5"]:
+            result = container_ass_llm.invoke(
+                [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=query)], 
+                config={"callbacks": [langfuse_handler]}
+            )
+        else:
+            parser = PydanticOutputParser(pydantic_object=ContainerLogsAssessment)
+            messages = [
+                SystemMessage(content=SYSTEM_PROMPT + f"\n\n{parser.get_format_instructions()}"),
+                HumanMessage(content=query),
+            ]
+            result = llm.invoke(messages, config={"callbacks": [langfuse_handler]})
+            result = parser.parse(result.content)
+        
         if not result.container_ok:
             state.stats.container_run_failures += 1
             if state.stats.test_iteration == 0:
@@ -671,14 +720,27 @@ def test_code(state: OverallState):
         service_list=service_list,
     )
     
-    result = serv_ver_ass_llm.invoke(
-        [SystemMessage(content=SYSTEM_PROMPT), 
-         HumanMessage(content=image_inspect_logs),
-         # HumanMessage(content=container_inspect_logs),
-         HumanMessage(content=code),
-         HumanMessage(content=query)], 
-        config={"callbacks": [langfuse_handler]}
-    )
+    if state.model.lower() in ["gpt-4o", "gpt-5"]:
+        result = serv_ver_ass_llm.invoke(
+            [SystemMessage(content=SYSTEM_PROMPT), 
+             HumanMessage(content=image_inspect_logs),
+             # HumanMessage(content=container_inspect_logs),
+             HumanMessage(content=code),
+             HumanMessage(content=query)], 
+            config={"callbacks": [langfuse_handler]}
+        )
+    else:
+        parser = PydanticOutputParser(pydantic_object=ServiceAssessment)
+        messages = [
+            SystemMessage(content=SYSTEM_PROMPT + f"\n\n{parser.get_format_instructions()}"),
+            HumanMessage(content=image_inspect_logs),
+            # HumanMessage(content=container_inspect_logs),
+            HumanMessage(content=code),
+            HumanMessage(content=query),
+        ]
+        result = llm.invoke(messages, config={"callbacks": [langfuse_handler]})
+        result = parser.parse(result.content)
+    
     state.stats.services_ok = result.services_ok
     
     if not result.code_hard_version:
@@ -712,14 +774,26 @@ def test_code(state: OverallState):
     
     query = CHECK_NETWORK_PROMPT.format()
     
-    result = network_ass_llm.invoke(
-        [SystemMessage(content=SYSTEM_PROMPT), 
-         # HumanMessage(content=image_inspect_logs),
-         HumanMessage(content=container_inspect_logs),
-         HumanMessage(content=code),
-         HumanMessage(content=query)], 
-        config={"callbacks": [langfuse_handler]}
-    )
+    if state.model.lower() in ["gpt-4o", "gpt-5"]:
+        result = network_ass_llm.invoke(
+            [SystemMessage(content=SYSTEM_PROMPT), 
+             # HumanMessage(content=image_inspect_logs),
+             HumanMessage(content=container_inspect_logs),
+             HumanMessage(content=code),
+             HumanMessage(content=query)], 
+            config={"callbacks": [langfuse_handler]}
+        )
+    else:
+        parser = PydanticOutputParser(pydantic_object=NetworkAssessment)
+        messages = [
+            SystemMessage(content=SYSTEM_PROMPT + f"\n\n{parser.get_format_instructions()}"),
+            # HumanMessage(content=image_inspect_logs),
+            HumanMessage(content=container_inspect_logs),
+            HumanMessage(content=code),
+            HumanMessage(content=query),
+        ]
+        result = llm.invoke(messages, config={"callbacks": [langfuse_handler]})
+        result = parser.parse(result.content)
         
     if not result.network_setup:
         state.stats.docker_misconfigured += 1
@@ -792,32 +866,69 @@ def revise_code(state: OverallState):
     for f in state.code.files:
         code += "-" * 10 + f" {f.location} " + "-" * 10 + f"\n{f.content}\n\n"
     
-    query = TEST_FAIL_PROMPT.format(
-        fail_explanation=state.fail_explanation,
-        revision_goal=state.revision_goal,
-        cve_id=state.cve_id,
-        mode=state.web_search_tool,
-        fixes=state.fixes,
-    )
+    
+    if state.model.lower() in ["gpt-4o", "gpt-5"]:
+        query = TEST_FAIL_PROMPT.format(
+            fail_explanation=state.fail_explanation,
+            revision_goal=state.revision_goal,
+            cve_id=state.cve_id,
+            mode=state.web_search_tool,
+            fixes=state.fixes,
+        )
+        result = revise_code_llm.invoke(
+            state.messages + [HumanMessage(content=code), HumanMessage(content=query)],
+            config={"callbacks": [langfuse_handler]}
+        )
         
-    result = revise_code_llm.invoke(
-        state.messages + [HumanMessage(content=code), HumanMessage(content=query)],
-        config={"callbacks": [langfuse_handler]}
-    )
+        output_string = f"\t- ERROR: {result.error}"
+        output_string += f"\n\t- FIX: {result.fix}"
+        print(output_string)
+        with builtins.open(final_report_file, "a") as f:
+            f.write(f"\n{output_string}\n")
+            
+        state.stats.test_iteration += 1
+        return {
+            "stats": state.stats,
+            "milestones": state.milestones,
+            "code": result.fixed_code,
+            "fixes": state.fixes + [result.fix],
+        }
+        
+    else:
+        revision_query = REVISION_PROMPT.format(fail_explanation=state.fail_explanation)
+        fix_suggestion = llm.invoke([
+            SystemMessage(content=SYSTEM_PROMPT),
+            HumanMessage(content=revision_query),
+        ], config={"callbacks": [langfuse_handler]})
+        
+        code_correction_query = CODE_CORRECTION_PROMPT.format(
+            fail_explanation=state.fail_explanation,
+            revision_goal=state.revision_goal,
+            fix=fix_suggestion.content,
+            cve_id=state.cve_id,
+            mode=state.web_search_tool,
+            fixes=state.fixes,
+        )
+        parser = PydanticOutputParser(pydantic_object=Code)
+        messages = [SystemMessage(content=SYSTEM_PROMPT + f"\n\n{parser.get_format_instructions()}")]
+        messages += state.messages[1:]
+        messages += [HumanMessage(content=code), HumanMessage(content=code_correction_query)]
+        result = llm.invoke(messages, config={"callbacks": [langfuse_handler]})
+        result = parser.parse(result.content)
 
-    output_string = f"\t- ERROR: {result.error}"
-    output_string += f"\n\t- FIX: {result.fix}"
-    print(output_string)
-    with builtins.open(final_report_file, "a") as f:
-        f.write(f"\n{output_string}\n")
+        output_string = f"\t- ERROR: {state.fail_explanation}"
+        output_string += f"\n\t- FIX: {fix_suggestion.content}"
+        print(output_string)
+        with builtins.open(final_report_file, "a") as f:
+            f.write(f"\n{output_string}\n")
 
-    state.stats.test_iteration += 1
-    return {
-        "stats": state.stats,
-        "milestones": state.milestones,
-        "code": result.fixed_code,
-        "fixes": state.fixes + [result.fix],
-    }
+        state.stats.test_iteration += 1
+        return {
+            "stats": state.stats,
+            "milestones": state.milestones,
+            "code": result,
+            "fixes": state.fixes + [fix_suggestion.content],
+        }
 
 
 def run_docker_scout(code_dir_path, index, iid):

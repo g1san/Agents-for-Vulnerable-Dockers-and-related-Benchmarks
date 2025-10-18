@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.output_parsers import PydanticOutputParser
 from langchain_openai import ChatOpenAI
 from langchain.chat_models import init_chat_model
 
@@ -154,18 +155,26 @@ class ContextGenerator:
             ]
             
             if self.model.lower() == "gpt-4o":
-                llm_model = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+                llm_model = ChatOpenAI(model=self.model.lower(), temperature=0.5, max_retries=2)
             elif self.model.lower() == "gpt-5":
-                llm_model = ChatOpenAI(
-                    model="gpt-5", 
+                llm_model = ChatOpenAI(model=self.model.lower(),
                     max_retries=2, 
                     reasoning_effort="low", 
-                    # use_responses_api=True, 
+                    # use_responses_api=True,
                     # verbosity="low",
                 )
-            elif self.model == "mistralai/Mistral-7B-Instruct-v0.1":
+            elif self.model in ["mistralai/Mistral-7B-Instruct-v0.1"]:
                 llm_model = ChatOpenAI(
-                    model="mistralai/Mistral-7B-Instruct-v0.1",
+                    model=self.model,
+                    base_url="https://kubernetes.polito.it/vllm/v1",
+                    api_key=os.getenv("SDC_API_KEY"),
+                )
+            elif self.model in ["gpt-oss:20b", "gpt-oss:120b"]:
+                llm_model = ChatOpenAI(model=self.model,
+                    max_retries=2, 
+                    reasoning_effort="low", 
+                    # use_responses_api=True,
+                    # verbosity="low",
                     base_url="https://kubernetes.polito.it/vllm/v1",
                     api_key=os.getenv("SDC_API_KEY"),
                 )
@@ -206,28 +215,47 @@ class ContextGenerator:
             ]
             
             if self.model.lower() == "gpt-4o":
-                llm_model = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+                llm_model = ChatOpenAI(model=self.model.lower(), temperature=0.5, max_retries=2)
             elif self.model.lower() == "gpt-5":
-                llm_model = ChatOpenAI(model="gpt-5",
+                llm_model = ChatOpenAI(model=self.model.lower(),
                     max_retries=2, 
                     reasoning_effort="low", 
                     # use_responses_api=True,
                     # verbosity="low",
                 )
-            elif self.model == "mistralai/Mistral-7B-Instruct-v0.1":
+            elif self.model in ["mistralai/Mistral-7B-Instruct-v0.1"]:
                 llm_model = ChatOpenAI(
-                    model="mistralai/Mistral-7B-Instruct-v0.1",
+                    model=self.model,
+                    base_url="https://kubernetes.polito.it/vllm/v1",
+                    api_key=os.getenv("SDC_API_KEY"),
+                )
+            elif self.model in ["gpt-oss:20b", "gpt-oss:120b"]:
+                llm_model = ChatOpenAI(model=self.model,
+                    max_retries=2, 
+                    reasoning_effort="low", 
+                    # use_responses_api=True,
+                    # verbosity="low",
                     base_url="https://kubernetes.polito.it/vllm/v1",
                     api_key=os.getenv("SDC_API_KEY"),
                 )
             else:
                 raise ValueError("Model not supported")
             
-            # Set the LLM to return a structured output from web search
-            docker_services_llm = llm_model.with_structured_output(WebSearch)
-            
-            # Invoke the LLM to summarize the web search content
-            formatted_response = docker_services_llm.invoke(messages, config={"callbacks": [langfuse_handler]})
+            if self.model.lower() in ["gpt-4o", "gpt-5"]:
+                messages = [
+                    SystemMessage(content=GET_DOCKER_SERVICES_PROMPT.format(cve_id=cve_id)),
+                    HumanMessage(content=f"Use the following knowledge to achieve your task: {conc_sum[:max_chars]}"),
+                ]
+                docker_services_llm = llm_model.with_structured_output(WebSearch)
+                formatted_response = docker_services_llm.invoke(messages, config={"callbacks": [langfuse_handler]})
+            else:
+                parser = PydanticOutputParser(pydantic_object=WebSearch)
+                messages = [
+                    SystemMessage(content=GET_DOCKER_SERVICES_PROMPT.format(cve_id=cve_id) + f"\n\n{parser.get_format_instructions()}"),
+                    HumanMessage(content=f"Use the following knowledge to achieve your task: {conc_sum[:max_chars]}"),
+                ]
+                response = llm_model.invoke(messages, config={"callbacks": [langfuse_handler]})
+                formatted_response = parser.parse(response.content)
             
             if self.verbose:
                 print(f"\n\n\tFORMATTED WEB SEARCH RESPONSE\n\t{formatted_response}")

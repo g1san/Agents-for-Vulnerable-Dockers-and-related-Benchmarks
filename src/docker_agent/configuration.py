@@ -21,7 +21,7 @@ langfuse_handler = CallbackHandler()
 
 class Service(BaseModel):
     name: str = Field(description="Name of the service")
-    version: list[str] = Field(description="Versions of the service")
+    version: list[str] = Field(description="List of versions of the service")
     dependency_type: str = Field(description="Type of the dependency of the service, either 'HARD' or 'SOFT'")
     description: str = Field(description="Brief description of why the service is necessary in the Docker")
 
@@ -29,7 +29,7 @@ class Service(BaseModel):
 class WebSearch(BaseModel):
     desc: str = Field(description="Description of the CVE")
     attack_type: str = Field(description="Type of attack (e.g. DoS, RCE, etc.)")
-    services: list[Service] = Field(description="List of services to be used in the Docker system vulnerable to the CVE-ID")
+    services: list[Service] = Field(description="List of services to be used in the Docker system vulnerable to the CVE")
     
 
 class HARDServiceVersionAssessment(BaseModel):
@@ -58,8 +58,6 @@ class ServiceAssessment(BaseModel):
 
 
 class NetworkAssessment(BaseModel):
-    # docker_builds: bool = Field(description="Do all Docker images get built correctly?")
-    # docker_runs: bool = Field(description="Does the Docker system run correctly?")
     network_setup: bool = Field(description="Are all services/containers setup to be accessible from the right network ports?")
     fail_explanation: Optional[str] = Field(description="Detailed explanation of why one or more milestones have failed")
 
@@ -67,7 +65,7 @@ class NetworkAssessment(BaseModel):
 class CodeRevision(BaseModel):
     error: str = Field(description="Detailed description of the error presented by the logs")
     fix: str = Field(description="Detailed description of fix applied to the code to solve the error")
-    fixed_code: Code = Field(description="The fixed file names, code and associated directory tree")
+    fixed_code: Code = Field(description="File location, content and associated directory tree")
 
 
 class Stats(BaseModel):
