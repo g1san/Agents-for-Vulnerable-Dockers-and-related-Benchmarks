@@ -67,7 +67,7 @@ def assess_dockers(cve_list: list[str], model: str, logs_set: str, web_search_mo
                         
                     result = compiled_workflow.invoke(
                         input={                   #! The model must be also manually initialized in the 'nodes.py' file !#
-                            "model": "gpt-4o",     #* Models allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                            "model_name": "gpt-oss:120b",     #* Models allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
                             "cve_id": cve,
                             "web_search_tool": wsm,
                             "verbose_web_search": False,
@@ -82,17 +82,6 @@ def assess_dockers(cve_list: list[str], model: str, logs_set: str, web_search_mo
                         print(f"{cve} 'docker_scout_vulnerable' {stats["docker_scout_vulnerable"]} --> {result["stats"].docker_scout_vulnerable}")
                 else:
                     continue
-                    result = compiled_workflow.invoke(
-                        input={                   #! The model must be also manually initialized in the 'nodes.py' file !#
-                            "model": "gpt-4o",     #* Models allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
-                            "cve_id": cve,
-                            "web_search_tool": wsm,
-                            "verbose_web_search": False,
-                            "web_search_result": web_search_data,
-                            "messages": [SystemMessage(content=SYSTEM_PROMPT)]
-                        },
-                        config={"callbacks": [langfuse_handler], "recursion_limit": 100},
-                    )
 
                 for m, val in result["milestones"]:
                     if val != milestones[m]:
@@ -123,7 +112,7 @@ def run_agent(cve_list: list[str], web_search_mode: str):
                 #             
                 #         result = compiled_workflow.invoke(
                 #             input={                  #! The model must be also manually initialized in the 'nodes.py' file !#
-                #                 "model": 'gpt-4o',   #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss:20b', 'gpt-oss:120b' *#
+                #                 "model_name": 'gpt-4o',   #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss:20b', 'gpt-oss:120b' *#
                 #                 "cve_id": cve,
                 #                 "web_search_tool": wsm,
                 #                 "verbose_web_search": False,
@@ -153,7 +142,7 @@ def run_agent(cve_list: list[str], web_search_mode: str):
 
                 result = compiled_workflow.invoke(
                     input={                        #! The model must be also manually initialized in the 'nodes.py' file !#
-                        "model": 'gpt-oss:120b',   #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss:20b', 'gpt-oss:120b' *#
+                        "model_name": 'gpt-oss:120b',   #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss:20b', 'gpt-oss:120b' *#
                         "cve_id": cve,
                         "web_search_tool": wsm,
                         "verbose_web_search": True,
@@ -878,7 +867,7 @@ def best_cve_runs(model: str, logs_set: str, iteration: str, mode: str):
 # data = extract_milestones_stats(model="GPT-5", logs_set="3rd", mode='custom_no_tool')
 # df = web_search_mode_stats(model="GPT-4o", logs_set="5th", iteration="", mode="")
 # df = web_search_mode_stats(model="GPT-5", logs_set="3rd", iteration="", mode="")
-# best_cve_runs(model="gpt-oss:120b", logs_set="1st", iteration="", mode="all-openai")     # Leave mode="" to consider all web search modes
+# best_cve_runs(model="gpt-oss:120b", logs_set="1st", iteration="", mode="custom_no_tool")     # Leave mode="" to consider all web search modes
 
 #* RUN AGENT *#
 # with builtins.open('services.json', "r") as f:
@@ -887,7 +876,7 @@ def best_cve_runs(model: str, logs_set: str, iteration: str, mode: str):
 # print(len(cve_list), cve_list)
 # result = run_agent(
 #     cve_list=cve_list,
-#     web_search_mode="all",
+#     web_search_mode="custom_no_tool",
 # )
 
 #* ASSESS DOCKERS *#
@@ -897,8 +886,8 @@ def best_cve_runs(model: str, logs_set: str, iteration: str, mode: str):
 # print(len(cve_list), cve_list)
 # df = assess_dockers(
 #     cve_list=cve_list,#cve_list, 
-#     model="GPT-4o",     #! INSERT THIS MANUALLY IN THE 'assess_dockers' function body !#
-#     logs_set="5th",
+#     model="gpt-oss:120b",     #! INSERT THIS MANUALLY IN THE 'assess_dockers' function body !#
+#     logs_set="1st",
 #     web_search_mode="custom_no_tool", #! MANDATORY !#
 # )
 

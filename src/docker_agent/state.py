@@ -2,15 +2,21 @@ from typing import Annotated, Optional
 from langchain_core.messages import AnyMessage
 from langgraph.graph.message import add_messages
 from pydantic import BaseModel, Field
+from langchain_openai import ChatOpenAI
 
 # My modules
 from configuration import Code, WebSearch, Stats, Milestones
 
 
 class OverallState(BaseModel):
-    model: str = Field(
+    model_name: str = Field(
         default="",
-        description="Model chosen for this agent run"
+        description="Name of the model chosen for this agent run"
+    )
+    
+    llm: ChatOpenAI = Field(
+        default=None, 
+        description="LLM instance being used"
     )
     
     cve_id: str = Field(

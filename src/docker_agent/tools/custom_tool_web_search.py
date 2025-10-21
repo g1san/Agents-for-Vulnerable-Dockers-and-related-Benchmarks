@@ -156,10 +156,10 @@ class ContextGenerator:
                 HumanMessage(content=f"Here is the content you have to summarise: {doc[:max_chars]}"),
             ]
             
-            if self.model.lower() == "gpt-4o":
-                llm_model = ChatOpenAI(model=self.model.lower(), temperature=0.5, max_retries=2)
-            elif self.model.lower() == "gpt-5":
-                llm_model = ChatOpenAI(model=self.model.lower(),
+            if self.model == "gpt-4o":
+                llm_model = ChatOpenAI(model=self.model, temperature=0.5, max_retries=2)
+            elif self.model == "gpt-5":
+                llm_model = ChatOpenAI(model=self.model,
                     max_retries=2, 
                     reasoning_effort="low", 
                     # use_responses_api=True,
@@ -177,6 +177,12 @@ class ContextGenerator:
                     reasoning_effort="low", 
                     # use_responses_api=True,
                     # verbosity="low",
+                    base_url="https://kubernetes.polito.it/vllm/v1",
+                    api_key=os.getenv("SDC_API_KEY"),
+                )
+            elif self.model == "llama4":
+                llm_model = ChatOpenAI(
+                    model="llama4:scout",
                     base_url="https://kubernetes.polito.it/vllm/v1",
                     api_key=os.getenv("SDC_API_KEY"),
                 )
@@ -208,10 +214,10 @@ class ContextGenerator:
             if self.verbose:
                 print(f"\n\n\tSUMMARY CONCATENATION\n\t{conc_sum}")
             
-            if self.model.lower() == "gpt-4o":
-                llm_model = ChatOpenAI(model=self.model.lower(), temperature=0.5, max_retries=2)
-            elif self.model.lower() == "gpt-5":
-                llm_model = ChatOpenAI(model=self.model.lower(),
+            if self.model == "gpt-4o":
+                llm_model = ChatOpenAI(model=self.model, temperature=0.5, max_retries=2)
+            elif self.model == "gpt-5":
+                llm_model = ChatOpenAI(model=self.model,
                     max_retries=2, 
                     reasoning_effort="low", 
                     # use_responses_api=True,
@@ -232,10 +238,16 @@ class ContextGenerator:
                     base_url="https://kubernetes.polito.it/vllm/v1",
                     api_key=os.getenv("SDC_API_KEY"),
                 )
+            elif self.model == "llama4":
+                llm_model = ChatOpenAI(
+                    model="llama4:scout",
+                    base_url="https://kubernetes.polito.it/vllm/v1",
+                    api_key=os.getenv("SDC_API_KEY"),
+                )
             else:
                 raise ValueError("Model not supported")
             
-            if self.model.lower() in ["gpt-4o", "gpt-5"]:
+            if self.model in ["gpt-4o", "gpt-5"]:
                 messages = [
                     SystemMessage(content=GET_DOCKER_SERVICES_PROMPT.format(cve_id=cve_id)),
                     HumanMessage(content=f"Use the following knowledge to achieve your task: {conc_sum[:max_chars]}"),
