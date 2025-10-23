@@ -88,7 +88,7 @@ def get_cve_id(state: OverallState):
             api_key=os.getenv("SDC_API_KEY"),
             max_tokens=16000,
         )
-    elif state.model_name in ["gpt-oss:20b", "gpt-oss:120b"]:
+    elif state.model_name in ["gpt-oss-20b", "gpt-oss-120b"]:
         state.llm = ChatOpenAI(
             model=state.model_name,
             max_retries=2, 
@@ -215,7 +215,7 @@ def get_services(state: OverallState):
         response_sourceless = web_search_result.content[0]["text"]
         
         # Invoke the LLM to convert the web search results into a structured output
-        if state.model_name.lower() in ["gpt-4o", "gpt-5"]:
+        if state.model_name in ["gpt-4o", "gpt-5"]:
             web_search_llm = state.llm.with_structured_output(WebSearch)
             formatted_response = web_search_llm.invoke(
                 WEB_SEARCH_FORMAT_PROMPT.format(web_search_result=response_sourceless), 
@@ -224,7 +224,7 @@ def get_services(state: OverallState):
         else:
             parser = PydanticOutputParser(pydantic_object=WebSearch)
             messages = [
-                SystemMessage(content=SYSTEM_PROMPT + f"\n\n{parser.get_format_instructions()}"),
+                SystemMessage(content=SYSTEM_PROMPT + f"  Never use Markdown in your answers.\n\n{parser.get_format_instructions()}"),
                 HumanMessage(content=WEB_SEARCH_FORMAT_PROMPT.format(web_search_result=response_sourceless)),
             ]
             response = state.llm.invoke(messages, config={"callbacks": [langfuse_handler]})
@@ -344,7 +344,7 @@ def assess_services(state: OverallState):
                 version_list=version_list,
             )
             
-            if state.model_name.lower() in ["gpt-4o", "gpt-5"]:
+            if state.model_name in ["gpt-4o", "gpt-5"]:
                 ver_ass_llm = state.llm.with_structured_output(HARDServiceVersionAssessment)
                 response = ver_ass_llm.invoke(
                     [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=ver_ass_query)], 
@@ -353,7 +353,7 @@ def assess_services(state: OverallState):
             else:
                 parser = PydanticOutputParser(pydantic_object=HARDServiceVersionAssessment)
                 messages = [
-                    SystemMessage(content=SYSTEM_PROMPT + f"\n\n{parser.get_format_instructions()}"),
+                    SystemMessage(content=SYSTEM_PROMPT + f"  Never use Markdown in your answers.\n\n{parser.get_format_instructions()}"),
                     HumanMessage(content=ver_ass_query),
                 ]
                 response = state.llm.invoke(messages, config={"callbacks": [langfuse_handler]})
@@ -413,7 +413,7 @@ def generate_code(state: OverallState):
         mode=state.web_search_tool,
     )
     
-    if state.model_name.lower() in ["gpt-4o", "gpt-5"]:
+    if state.model_name in ["gpt-4o", "gpt-5"]:
         code_generation_llm = state.llm.with_structured_output(Code)
         generated_code = code_generation_llm.invoke(
             state.messages + [HumanMessage(content=code_gen_query)], 
@@ -422,7 +422,7 @@ def generate_code(state: OverallState):
     else:
         parser = PydanticOutputParser(pydantic_object=Code)
         messages = [
-            SystemMessage(content=SYSTEM_PROMPT + f"\n\n{parser.get_format_instructions()}"),
+            SystemMessage(content=SYSTEM_PROMPT + f"  Never use Markdown in your answers.\n\n{parser.get_format_instructions()}"),
             HumanMessage(content=code_gen_query),
         ]
         generated_code = state.llm.invoke(messages, config={"callbacks": [langfuse_handler]})
@@ -490,7 +490,7 @@ def launch_docker(code_dir_path, log_file):
 
     except subprocess.TimeoutExpired as e:
         print(f"\t{e}")
-        return False, e
+        return False, e.output if e.output is not None else "No logs available"
 
 
 def get_image_ids():
@@ -665,7 +665,7 @@ def test_code(state: OverallState):
             inspect_container_log=inspect_container_log,
         )
         
-        if state.model_name.lower() in ["gpt-4o", "gpt-5"]:
+        if state.model_name in ["gpt-4o", "gpt-5"]:
             container_ass_llm = state.llm.with_structured_output(ContainerLogsAssessment)
             result = container_ass_llm.invoke(
                 [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=query)], 
@@ -674,7 +674,7 @@ def test_code(state: OverallState):
         else:
             parser = PydanticOutputParser(pydantic_object=ContainerLogsAssessment)
             messages = [
-                SystemMessage(content=SYSTEM_PROMPT + f"\n\n{parser.get_format_instructions()}"),
+                SystemMessage(content=SYSTEM_PROMPT + f"  Never use Markdown in your answers.\n\n{parser.get_format_instructions()}"),
                 HumanMessage(content=query),
             ]
             result = state.llm.invoke(messages, config={"callbacks": [langfuse_handler]})
@@ -722,7 +722,7 @@ def test_code(state: OverallState):
         service_list=service_list,
     )
     
-    if state.model_name.lower() in ["gpt-4o", "gpt-5"]:
+    if state.model_name in ["gpt-4o", "gpt-5"]:
         serv_ver_ass_llm = state.llm.with_structured_output(ServiceAssessment)
         result = serv_ver_ass_llm.invoke(
             [SystemMessage(content=SYSTEM_PROMPT), 
@@ -735,7 +735,7 @@ def test_code(state: OverallState):
     else:
         parser = PydanticOutputParser(pydantic_object=ServiceAssessment)
         messages = [
-            SystemMessage(content=SYSTEM_PROMPT + f"\n\n{parser.get_format_instructions()}"),
+            SystemMessage(content=SYSTEM_PROMPT + f"  Never use Markdown in your answers.\n\n{parser.get_format_instructions()}"),
             HumanMessage(content=image_inspect_logs),
             # HumanMessage(content=container_inspect_logs),
             HumanMessage(content=code),
@@ -777,7 +777,7 @@ def test_code(state: OverallState):
     
     query = CHECK_NETWORK_PROMPT.format()
     
-    if state.model_name.lower() in ["gpt-4o", "gpt-5"]:
+    if state.model_name in ["gpt-4o", "gpt-5"]:
         network_ass_llm = state.llm.with_structured_output(NetworkAssessment)
         result = network_ass_llm.invoke(
             [SystemMessage(content=SYSTEM_PROMPT), 
@@ -790,7 +790,7 @@ def test_code(state: OverallState):
     else:
         parser = PydanticOutputParser(pydantic_object=NetworkAssessment)
         messages = [
-            SystemMessage(content=SYSTEM_PROMPT + f"\n\n{parser.get_format_instructions()}"),
+            SystemMessage(content=SYSTEM_PROMPT + f"  Never use Markdown in your answers.\n\n{parser.get_format_instructions()}"),
             # HumanMessage(content=image_inspect_logs),
             HumanMessage(content=container_inspect_logs),
             HumanMessage(content=code),
@@ -871,7 +871,7 @@ def revise_code(state: OverallState):
         code += "-" * 10 + f" {f.location} " + "-" * 10 + f"\n{f.content}\n\n"
     
     
-    if state.model_name.lower() in ["gpt-4o", "gpt-5"]:
+    if state.model_name in ["gpt-4o", "gpt-5"]:
         query = TEST_FAIL_PROMPT.format(
             fail_explanation=state.fail_explanation,
             revision_goal=state.revision_goal,
@@ -915,7 +915,7 @@ def revise_code(state: OverallState):
             fixes=state.fixes,
         )
         parser = PydanticOutputParser(pydantic_object=Code)
-        messages = [SystemMessage(content=SYSTEM_PROMPT + f"\n\n{parser.get_format_instructions()}")]
+        messages = [SystemMessage(content=SYSTEM_PROMPT + f"  Never use Markdown in your answers.\n\n{parser.get_format_instructions()}")]
         messages += state.messages[1:]
         messages += [HumanMessage(content=code), HumanMessage(content=code_correction_query)]
         result = state.llm.invoke(messages, config={"callbacks": [langfuse_handler]})

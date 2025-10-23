@@ -1,13 +1,18 @@
 # TODOLIST
 
-
 ## 4 Thesis
-Benchmark hybrid agent with reusing GPT-4o web search results (maybe just for best web search mode) and GPT-5 reasoning for code development.
-Test the 4 models using local LLMs (wait for API to be up).
+Revisione manauale 6th-bs di GPT-4o
+### Boffa Says
+**Best web search mode**: fare più run per CVE per ogni WSM usando SOLO GPT-4o. OBBIETTIVO: scegli la migliore WSM per gli step di analisi successivi. SOLUZIONE: usare i risultati di 5th-bs, 6th-bs e 7th-bs
+**Docker generation**: usando più modelli e la miglior WSM, fare le run (1 o più?) sulle 20 CVE. OBBIETTIVO: raccogliere metriche (e.g. milestones, costo, numero iterazioni, etc.)
+**Vuln Ass**: VA per le 20 CVEs, statica e dinamica
 
+### Giordano Says
+Prova a fare generazione Docker anche se web search fallisce. OBBIETTIVO: capire se le milestone della fase di web search devono fungere da blocco al proseguo del workflow o se l'agente è comunque capace a sviluppare un Docker funzionante anche se i risultati della web search non sono quelli desiderati. SOLUZIONE: usare i risultati di 5th-bs, 6th-bs e 7th-bs per testare se è vero, farlo solo per quei casi in cui web search è fallita, implementare bypass con tag "relax-web-search-constraints" in "debug"
 
-### Better graphs
-- Add % values to the heatmap graph
+### Drago Says
+Testa altri modelli
+
 
 ### More stats
 - Most frequently used services both HARD and SOFT dependencies &rarr; _web\_search\_result.json_ can be used to compute these stats

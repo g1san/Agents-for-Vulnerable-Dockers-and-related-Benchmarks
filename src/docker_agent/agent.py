@@ -2,6 +2,7 @@
 import math
 import json
 import builtins
+import subprocess
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -15,6 +16,29 @@ from prompts import SYSTEM_PROMPT
 from graph import compiled_workflow
 
 
+def down_docker(code_dir_path):
+    # Ensure Docker is down and containers and volumes are removed
+    subprocess.run(
+        ["sudo", "docker", "compose", "down", "--volumes"],
+        cwd=code_dir_path,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+
+
+def remove_all_images():
+    image_ids = subprocess.check_output(["docker", "images", "-aq"]).decode().split()
+
+    if image_ids:
+        subprocess.run(
+            ["docker", "rmi", "-f"] + image_ids,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True
+        )
+
+
+#* DRAW AGENTIC WORKFLOW GRAPH USING MERMAID CHART *#
 def draw_graph():
     try:
         # print(compiled_workflow.get_graph().draw_mermaid())
@@ -22,9 +46,11 @@ def draw_graph():
         
     except Exception as e:
         print(f"Rendering failed with code {e}.\nHere's the Mermaid source:\n{compiled_workflow.get_graph().draw_mermaid()}")
+# draw_graph()
 
 
-def benchmark(web_search_mode: str):
+#* GENERATE THE '{wsm}-milestones.json' FILE OUT OF ALL DOCKERS IN THE 'docker' FOLDER *#
+def milestone_file(web_search_mode: str):
     try:
         with builtins.open('services.json', "r") as f:
             jsonServices = json.load(f)
@@ -43,8 +69,13 @@ def benchmark(web_search_mode: str):
 
     except Exception as e:
         print(f"Workflow invocation failed: {e}.")
+milestones = milestone_file("custom")
+milestones = milestone_file("custom_no_tool")
+milestones = milestone_file("openai")
 
 
+
+#* TEST THE DOCKERS IN THE 'docker' FOLDER *#
 def assess_dockers(cve_list: list[str], model: str, logs_set: str, web_search_mode: str):
     try:
         if web_search_mode == "all": web_search_mode = ["custom", "custom_no_tool", "openai"]
@@ -67,7 +98,7 @@ def assess_dockers(cve_list: list[str], model: str, logs_set: str, web_search_mo
                         
                     result = compiled_workflow.invoke(
                         input={                   #! The model must be also manually initialized in the 'nodes.py' file !#
-                            "model_name": "gpt-oss:120b",     #* Models allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                            "model_name": "gpt-oss-120b",     #* Models allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
                             "cve_id": cve,
                             "web_search_tool": wsm,
                             "verbose_web_search": False,
@@ -90,43 +121,32 @@ def assess_dockers(cve_list: list[str], model: str, logs_set: str, web_search_mo
     
     except Exception as e:
         print(f"Workflow invocation failed: {e}")
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[:20]
+# print(len(cve_list), cve_list)
+# df = assess_dockers(
+#     cve_list=cve_list,#cve_list, 
+#     model="gpt-oss-120b",     #! INSERT THIS MANUALLY IN THE 'assess_dockers' function body !#
+#     logs_set="1st",
+#     web_search_mode="custom_no_tool", #! MANDATORY !#
+# )
 
 
-def run_agent(cve_list: list[str], web_search_mode: str):
-    try:
+#* RUN AGENT *#
+def run_agent(cve_list: list[str], web_search_mode: str, model_name: str, verbose_web_search: bool, reuse_web_search: bool, reuse_web_search_and_code: bool):
         if web_search_mode == "all": web_search_mode = ["custom", "custom_no_tool", "openai"]
         else: web_search_mode = [f"{web_search_mode}"]
         
         for wsm in web_search_mode:        
-            for cve in cve_list:
-                # with builtins.open(f'./../../benchmark_logs/GPT-4o/5th-benchmark-session/{cve}/{wsm}/logs/milestones.json', 'r') as f:
-                #     milestones = json.load(f)
-                #     if milestones["hard_service"] and milestones["hard_version"] and milestones["soft_services"]:
-                #         with builtins.open(f'./../../benchmark_logs/GPT-4o/5th-benchmark-session/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:   
-                #             web_search_data = json.load(f)
-                #         logs_dir_path = Path(f"./../../dockers/{cve}/{wsm}/logs")
-                #         logs_dir_path.mkdir(parents=True, exist_ok=True)
-                #         web_search_file = logs_dir_path / 'web_search_results.json'
-                #         with builtins.open(web_search_file, 'w') as fp:
-                #             json.dump(web_search_data, fp, indent=4) 
-                #             
-                #         result = compiled_workflow.invoke(
-                #             input={                  #! The model must be also manually initialized in the 'nodes.py' file !#
-                #                 "model_name": 'gpt-4o',   #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss:20b', 'gpt-oss:120b' *#
-                #                 "cve_id": cve,
-                #                 "web_search_tool": wsm,
-                #                 "verbose_web_search": False,
-                #                 "web_search_result": web_search_data,
-                #                 # "code": code_data,
-                #                 "messages": [SystemMessage(content=SYSTEM_PROMPT)]
-                #             },
-                #             config={"callbacks": [langfuse_handler], "recursion_limit": 100},
-                #         )
-                #         continue
+            for cve in cve_list:                
+                if reuse_web_search or reuse_web_search_and_code:
+                    with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:
+                        web_search_data = json.load(f)
+                    if reuse_web_search_and_code:
+                        with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/code.json', 'r') as f:
+                            code_data = json.load(f)
                 
-                #! Uncomment this to reuse the web_search_results file from the 'docker' folder !#
-                # with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:
-                #     web_search_data = json.load(f)
                 #! Uncomment this to reuse the web_search_results file from the 'benchmark_logs' folder !#
                 # with builtins.open(f'./../../benchmark_logs/GPT-4o/5th-benchmark-session/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:   
                 #     web_search_data = json.load(f)
@@ -136,30 +156,68 @@ def run_agent(cve_list: list[str], web_search_mode: str):
                 # with builtins.open(web_search_file, 'w') as fp:
                 #     json.dump(web_search_data, fp, indent=4)    
 
-                #! Uncomment this to reuse the code files from the 'docker' folder !#
-                # with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/code.json', 'r') as f:
-                #     code_data = json.load(f)
+                try:
+                    if reuse_web_search:
+                        result = compiled_workflow.invoke(
+                            input={              
+                                "model_name": model_name,
+                                "cve_id": cve,
+                                "web_search_tool": wsm,
+                                "verbose_web_search": verbose_web_search,
+                                "web_search_result": web_search_data,
+                                "messages": [SystemMessage(content=SYSTEM_PROMPT)]
+                            },
+                            config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+                        )
+                    elif reuse_web_search_and_code:
+                        result = compiled_workflow.invoke(
+                            input={             
+                                "model_name": model_name,
+                                "cve_id": cve,
+                                "web_search_tool": wsm,
+                                "verbose_web_search": verbose_web_search,
+                                "web_search_result": web_search_data,
+                                "code": code_data,
+                                "messages": [SystemMessage(content=SYSTEM_PROMPT)]
+                            },
+                            config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+                        )
+                    else:
+                        result = compiled_workflow.invoke(
+                            input={             
+                                "model_name": model_name,
+                                "cve_id": cve,
+                                "web_search_tool": wsm,
+                                "verbose_web_search": verbose_web_search,
+                                "messages": [SystemMessage(content=SYSTEM_PROMPT)]
+                            },
+                            config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+                        )
 
-                result = compiled_workflow.invoke(
-                    input={                        #! The model must be also manually initialized in the 'nodes.py' file !#
-                        "model_name": 'gpt-oss:120b',   #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss:20b', 'gpt-oss:120b' *#
-                        "cve_id": cve,
-                        "web_search_tool": wsm,
-                        "verbose_web_search": True,
-                        # "web_search_result": web_search_data,
-                        # "code": code_data,
-                        "messages": [SystemMessage(content=SYSTEM_PROMPT)]
-                    },
-                    config={"callbacks": [langfuse_handler], "recursion_limit": 100},
-                )
-                
-                if len(cve_list) == 1 and len(web_search_mode) == 1:
-                    return result
-    
-    except Exception as e:
-        print(f"Workflow invocation failed: {e}")
+                    if len(cve_list) == 1 and len(web_search_mode) == 1:
+                        return result
+                except Exception as e:
+                    code_dir_path = Path(f"./../../dockers/{cve}/{wsm}/")
+                    down_docker(code_dir_path=code_dir_path)
+                    remove_all_images()
+                    print(f"===== [AGENTIC WORKFLOW FAILED] =====\n{e}\n"+"="*37)
+                    continue      
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[:20]
+# print(len(cve_list), cve_list)
+# result = run_agent(
+#     cve_list=cve_list,
+#     web_search_mode="openai",
+#     model_name="gpt-4o",                #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss-20b', 'gpt-oss-120b' *#
+#     verbose_web_search=False,
+#     reuse_web_search=True,
+#     reuse_web_search_and_code=False,
+# )
 
 
+
+#* GENERATE THE '{wsm}-benchmark.xlsx' and '{wsm}-benchmark.csv' FILEs *#
 def generate_excel_csv():
     # CVE identifiers
     with builtins.open('services.json', "r") as f:
@@ -244,6 +302,7 @@ def generate_excel_csv():
     df.to_excel(f'./../../dockers/benchmark-milestones.xlsx')
     df.to_csv(f'./../../dockers/benchmark-milestones.csv')
     return df
+# df = generate_excel_csv()
 
 
 def generate_excel_csv_mono_mode(model, logs_set, mode):
@@ -337,6 +396,7 @@ def generate_excel_csv_mono_mode(model, logs_set, mode):
     df.to_excel(main_path / f'{mode}-benchmark.xlsx')
     df.to_csv(main_path / f'{mode}-benchmark.csv')
     return df
+# df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
 
 
 def get_cve_df(model: str, logs_set: str, iteration: str, mode: str):
@@ -369,6 +429,7 @@ def get_cve_df(model: str, logs_set: str, iteration: str, mode: str):
     return df 
 
 
+#* PRINT MILESTONE RELATED STATS *#
 def extract_milestones_stats(model: str, logs_set: str, mode: str):    
     data = {}
     with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{mode}-milestones.json', 'r') as f:
@@ -382,7 +443,7 @@ def extract_milestones_stats(model: str, logs_set: str, mode: str):
     for milestone, value in data.items():
         print(f"{milestone} --> {value}%")
     return data  
-
+# data = extract_milestones_stats(model="GPT-5", logs_set="3rd", mode='custom_no_tool')
 
 def is_achieved(x):
     if pd.isna(x):
@@ -410,6 +471,7 @@ def is_achieved(x):
     return True
 
 
+#* PRINT WSM RELATED STATS *#
 def web_search_mode_stats(model: str, logs_set: str, iteration: str, mode: str):
     print(f"model: {model}, logs_set: {logs_set}, iteration: {iteration if iteration else "none"}, mode: {mode if mode else "all"}")
     if mode == "":
@@ -509,6 +571,7 @@ def web_search_mode_stats(model: str, logs_set: str, iteration: str, mode: str):
     
     return df
     # df.groupby(['cve_id'])    
+# df = web_search_mode_stats(model="GPT-4o", logs_set="5th", iteration="", mode="")
 
 
 def barh_mean_std(df, feature: str):
@@ -571,8 +634,9 @@ def barh_service_wsm(df, unique_services):
     plt.legend()
     plt.tight_layout()
     plt.show()
-    
 
+
+#* SERVICE RELATED STATS *#
 def services_stats(cve_list: list[str], model: str, logs_set: str, iteration: str, web_search_mode: str, filtered_milestones: bool):
     file_name = f"./../../benchmark_logs/{model}/{logs_set}-benchmark-session/"
     if iteration != "": file_name += f"{iteration}-iteration/"
@@ -655,13 +719,25 @@ def services_stats(cve_list: list[str], model: str, logs_set: str, iteration: st
     # barh_mean_std(df, feature="web_search_mode")    #! Use either 'service_name' or 'web_search_mode'
     
     return df
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[:20]
+# df = services_stats(
+#     cve_list=cve_list, 
+#     model="GPT-4o", 
+#     logs_set="5th", 
+#     iteration="", 
+#     web_search_mode="",
+#     filtered_milestones=True,
+# )
 
 
-def vuln_ass_stats(cve_list: list[str], model: str, logs_set: str, iteration: str, web_search_mode: str, correct_web_search_only: bool, correct_docker_only: bool):
+def get_data(cve_list: list[str], model: str, logs_set: str, iteration: str, web_search_mode: str, correct_web_search_only: bool, correct_docker_only: bool):
     file_name = f"./../../benchmark_logs/{model}/{logs_set}-benchmark-session/"
     if iteration != "": file_name += f"{iteration}-iteration/"
-    if web_search_mode != "": modes = [web_search_mode]
-    else: modes = ["custom", "custom_no_tool", "openai"]
+    if web_search_mode == "all": modes = ["custom", "custom_no_tool", "openai"]
+    elif web_search_mode == "all-openai": modes = ["custom", "custom_no_tool"]
+    else: modes = [web_search_mode]
     
     df = []
     print("="*10 + "START ERROR MESSAGES" + "="*10)
@@ -726,33 +802,49 @@ def vuln_ass_stats(cve_list: list[str], model: str, logs_set: str, iteration: st
     print("="*10 + "END ERROR MESSAGES" + "="*10 + "\n"*3)
             
     df = pd.DataFrame(df)
-    display(df)
-    print(df.mean(numeric_only=True))
-    
-    if correct_docker_only:
-        docker_ok_cves = set()
-        static_cves = set()
-        dynamic_cves = set()
-        stat_dyn_cves = set()
-        for index in range(0, len(df)):
-            row = df.iloc[index]
-            docker_ok_cves.add(row["cve"])
-            if row["docker_scout_vulnerable"]:
-                static_cves.add(row["cve"])
-            if row["exploitable"]:
-                dynamic_cves.add(row["cve"])
-            if row["static_and_dynamic_va"]:
-                stat_dyn_cves.add(row["cve"])
-
-        print("\n\n\n")
-        print(f"CVEs Docker OK ({len(docker_ok_cves)})\n{sorted(docker_ok_cves)}\n\n\n")
-        print(f"CVEs Static VA ({len(static_cves)})\n{sorted(static_cves)}\n\n\n")
-        print(f"CVEs Dynamic VA ({len(dynamic_cves)})\n{sorted(dynamic_cves)}\n\n\n")
-        print(f"CVEs Static + Dynamic VA ({len(stat_dyn_cves)})\n{sorted(stat_dyn_cves)}\n\n\n")
-
     return df
 
 
+#* VULNERABILITY ASSESSMENT RELATED STATS *#
+def vuln_ass_stats(df):
+    # Ensure that 'df' contains only the runs that produced a working Docker
+    display(df)
+    print(df.mean(numeric_only=True))
+
+    docker_ok_cves = set()
+    static_cves = set()
+    dynamic_cves = set()
+    stat_dyn_cves = set()
+    for index in range(0, len(df)):
+        row = df.iloc[index]
+        docker_ok_cves.add(row["cve"])
+        if row["docker_scout_vulnerable"]:
+            static_cves.add(row["cve"])
+        if row["exploitable"]:
+            dynamic_cves.add(row["cve"])
+        if row["static_and_dynamic_va"]:
+            stat_dyn_cves.add(row["cve"])
+
+    print("\n\n\n")
+    print(f"CVEs Docker OK ({len(docker_ok_cves)})\n{sorted(docker_ok_cves)}\n\n\n")
+    print(f"CVEs Static VA ({len(static_cves)})\n{sorted(static_cves)}\n\n\n")
+    print(f"CVEs Dynamic VA ({len(dynamic_cves)})\n{sorted(dynamic_cves)}\n\n\n")
+    print(f"CVEs Static + Dynamic VA ({len(stat_dyn_cves)})\n{sorted(stat_dyn_cves)}\n\n\n")
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[:20]
+# df = vuln_ass_stats(get_data(
+#     cve_list=cve_list, 
+#     model="gpt-oss-120b",
+#     logs_set="1st", 
+#     iteration="", 
+#     web_search_mode="all-openai",
+#     correct_web_search_only=False,
+#     correct_docker_only=True,
+# ))
+
+
+#* HORIZONTAL BAR PLOT FOR BEST RUN OF EACH CVE *#
 def best_cve_runs(model: str, logs_set: str, iteration: str, mode: str):
     print(f"model: {model}, logs_set: {logs_set}, iteration: {iteration if iteration else "none"}, mode: {mode if mode else "all"}")
     if mode == "all":
@@ -761,7 +853,7 @@ def best_cve_runs(model: str, logs_set: str, iteration: str, mode: str):
             get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode='custom_no_tool'), 
             get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode='openai'),
         ])
-    if mode == "all-openai":
+    elif mode == "all-openai":
         df = pd.concat([
             get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode='custom'), 
             get_cve_df(model=model, iteration=iteration, logs_set=logs_set, mode='custom_no_tool'), 
@@ -791,6 +883,7 @@ def best_cve_runs(model: str, logs_set: str, iteration: str, mode: str):
     milestone_list[0] = ""
 
     # Prints the graph ordered by best run
+    print("Sorted by best results")
     cves, values = zip(*sorted(best_cve_run.items(), key=lambda x:x[1]))
     colors = ['royalblue', 'orange', 'purple']
     plt.figure(figsize=(len(milestone_list) - 2, len(best_cve_run)/2))
@@ -826,6 +919,7 @@ def best_cve_runs(model: str, logs_set: str, iteration: str, mode: str):
     
     
     # Prints the graph ordered by CVE-ID
+    print("Sorted by CVE-ID")
     cves, values = zip(*sorted(best_cve_run.items(), key=lambda x:x[0]))
     colors = ['royalblue', 'orange', 'purple']
     plt.figure(figsize=(len(milestone_list) - 2, len(best_cve_run)/2))
@@ -858,68 +952,262 @@ def best_cve_runs(model: str, logs_set: str, iteration: str, mode: str):
     plt.tight_layout()
     plt.grid(axis='x')
     plt.show()
+# best_cve_runs(model="GPT-5", logs_set="3rd", iteration="", mode="all")     # Use mode="all" to consider all web search modes, mode="all-openai" to exclude the "openai" web search mode
+    
+
+def bar_plot(data: dict, models: set, ylim: int, wsm: str):
+    x = np.arange(len(models))  # the label locations
+    width = 0.25  # the width of the bars
+    multiplier = 0
+
+    colors = ["green", "orange", "purple"]
+    fig, ax = plt.subplots(layout='constrained')
+
+    for (attribute, measurement), color in zip(data.items(), colors):
+        offset = width * multiplier
+        rects = ax.bar(x + offset, measurement, width, label=attribute, color=color)
+        ax.bar_label(rects, padding=len(models))
+        multiplier += 1
+
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    title = "Model Performance Comparison"
+    if wsm is not None: title += f" ('{wsm}' Web Search Mode)"
+    ax.set_ylabel('Number of runs')
+    ax.set_title(title)
+    ax.set_xticks(x + width, models)
+    ax.legend(loc='upper left', ncols=1)
+    ax.set_ylim(0, ylim)
+    
+    plt.show()
 
 
-# draw_graph()
-# milestones = benchmark("custom")
-# df = generate_excel_csv()
-# df = generate_excel_csv_mono_mode(model="GPT-5", logs_set="1st", mode="openai")
-# data = extract_milestones_stats(model="GPT-5", logs_set="3rd", mode='custom_no_tool')
-# df = web_search_mode_stats(model="GPT-4o", logs_set="5th", iteration="", mode="")
-# df = web_search_mode_stats(model="GPT-5", logs_set="3rd", iteration="", mode="")
-# best_cve_runs(model="gpt-oss:120b", logs_set="1st", iteration="", mode="custom_no_tool")     # Leave mode="" to consider all web search modes
-
-#* RUN AGENT *#
+#* BAR PLOT TO VISUALIZE MODEL ALL-RUN PERFORMANCE *#
+def all_run_comparison(cve_list: list, models: tuple, logs_sets: tuple, web_search_modes: tuple):
+    total_runs, correct_web_search_runs, working_docker_runs = [], [], []
+    for model, logs_set, wsm in zip(models, logs_sets, web_search_modes):
+        print(model, logs_set)
+        total_runs.append(len(get_data(
+            cve_list=cve_list, 
+            model=model, 
+            logs_set=logs_set, 
+            iteration="", 
+            web_search_mode=wsm,
+            correct_web_search_only=False,
+            correct_docker_only=False,
+        )))
+        correct_web_search_runs.append(len(get_data(
+            cve_list=cve_list, 
+            model=model, 
+            logs_set=logs_set, 
+            iteration="", 
+            web_search_mode=wsm,
+            correct_web_search_only=True,
+            correct_docker_only=False,
+        )))
+        working_docker_runs.append(len(get_data(
+            cve_list=cve_list, 
+            model=model, 
+            logs_set=logs_set, 
+            iteration="", 
+            web_search_mode=wsm,
+            correct_web_search_only=False,
+            correct_docker_only=True,
+        )))
+    data = {
+        "Total Runs": total_runs,
+        "Correct Web Search Runs": correct_web_search_runs,
+        "Working Docker Runs": working_docker_runs,
+    }
+    bar_plot(
+      data=data, 
+      models=models, 
+      ylim=80, 
+      wsm=None,
+    )
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
-# print(len(cve_list), cve_list)
-# result = run_agent(
-#     cve_list=cve_list,
-#     web_search_mode="custom_no_tool",
-# )
+# models = ("gpt-oss-120b", "GPT-4o", "GPT-5")
+# logs_sets = ("1st", "5th", "3rd")
+# web_search_modes = ("all-openai", "all", "all")
+# all_run_comparison(cve_list=cve_list, models=models, logs_sets=logs_sets, web_search_modes=web_search_modes)
 
-#* ASSESS DOCKERS *#
+
+#* BAR PLOT TO VISUALIZE MODEL PERFORMANCE FOR SPECIFIC WSM *#
+def wsm_run_comparison(cve_list: list, models: tuple, logs_sets: tuple, wsm: str):
+    total_runs, correct_web_search_runs, working_docker_runs = [], [], []
+    for model, logs_set in zip(models, logs_sets):
+        if wsm == "openai" and model not in ["GPT-4o", "GPT-5"]: continue
+        print(model, logs_set)
+        total_runs.append(len(get_data(
+            cve_list=cve_list, 
+            model=model, 
+            logs_set=logs_set, 
+            iteration="", 
+            web_search_mode=wsm,
+            correct_web_search_only=False,
+            correct_docker_only=False,
+        )))
+        correct_web_search_runs.append(len(get_data(
+            cve_list=cve_list, 
+            model=model, 
+            logs_set=logs_set, 
+            iteration="", 
+            web_search_mode=wsm,
+            correct_web_search_only=True,
+            correct_docker_only=False,
+        )))
+        working_docker_runs.append(len(get_data(
+            cve_list=cve_list, 
+            model=model, 
+            logs_set=logs_set, 
+            iteration="", 
+            web_search_mode=wsm,
+            correct_web_search_only=False,
+            correct_docker_only=True,
+        )))
+    data = {
+        "Total Runs": total_runs,
+        "Correct Web Search Runs": correct_web_search_runs,
+        "Working Docker Runs": working_docker_runs,
+    }
+    bar_plot(
+        data=data, 
+        models=models if wsm != "openai" else ("GPT-4o", "GPT-5"), 
+        ylim=30, 
+        wsm=wsm,
+    )
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
-# print(len(cve_list), cve_list)
-# df = assess_dockers(
-#     cve_list=cve_list,#cve_list, 
-#     model="gpt-oss:120b",     #! INSERT THIS MANUALLY IN THE 'assess_dockers' function body !#
-#     logs_set="1st",
-#     web_search_mode="custom_no_tool", #! MANDATORY !#
-# )
+# models = ("gpt-oss-120b", "GPT-4o", "GPT-5")
+# logs_sets = ("1st", "5th", "3rd")
+# wsm_run_comparison(cve_list=cve_list, models=models, logs_sets=logs_sets, wsm="openai")
 
-#* SERVICE RELATED STATS *#
+
+def stacked_bar_plot(data: dict, models: set, wsm: str):
+    width = 0.5
+    fig, ax = plt.subplots()
+    bottom = np.zeros(len(models))
+    for boolean, error_count in data.items():
+        p = ax.bar(models, error_count, width, label=boolean, bottom=bottom)
+        for rect, value, btm in zip(p, error_count, bottom):
+            ax.text(
+                x = rect.get_x() + rect.get_width() / 2,
+                y = btm + rect.get_height() / 2,
+                s = f'{int(value)}' if value > 0 else '',
+                ha='center', va='center', color='black', fontsize=10, fontweight='bold'
+            )
+        bottom += error_count
+        
+    # for i, h in enumerate(mean_test_iterations):
+    #     ax.hlines(y=h, xmin=i - 0.25, xmax=i + 0.25, linewidth=2)
+    #     ax.text(i, h + 2, str(h), ha='center', va='bottom', fontsize=9, fontweight='bold')
+
+    # # Add one sample line to the legend to represent all
+    # ax.hlines(y=0, xmin=0, xmax=0, linewidth=2, color='gray', label='Mean Test Iterations')
+    title = "Number of testing errors by type"
+    if wsm is not None: title += f" ('{wsm}' Web Search Mode)"
+    ax.set_title(title)
+    ax.legend(loc='center left', bbox_to_anchor=(0.75, 0.75))
+
+    plt.show()
+    
+    
+#* STACKED BAR PLOT TO VISUALIZE HOW TESTING LOOP ERRORS ARE DISTRIBUTED *#
+def all_run_test_loop_errors(cve_list: list, models: tuple, logs_sets: tuple, web_search_modes: tuple):
+    image_build_errors, container_run_errors, not_vuln_version_errors, wrong_network_setup_errors, mean_errors, mean_test_iterations = [], [], [], [], [], []
+    for model, logs_set, wsm in zip(models, logs_sets, web_search_modes):
+        print(model, logs_set)
+        df = get_data(
+            cve_list=cve_list, 
+            model=model, 
+            logs_set=logs_set, 
+            iteration="", 
+            web_search_mode=wsm,
+            correct_web_search_only=False,
+            correct_docker_only=False,
+        )
+        image_build_failures = df['image_build_failures'].sum()
+        container_run_failures = df['container_run_failures'].sum()
+        not_vuln_version_fail = df['not_vuln_version_fail'].sum()
+        docker_misconfigured = df['docker_misconfigured'].sum()
+        
+        image_build_errors.append(image_build_failures)
+        container_run_errors.append(container_run_failures)
+        not_vuln_version_errors.append(not_vuln_version_fail)
+        wrong_network_setup_errors.append(docker_misconfigured)
+        mean_errors.append(((image_build_failures + container_run_failures + not_vuln_version_fail + docker_misconfigured) / len(df)).round(2))
+        mean_test_iterations.append(df['test_iteration'].mean().round(2))
+        
+    data = {
+        "Image Build Errors": image_build_errors,
+        "Container Run Errors": container_run_errors,
+        "Not Vulnerable Version": not_vuln_version_errors,
+        "Wrong Network Setup": wrong_network_setup_errors,
+    }
+    print(f"Mean Errors {mean_errors}")
+    print(f"Mean Test Iterations {mean_test_iterations}")
+    stacked_bar_plot(
+      data=data,
+      models=models,
+      wsm=None,
+    )
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
-# df = services_stats(
-#     cve_list=cve_list, 
-#     model="GPT-4o", 
-#     logs_set="5th", 
-#     iteration="", 
-#     web_search_mode="",
-#     filtered_milestones=True,
-# )
+# models = ("gpt-oss-120b", "GPT-4o", "GPT-5")
+# logs_sets = ("1st", "5th", "3rd")
+# web_search_modes = ("all-openai", "all", "all")
+# all_run_test_loop_errors(cve_list=cve_list, models=models, logs_sets=logs_sets, web_search_modes=web_search_modes)
 
-#* VULNERABILITY ASSESSMENT RELATED STATS *#
+
+#* STACKED BAR PLOT TO VISUALIZE HOW TESTING LOOP ERRORS ARE DISTRIBUTED FOR SPECIFIC WSM*#
+def wsm_test_loop_errors(cve_list: list, models: tuple, logs_sets: tuple, wsm: str):
+    image_build_errors, container_run_errors, not_vuln_version_errors, wrong_network_setup_errors, mean_errors, mean_test_iterations = [], [], [], [], [], []
+    for model, logs_set in zip(models, logs_sets):
+        if wsm == "openai" and model not in ["GPT-4o", "GPT-5"]: continue
+        print(model, logs_set)
+        df = get_data(
+            cve_list=cve_list, 
+            model=model, 
+            logs_set=logs_set, 
+            iteration="", 
+            web_search_mode=wsm,
+            correct_web_search_only=False,
+            correct_docker_only=False,
+        )
+        image_build_failures = df['image_build_failures'].sum()
+        container_run_failures = df['container_run_failures'].sum()
+        not_vuln_version_fail = df['not_vuln_version_fail'].sum()
+        docker_misconfigured = df['docker_misconfigured'].sum()
+        
+        image_build_errors.append(image_build_failures)
+        container_run_errors.append(container_run_failures)
+        not_vuln_version_errors.append(not_vuln_version_fail)
+        wrong_network_setup_errors.append(docker_misconfigured)
+        mean_errors.append(((image_build_failures + container_run_failures + not_vuln_version_fail + docker_misconfigured) / len(df)).round(2))
+        mean_test_iterations.append(df['test_iteration'].mean().round(2))
+        
+    data = {
+        "Image Build Errors": image_build_errors,
+        "Container Run Errors": container_run_errors,
+        "Not Vulnerable Version": not_vuln_version_errors,
+        "Wrong Network Setup": wrong_network_setup_errors,
+    }
+    print(f"Mean Errors {mean_errors}")
+    print(f"Mean Test Iterations {mean_test_iterations}")
+    stacked_bar_plot(
+        data=data,
+        models=models if wsm != "openai" else ("GPT-4o", "GPT-5"), 
+        wsm=wsm,
+    )
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
-# df = vuln_ass_stats(
-#     cve_list=cve_list, 
-#     model="GPT-4o", 
-#     logs_set="5th", 
-#     iteration="", 
-#     web_search_mode="",
-#     correct_web_search_only=True,
-#     correct_docker_only=False,
-# )
-
-
-
+# models = ("gpt-oss-120b", "GPT-4o", "GPT-5")
+# logs_sets = ("1st", "5th", "3rd")
+# wsm_test_loop_errors(cve_list=cve_list, models=models, logs_sets=logs_sets, wsm="openai")
 
 
 
