@@ -1,7 +1,7 @@
 # TODOLIST
 
 ## 4 Thesis
-Revisione manauale 6th-bs di GPT-4o
+Revisione manauale 6th-bs e 7th-bs di GPT-4o
 ### Boffa Says
 **Best web search mode**: fare più run per CVE per ogni WSM usando SOLO GPT-4o. OBBIETTIVO: scegli la migliore WSM per gli step di analisi successivi. SOLUZIONE: usare i risultati di 5th-bs, 6th-bs e 7th-bs
 **Docker generation**: usando più modelli e la miglior WSM, fare le run (1 o più?) sulle 20 CVE. OBBIETTIVO: raccogliere metriche (e.g. milestones, costo, numero iterazioni, etc.)

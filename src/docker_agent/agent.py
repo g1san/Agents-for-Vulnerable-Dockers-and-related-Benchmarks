@@ -69,10 +69,9 @@ def milestone_file(web_search_mode: str):
 
     except Exception as e:
         print(f"Workflow invocation failed: {e}.")
-milestones = milestone_file("custom")
-milestones = milestone_file("custom_no_tool")
-milestones = milestone_file("openai")
-
+# milestones = milestone_file("custom")
+# milestones = milestone_file("custom_no_tool")
+# milestones = milestone_file("openai")
 
 
 #* TEST THE DOCKERS IN THE 'docker' FOLDER *#
@@ -208,10 +207,10 @@ def run_agent(cve_list: list[str], web_search_mode: str, model_name: str, verbos
 # print(len(cve_list), cve_list)
 # result = run_agent(
 #     cve_list=cve_list,
-#     web_search_mode="openai",
+#     web_search_mode="",
 #     model_name="gpt-4o",                #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss-20b', 'gpt-oss-120b' *#
 #     verbose_web_search=False,
-#     reuse_web_search=True,
+#     reuse_web_search=False,
 #     reuse_web_search_and_code=False,
 # )
 
