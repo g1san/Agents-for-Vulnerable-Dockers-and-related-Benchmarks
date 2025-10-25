@@ -69,35 +69,37 @@ def milestone_file(web_search_mode: str):
 
     except Exception as e:
         print(f"Workflow invocation failed: {e}.")
-# milestones = milestone_file("custom")
-# milestones = milestone_file("custom_no_tool")
+milestones = milestone_file("custom")
+milestones = milestone_file("custom_no_tool")
 # milestones = milestone_file("openai")
 
 
 #* TEST THE DOCKERS IN THE 'docker' FOLDER *#
-def assess_dockers(cve_list: list[str], model: str, logs_set: str, web_search_mode: str):
-    try:
-        if web_search_mode == "all": web_search_mode = ["custom", "custom_no_tool", "openai"]
-        else: web_search_mode = [f"{web_search_mode}"]
-        
-        for wsm in web_search_mode:
-            for cve in cve_list: 
-                with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{wsm}/logs/milestones.json', 'r') as f:
-                    milestones = json.load(f)
+def assess_dockers(cve_list: list[str], model_name: str, model_docker_name: str, logs_set: str, web_search_mode: str):
+    if web_search_mode == "all": web_search_mode = ["custom", "custom_no_tool", "openai"]
+    else: web_search_mode = [f"{web_search_mode}"]
+    
+    
+    for wsm in web_search_mode:
+        for cve in cve_list: 
+            logs_path = Path(f"./../../benchmark_logs/{model_docker_name}/{logs_set}-benchmark-session/{cve}/{wsm}/logs/")
+            with builtins.open(logs_path / 'milestones.json', 'r') as f:
+                milestones = json.load(f)
 
-                with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:
-                    web_search_data = json.load(f)
+            with builtins.open(logs_path / 'web_search_results.json', 'r') as f:
+                web_search_data = json.load(f)
+                
+            if milestones["docker_builds"] and milestones["docker_runs"] and milestones["code_hard_version"]:
+                with builtins.open(logs_path / 'code.json', 'r') as f:
+                    code_data = json.load(f)
                     
-                if milestones["docker_builds"] and milestones["docker_runs"]:
-                    with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{wsm}/logs/code.json', 'r') as f:
-                        code_data = json.load(f)
-                        
-                    with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{cve}/{wsm}/logs/stats.json', 'r') as f:
-                        stats = json.load(f)
-                        
+                with builtins.open(logs_path / 'stats.json', 'r') as f:
+                    stats = json.load(f)
+                
+                try:
                     result = compiled_workflow.invoke(
-                        input={                   #! The model must be also manually initialized in the 'nodes.py' file !#
-                            "model_name": "gpt-oss-120b",     #* Models allowed: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1' *#
+                        input={
+                            "model_name": model_name,
                             "cve_id": cve,
                             "web_search_tool": wsm,
                             "verbose_web_search": False,
@@ -107,34 +109,40 @@ def assess_dockers(cve_list: list[str], model: str, logs_set: str, web_search_mo
                         },
                         config={"callbacks": [langfuse_handler], "recursion_limit": 100},
                     )
-                    
+
                     if stats["docker_scout_vulnerable"] != result["stats"].docker_scout_vulnerable:
                         print(f"{cve} 'docker_scout_vulnerable' {stats["docker_scout_vulnerable"]} --> {result["stats"].docker_scout_vulnerable}")
-                else:
-                    continue
+                        
+                except Exception as e:
+                    code_dir_path = Path(f"./../../dockers/{cve}/{wsm}/")
+                    down_docker(code_dir_path=code_dir_path)
+                    remove_all_images()
+                    print(f"\n\n===== [AGENTIC WORKFLOW FAILED] =====\n{e}\n"+"="*37+"\n\n")
+                    continue 
+            else:
+                continue
 
-                for m, val in result["milestones"]:
-                    if val != milestones[m]:
-                        print(f"{cve} '{m}' {milestones[m]} --> {val}")
-                print("\n\n\n")
-    
-    except Exception as e:
-        print(f"Workflow invocation failed: {e}")
+            for m, val in result["milestones"]:
+                if val != milestones[m]:
+                    print(f"{cve} '{m}' {milestones[m]} --> {val}")
+            print("\n\n\n")
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
 # print(len(cve_list), cve_list)
 # df = assess_dockers(
-#     cve_list=cve_list,#cve_list, 
-#     model="gpt-oss-120b",     #! INSERT THIS MANUALLY IN THE 'assess_dockers' function body !#
-#     logs_set="1st",
-#     web_search_mode="custom_no_tool", #! MANDATORY !#
+#     cve_list=cve_list,#cve_list,
+#     model_name="gpt-oss:120b",
+#     model_docker_name="GPT-4o",
+#     logs_set="6th",
+#     web_search_mode="all",
 # )
 
 
 #* RUN AGENT *#
 def run_agent(cve_list: list[str], web_search_mode: str, model_name: str, verbose_web_search: bool, reuse_web_search: bool, reuse_web_search_and_code: bool):
         if web_search_mode == "all": web_search_mode = ["custom", "custom_no_tool", "openai"]
+        elif web_search_mode == "all-openai": web_search_mode = ["custom", "custom_no_tool"]
         else: web_search_mode = [f"{web_search_mode}"]
         
         for wsm in web_search_mode:        
@@ -199,7 +207,7 @@ def run_agent(cve_list: list[str], web_search_mode: str, model_name: str, verbos
                     code_dir_path = Path(f"./../../dockers/{cve}/{wsm}/")
                     down_docker(code_dir_path=code_dir_path)
                     remove_all_images()
-                    print(f"===== [AGENTIC WORKFLOW FAILED] =====\n{e}\n"+"="*37)
+                    print(f"\n\n===== [AGENTIC WORKFLOW FAILED] =====\n{e}\n"+"="*37+"\n\n")
                     continue      
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
@@ -207,13 +215,20 @@ def run_agent(cve_list: list[str], web_search_mode: str, model_name: str, verbos
 # print(len(cve_list), cve_list)
 # result = run_agent(
 #     cve_list=cve_list,
-#     web_search_mode="",
-#     model_name="gpt-4o",                #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss-20b', 'gpt-oss-120b' *#
+#     web_search_mode="all-openai",
+#     model_name="gpt-oss:120b",                #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss-20b', 'gpt-oss-120b' *#
 #     verbose_web_search=False,
 #     reuse_web_search=False,
 #     reuse_web_search_and_code=False,
 # )
-
+# result = run_agent(
+#     cve_list=["CVE-2018-12613", "CVE-2020-11651"],
+#     web_search_mode="custom",
+#     model_name="gpt-oss:120b",                #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss-20b', 'gpt-oss-120b' *#
+#     verbose_web_search=False,
+#     reuse_web_search=False,
+#     reuse_web_search_and_code=False,
+# )
 
 
 #* GENERATE THE '{wsm}-benchmark.xlsx' and '{wsm}-benchmark.csv' FILEs *#

@@ -171,7 +171,7 @@ class ContextGenerator:
                     base_url="https://kubernetes.polito.it/vllm/v1",
                     api_key=os.getenv("SDC_API_KEY"),
                 )
-            elif self.model in ["gpt-oss-20b", "gpt-oss-120b"]:
+            elif self.model in ["gpt-oss:20b", "gpt-oss:120b"]:
                 llm_model = ChatOpenAI(model=self.model,
                     max_retries=2, 
                     reasoning_effort="low", 
@@ -229,7 +229,7 @@ class ContextGenerator:
                     base_url="https://kubernetes.polito.it/vllm/v1",
                     api_key=os.getenv("SDC_API_KEY"),
                 )
-            elif self.model in ["gpt-oss-20b", "gpt-oss-120b"]:
+            elif self.model in ["gpt-oss:20b", "gpt-oss:120b"]:
                 llm_model = ChatOpenAI(model=self.model,
                     max_retries=2, 
                     reasoning_effort="low", 

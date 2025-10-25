@@ -88,7 +88,7 @@ def get_cve_id(state: OverallState):
             api_key=os.getenv("SDC_API_KEY"),
             max_tokens=16000,
         )
-    elif state.model_name in ["gpt-oss-20b", "gpt-oss-120b"]:
+    elif state.model_name in ["gpt-oss:20b", "gpt-oss:120b"]:
         state.llm = ChatOpenAI(
             model=state.model_name,
             max_retries=2, 
@@ -901,10 +901,9 @@ def revise_code(state: OverallState):
         
     else:
         revision_query = REVISION_PROMPT.format(fail_explanation=state.fail_explanation)
-        fix_suggestion = state.llm.invoke([
-            SystemMessage(content=SYSTEM_PROMPT),
-            HumanMessage(content=revision_query),
-        ], config={"callbacks": [langfuse_handler]})
+        messages = [SystemMessage(content=SYSTEM_PROMPT + f"  Never use Markdown in your answers.")]
+        messages += state.messages[1:] + [HumanMessage(content=code), HumanMessage(content=revision_query)]
+        fix_suggestion = state.llm.invoke(messages, config={"callbacks": [langfuse_handler]})
         
         code_correction_query = CODE_CORRECTION_PROMPT.format(
             fail_explanation=state.fail_explanation,
@@ -916,8 +915,7 @@ def revise_code(state: OverallState):
         )
         parser = PydanticOutputParser(pydantic_object=Code)
         messages = [SystemMessage(content=SYSTEM_PROMPT + f"  Never use Markdown in your answers.\n\n{parser.get_format_instructions()}")]
-        messages += state.messages[1:]
-        messages += [HumanMessage(content=code), HumanMessage(content=code_correction_query)]
+        messages += state.messages[1:] + [HumanMessage(content=code), HumanMessage(content=code_correction_query)]
         result = state.llm.invoke(messages, config={"callbacks": [langfuse_handler]})
         result = parser.parse(result.content)
 

@@ -153,7 +153,7 @@ GUIDELINES:
 
 REVISION_PROMPT = """CONTEXT: {fail_explanation}
 
-GOALS: tell me how you would fix this problem, keep it very short.
+GOALS: explain how you would fix this problem by modifying the code in a few sentences, do not use bullet points.
 """
 
 
