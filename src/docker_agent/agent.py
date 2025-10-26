@@ -222,7 +222,7 @@ def run_agent(cve_list: list[str], web_search_mode: str, model_name: str, verbos
 # )
 
 
-#* TEST THE DOCKERS IN THE 'docker' FOLDER *#
+#* TRY TO CREATE DOCKERS WITH A WRONG WEB SEARCH *#
 def test_wrong_web_search(cve_list: list[str], model_name: str, model_docker_name: str, logs_set: str, web_search_mode: str):
     if web_search_mode == "all": web_search_mode = ["custom", "custom_no_tool", "openai"]
     else: web_search_mode = [f"{web_search_mode}"]
@@ -264,20 +264,18 @@ def test_wrong_web_search(cve_list: list[str], model_name: str, model_docker_nam
             
             else:
                 continue
-            print("\n\n\n")
-            
     print(f"Docker already ok: {ok_dockers}\nNew Dockers ok: {new_ok_dockers}\n\n\n\n\n")
-with builtins.open('services.json', "r") as f:
-    jsonServices = json.load(f)
-cve_list = list(jsonServices.keys())[:20]
-print(len(cve_list), cve_list)
-df = test_wrong_web_search(
-    cve_list=cve_list,
-    model_name="gpt-4o",
-    model_docker_name="GPT-4o",
-    logs_set="7th",
-    web_search_mode="all",
-)
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[:20]
+# print(len(cve_list), cve_list)
+# df = test_wrong_web_search(
+#     cve_list=cve_list,
+#     model_name="gpt-4o",
+#     model_docker_name="GPT-4o",
+#     logs_set="7th",
+#     web_search_mode="all",
+# )
 
 
 #* GENERATE THE '{wsm}-benchmark.xlsx' and '{wsm}-benchmark.csv' FILEs *#
