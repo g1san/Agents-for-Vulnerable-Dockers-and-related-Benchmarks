@@ -140,74 +140,74 @@ def assess_dockers(cve_list: list[str], model_name: str, model_docker_name: str,
 
 #* RUN AGENT *#
 def run_agent(cve_list: list[str], web_search_mode: str, model_name: str, verbose_web_search: bool, reuse_web_search: bool, reuse_web_search_and_code: bool):
-        if web_search_mode == "all": web_search_mode = ["custom", "custom_no_tool", "openai"]
-        elif web_search_mode == "all-openai": web_search_mode = ["custom", "custom_no_tool"]
-        else: web_search_mode = [f"{web_search_mode}"]
-        
-        for wsm in web_search_mode:        
-            for cve in cve_list:                
-                if reuse_web_search or reuse_web_search_and_code:
-                    with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:
-                        web_search_data = json.load(f)
-                    if reuse_web_search_and_code:
-                        with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/code.json', 'r') as f:
-                            code_data = json.load(f)
-                
-                #! Uncomment this to reuse the web_search_results file from the 'benchmark_logs' folder !#
-                # with builtins.open(f'./../../benchmark_logs/GPT-4o/5th-benchmark-session/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:   
-                #     web_search_data = json.load(f)
-                # logs_dir_path = Path(f"./../../dockers/{cve}/{wsm}/logs")
-                # logs_dir_path.mkdir(parents=True, exist_ok=True)
-                # web_search_file = logs_dir_path / 'web_search_results.json'
-                # with builtins.open(web_search_file, 'w') as fp:
-                #     json.dump(web_search_data, fp, indent=4)    
+    if web_search_mode == "all": web_search_mode = ["custom", "custom_no_tool", "openai"]
+    elif web_search_mode == "all-openai": web_search_mode = ["custom", "custom_no_tool"]
+    else: web_search_mode = [f"{web_search_mode}"]
+    
+    for wsm in web_search_mode:        
+        for cve in cve_list:                
+            if reuse_web_search or reuse_web_search_and_code:
+                with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:
+                    web_search_data = json.load(f)
+                if reuse_web_search_and_code:
+                    with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/code.json', 'r') as f:
+                        code_data = json.load(f)
+            
+            #! Uncomment this to reuse the web_search_results file from the 'benchmark_logs' folder !#
+            # with builtins.open(f'./../../benchmark_logs/GPT-4o/5th-benchmark-session/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:   
+            #     web_search_data = json.load(f)
+            # logs_dir_path = Path(f"./../../dockers/{cve}/{wsm}/logs")
+            # logs_dir_path.mkdir(parents=True, exist_ok=True)
+            # web_search_file = logs_dir_path / 'web_search_results.json'
+            # with builtins.open(web_search_file, 'w') as fp:
+            #     json.dump(web_search_data, fp, indent=4)    
 
-                try:
-                    if reuse_web_search:
-                        result = compiled_workflow.invoke(
-                            input={              
-                                "model_name": model_name,
-                                "cve_id": cve,
-                                "web_search_tool": wsm,
-                                "verbose_web_search": verbose_web_search,
-                                "web_search_result": web_search_data,
-                                "messages": [SystemMessage(content=SYSTEM_PROMPT)]
-                            },
-                            config={"callbacks": [langfuse_handler], "recursion_limit": 100},
-                        )
-                    elif reuse_web_search_and_code:
-                        result = compiled_workflow.invoke(
-                            input={             
-                                "model_name": model_name,
-                                "cve_id": cve,
-                                "web_search_tool": wsm,
-                                "verbose_web_search": verbose_web_search,
-                                "web_search_result": web_search_data,
-                                "code": code_data,
-                                "messages": [SystemMessage(content=SYSTEM_PROMPT)]
-                            },
-                            config={"callbacks": [langfuse_handler], "recursion_limit": 100},
-                        )
-                    else:
-                        result = compiled_workflow.invoke(
-                            input={             
-                                "model_name": model_name,
-                                "cve_id": cve,
-                                "web_search_tool": wsm,
-                                "verbose_web_search": verbose_web_search,
-                                "messages": [SystemMessage(content=SYSTEM_PROMPT)]
-                            },
-                            config={"callbacks": [langfuse_handler], "recursion_limit": 100},
-                        )
+            try:
+                if reuse_web_search:
+                    result = compiled_workflow.invoke(
+                        input={              
+                            "model_name": model_name,
+                            "cve_id": cve,
+                            "web_search_tool": wsm,
+                            "verbose_web_search": verbose_web_search,
+                            "web_search_result": web_search_data,
+                            "messages": [SystemMessage(content=SYSTEM_PROMPT)]
+                        },
+                        config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+                    )
+                elif reuse_web_search_and_code:
+                    result = compiled_workflow.invoke(
+                        input={             
+                            "model_name": model_name,
+                            "cve_id": cve,
+                            "web_search_tool": wsm,
+                            "verbose_web_search": verbose_web_search,
+                            "web_search_result": web_search_data,
+                            "code": code_data,
+                            "messages": [SystemMessage(content=SYSTEM_PROMPT)]
+                        },
+                        config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+                    )
+                else:
+                    result = compiled_workflow.invoke(
+                        input={             
+                            "model_name": model_name,
+                            "cve_id": cve,
+                            "web_search_tool": wsm,
+                            "verbose_web_search": verbose_web_search,
+                            "messages": [SystemMessage(content=SYSTEM_PROMPT)]
+                        },
+                        config={"callbacks": [langfuse_handler], "recursion_limit": 100},
+                    )
 
-                    if len(cve_list) == 1 and len(web_search_mode) == 1:
-                        return result
-                except Exception as e:
-                    code_dir_path = Path(f"./../../dockers/{cve}/{wsm}/")
-                    down_docker(code_dir_path=code_dir_path)
-                    remove_all_images()
-                    print(f"\n\n===== [AGENTIC WORKFLOW FAILED] =====\n{e}\n"+"="*37+"\n\n")
-                    continue      
+                if len(cve_list) == 1 and len(web_search_mode) == 1:
+                    return result
+            except Exception as e:
+                code_dir_path = Path(f"./../../dockers/{cve}/{wsm}/")
+                down_docker(code_dir_path=code_dir_path)
+                remove_all_images()
+                print(f"\n\n===== [AGENTIC WORKFLOW FAILED] =====\n{e}\n"+"="*37+"\n\n")
+                continue      
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
@@ -275,7 +275,7 @@ df = test_wrong_web_search(
     cve_list=cve_list,
     model_name="gpt-4o",
     model_docker_name="GPT-4o",
-    logs_set="5th",
+    logs_set="7th",
     web_search_mode="all",
 )
 
