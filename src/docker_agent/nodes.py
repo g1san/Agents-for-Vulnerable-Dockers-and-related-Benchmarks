@@ -269,11 +269,11 @@ def assess_services(state: OverallState):
     with builtins.open(filename, "r") as f:
         jsonServices = json.load(f)
     
-    #! Check again this approach !#
     code_dir_path = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/")
     logs_dir_path = code_dir_path / "logs"
     final_report_file = logs_dir_path / "final_report.txt"
         
+    #! Check again this approach !#
     if not jsonServices.get(state.cve_id):
         state.milestones.hard_service = True
         state.milestones.hard_version = True
@@ -321,7 +321,6 @@ def assess_services(state: OverallState):
         print(f"\t{output_string}")
         with builtins.open(final_report_file, "a") as f:
             f.write(f"{output_string}\n")
-            
         return {"milestones": state.milestones}
         
 
@@ -388,7 +387,7 @@ def assess_services(state: OverallState):
 def route_services(state: OverallState) -> Literal["Ok", "Not Ok"]:    
     """Route to the code generator or terminate the graph"""
     print(f"\nRouting services (hard_service={state.milestones.hard_service}, hard_version={state.milestones.hard_version}, soft_services={state.milestones.soft_services})")
-    if state.milestones.hard_service and state.milestones.hard_version and state.milestones.soft_services:
+    if state.debug == "relax-web-search-constraints" or (state.milestones.hard_service and state.milestones.hard_version and state.milestones.soft_services):
         return "Ok"
     else:
         milestone_file = Path(f"./../../dockers/{state.cve_id}/{state.web_search_tool}/logs/milestones.json")
