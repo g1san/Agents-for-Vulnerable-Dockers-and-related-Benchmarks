@@ -1,0 +1,325 @@
+{
+    "CVE-2015-5254": [
+        "HARD:activemq:5.11.1"
+    ],
+    "CVE-2016-3088": [
+        "HARD:activemq:5.11.1-with-cron"
+    ],
+    "CVE-2022-41678": [
+        "HARD:activemq:5.17.3"
+    ],
+    "CVE-2023-46604": [
+        "HARD:activemq:5.17.3"
+    ],
+    "CVE-2021-21311": [
+        "HARD:adminer:4.7.8"
+    ],
+    "CVE-2021-43008": [
+        "HARD:adminer:4.6.2"
+    ],
+    "CVE-2020-11978": [
+        "HARD:airflow:1.10.10",
+        "SOFT-DB:postgres:13-alpine",
+        "SOFT-CACHE:redis:5-alpine"
+    ],
+    "CVE-2020-11981": [
+        "HARD:airflow:1.10.10",
+        "SOFT-DB:postgres:13-alpine",
+        "SOFT-CACHE:redis:5-alpine"
+    ],
+    "CVE-2020-17526": [
+        "HARD:airflow:1.10.10",
+        "SOFT-DB:postgres:13-alpine",
+        "SOFT-CACHE:redis:5-alpine"
+    ],
+    "CVE-2024-7314": [
+        "HARD:aj-report:1.4.0",
+        "SOFT-DB:mysql:5.7"
+    ],
+    "CVE-2021-25646": [
+        "HARD:apache-druid:0.20.0"
+    ],
+    "CVE-2020-13945": [
+        "HARD:apisix:2.11.0",
+        "SOFT-CACHE:bitnami/etcd:3.4.15"
+    ],
+    "CVE-2021-45232": [
+        "HARD:apisix:2.9",
+        "SOFT:apisix-dashboard:2.9.0",
+        "SOFT-CACHE:bitnami/etcd:3.4.15"
+    ],
+    "CVE-2018-8715": [
+        "HARD:appweb:7.0.1"
+    ],
+    "CVE-2023-39141": [
+        "HARD:aria2:1.18.8"
+    ],
+    "CVE-2014-6271": [
+        "HARD:bash:4.3.0-with-httpd"
+    ],
+    "CVE-2016-5385": [
+        "HARD:nginx:1",
+        "SOFT-WEB:php:httpoxy"
+    ],
+    "CVE-2019-9053": [
+        "HARD:cmsms:2.2.9.1",
+        "SOFT-DB:mysql:5.7"
+    ],
+    "CVE-2021-26120": [
+        "HARD:cmsms:2.2.9.1",
+        "SOFT-DB:mysql:5.7"
+    ],
+    "CVE-2010-2861": [
+        "HARD:coldfusion:8.0.1"
+    ],
+    "CVE-2017-3066": [
+        "HARD:coldfusion:11u3"
+    ],
+    "CVE-2023-26360": [
+        "HARD:coldfusion:2018.0.15"
+    ],
+    "CVE-2023-29300": [
+        "HARD:coldfusion:2018.0.15"
+    ],
+    "CVE-2019-3396": [
+        "HARD:confluence:6.10.2",
+        "SOFT-DB:postgres:10.7-alpine"
+    ],
+    "CVE-2021-26084": [
+        "HARD:confluence:7.4.10",
+        "SOFT-DB:postgres:12.8-alpine"
+    ],
+    "CVE-2022-26134": [
+        "HARD:confluence:7.13.6",
+        "SOFT-DB:postgres:12.8-alpine"
+    ],
+    "CVE-2023-22515": [
+        "HARD:confluence:8.5.1",
+        "SOFT-DB:postgres:15.4-alpine"
+    ],
+    "CVE-2023-22527": [
+        "HARD:confluence:8.5.3",
+        "SOFT-DB:postgres:15.4-alpine"
+    ],
+    "CVE-2017-12635": [
+        "HARD:couchdb:2.1.0",
+        "SOFT:buildpack-deps:focal-curl"
+    ],
+    "CVE-2017-12636": [
+        "HARD:couchdb:1.6.0"
+    ],
+    "CVE-2017-12794": [
+        "HARD:django:1.11.4",
+        "SOFT-DB:postgres:9.6-alpine"
+    ],
+    "CVE-2018-14574": [
+        "HARD:django:2.0.7"
+    ],
+    "CVE-2019-14234": [
+        "HARD:django:2.2.3",
+        "SOFT-DB:postgres:9.6-alpine"
+    ],
+    "CVE-2020-9402": [
+        "HARD:django:3.0.3",
+        "SOFT-DB:oracle:12c-ee"
+    ],
+    "CVE-2021-35042": [
+        "HARD:django:3.2.4",
+        "SOFT-DB:mysql:5.7"
+    ],
+    "CVE-2022-34265": [
+        "HARD:django:4.0.5",
+        "SOFT-DB:postgres:13-alpine"
+    ],
+    "CVE-2014-3704": [
+        "HARD:drupal:7.31",
+        "SOFT-DB:mysql:5.5"
+    ],
+    "CVE-2017-6920": [
+        "HARD:drupal:8.3.0"
+    ],
+    "CVE-2018-7600": [
+        "HARD:drupal:8.5.0"
+    ],
+    "CVE-2018-7602": [
+        "HARD:drupal:7.57"
+    ],
+    "CVE-2019-6339": [
+        "HARD:drupal:8.5.0"
+    ],
+    "CVE-2019-6341": [
+        "HARD:drupal:8.5.0"
+    ],
+    "CVE-2019-17564": [
+        "HARD:dubbo:2.7.3",
+        "SOFT-CACHE:zookeeper:3.7.0"
+    ],
+    "CVE-2021-41460": [
+        "HARD:ecshop:4.0.6",
+        "SOFT-DB:mysql:5.5"
+    ],
+    "CVE-2014-3120": [
+        "HARD:elasticsearch:1.1.1"
+    ],
+    "CVE-2015-1427": [
+        "HARD:elasticsearch:1.4.2"
+    ],
+    "CVE-2015-3337": [
+        "HARD:elasticsearch:1.4.4"
+    ],
+    "CVE-2015-5531": [
+        "HARD:elasticsearch:1.6.0"
+    ],
+    "CVE-2018-15685": [
+        "HARD:electron:wine",
+        "SOFT-WEB:nginx:1"
+    ],
+    "CVE-2021-32682": [
+        "HARD:elfinder:2.1.58"
+    ],
+    "CVE-2017-18349": [
+        "HARD:fastjson:1.2.24"
+    ],
+    "CVE-2016-1897": [
+        "HARD:ffmpeg:2.8.4-with-php"
+    ],
+    "CVE-2016-1898": [
+        "HARD:ffmpeg:2.8.4-with-php"
+    ],
+    "CVE-2017-9993": [
+        "HARD:ffmpeg:3.2.4-with-php"
+    ],
+    "CVE-2025-23211": [
+        "HARD:flask:1.1.1"
+    ],
+    "CVE-2020-17518": [
+        "HARD:flink:1.11.2"
+    ],
+    "CVE-2020-17519": [
+        "HARD:flink:1.11.2"
+    ],
+    "CVE-2021-40822": [
+        "HARD:geoserver:2.19.1"
+    ],
+    "CVE-2022-24816": [
+        "HARD:geoserver:2.17.2"
+    ],
+    "CVE-2023-35042": [
+        "HARD:geoserver:2.17.2"
+    ],
+    "CVE-2023-25157": [
+        "HARD:geoserver:2.22.1",
+        "SOFT-DB:postgis:14-3.3-alpine"
+    ],
+    "CVE-2024-36401": [
+        "HARD:geoserver:2.23.2"
+    ],
+    "CVE-2018-16509": [
+        "HARD:imagemagick:7.0.8-10-php"
+    ],
+    "CVE-2018-19475": [
+        "HARD:imagemagick:7.0.8-20-php"
+    ],
+    "CVE-2019-6116": [
+        "HARD:imagemagick:7.0.8-27-php"
+    ],
+    "CVE-2017-8386": [
+        "HARD:git:2.12.2-with-openssh"
+    ],
+    "CVE-2020-14144": [
+        "HARD:gitea:1.4.0"
+    ],
+    "CVE-2016-9086": [
+        "HARD:gitlab:8.13.1",
+        "SOFT-CACHE:redis:4.0.14-alpine",
+        "SOFT-DB:postgres:11.9-alpine"
+    ],
+    "CVE-2021-22205": [
+        "HARD:gitlab:13.10.1",
+        "SOFT-CACHE:redis:5.0.9-alpine",
+        "SOFT-DB:postgres:12-alpine"
+    ],
+    "CVE-2018-1000533": [
+        "HARD:gitlist:0.6.0"
+    ],
+    "CVE-2017-1000028": [
+        "HARD:glassfish:4.1"
+    ],
+    "CVE-2017-17562": [
+        "HARD:goahead:3.6.4"
+    ],
+    "CVE-2021-42342": [
+        "HARD:goahead:5.1.4"
+    ],
+    "CVE-2018-18925": [
+        "HARD:gogs:0.11.66"
+    ],
+    "CVE-2023-51449": [
+        "HARD:gradio:4.10.0"
+    ],
+    "CVE-2024-1561": [
+        "HARD:gradio:4.12.0"
+    ],
+    "CVE-2025-4123": [
+        "HARD:grafana:8.5.4"
+    ],
+    "CVE-2018-10054": [
+        "HARD:spring-with-h2database:1.4.197"
+    ],
+    "CVE-2021-42392": [
+        "HARD:spring-with-h2database:2.0.204"
+    ],
+    "CVE-2022-23221": [
+        "HARD:spring-with-h2database:2.0.206"
+    ],
+    "CVE-2023-26031": [
+        "HARD:hadoop:2.8.1"
+    ],
+    "CVE-2024-42323": [
+        "HARD:hertzbeat:1.4.4"
+    ],
+    "CVE-2017-15715": [
+        "HARD:php:5.5-apache"
+    ],
+    "CVE-2021-40438": [
+        "HARD:httpd:2.4.43",
+        "SOFT-WEB:tomcat:8.5.19"
+    ],
+    "CVE-2024-27348": [
+        "HARD:hugegraph:1.2.0"
+    ],
+    "CVE-2024-43441": [
+        "HARD:hugegraph:1.3.0"
+    ],
+    "CVE-2016-3714": [
+        "HARD:imagemagick:6.9.2-10-php"
+    ],
+    "CVE-2020-29599": [
+        "HARD:imagemagick:7.0.10-36"
+    ],
+    "CVE-2022-44268": [
+        "HARD:imagemagick:7.1.0-49-php"
+    ],
+    "CVE-2019-20933": [
+        "HARD:influxdb:1.6.6"
+    ],
+    "CVE-2025-1974": [
+        "HARD:ingress-nginx:1.9.5"
+    ],
+    "CVE-2017-7525": [
+        "HARD:jackson-databind:2.8.8",
+        "SOFT:openjdk:8-jdk"
+    ],    
+    "CVE-2017-12149": [
+        "HARD:jboss:as-6.1.0"
+    ],
+    "CVE-2017-7504": [
+        "HARD:jboss:as-4.0.5"
+    ],
+    "CVE-2017-1000353": [
+        "HARD:jenkins:2.46.1"
+    ],
+    "CVE-2018-1000861": [
+        "HARD:jenkins:2.138"
+    ]
+}

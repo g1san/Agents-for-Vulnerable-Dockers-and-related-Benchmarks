@@ -8,7 +8,7 @@ Revisione manauale 6th-bs e 7th-bs di GPT-4o
 **Vuln Ass**: VA per le 20 CVEs, statica e dinamica
 
 ### Giordano Says
-Prova a fare generazione Docker anche se web search fallisce. OBBIETTIVO: capire se le milestone della fase di web search devono fungere da blocco al proseguo del workflow o se l'agente è comunque capace a sviluppare un Docker funzionante anche se i risultati della web search non sono quelli desiderati. SOLUZIONE: usare i risultati di 5th-bs, 6th-bs e 7th-bs per testare se è vero, farlo solo per quei casi in cui web search è fallita, implementare bypass con tag "relax-web-search-constraints" in "debug"
+Cerca di capire come mai alcuni risultati sbagliati della web search portano alla creazione di docker funzionanti
 
 ### Drago Says
 Testa altri modelli

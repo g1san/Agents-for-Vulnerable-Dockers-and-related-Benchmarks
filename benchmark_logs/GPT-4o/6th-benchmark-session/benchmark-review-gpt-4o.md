@@ -1,12 +1,14 @@
-# GPT-4o 5th Benchmark Results
+# GPT-4o 6th Benchmark Results
 
 ## CVE-2012-1823 
 ### 'custom'
-- **Web Search** &rarr; (_FAIL_) right version numbers but not the 'cgi' variant 
+- **Web Search** &rarr; (_PASS_) right version numbers but not the 'cgi' variant. In this instance, LLM-as-a-Judge decided it was ok this time
+- **Docker** &rarr; (_FAIL_) always fails to build image
 ### 'custom_no_tool'
-- **Web Search** &rarr; (_FAIL_) right version numbers but not the 'cgi' variant
+- **Web Search** &rarr; (_FAIL_) right version numbers but not the 'cgi' variant. In this instance, LLM-as-a-Judge decided it was ok this time
+- **Docker** &rarr; (_FAIL_) always fails to build image
 ### 'openai'
-- **Web Search** &rarr; (_PASS_) right version numbers but not the 'cgi' variant. LLM-as-a-Judge decided it was ok this time
+- **Web Search** &rarr; (_PASS_) right version numbers but not the 'cgi' variant. In this instance, LLM-as-a-Judge decided it was ok this time
 - **Docker** &rarr; (_FAIL_) always fails to build image
 
 
@@ -22,9 +24,8 @@
 - **Docker** &rarr; (_FAIL_) always fails to build image
 ### 'openai'
 - **Web Search** &rarr; (_PASS_)
-- **Docker** &rarr; (_PASS_)
-- **Static VA** &rarr; (_FAIL_) _php_ version _7.4_ is used in the _phpMyAdmin_ container, this version may fix the CVE, lower version (_<5.3_) is required
-- **Dynamic VA** &rarr; (_FAIL_) _php_ version _7.4_ is used in the _phpMyAdmin_ container, this version may fix the CVE, lower version (_<5.3_) is required
+- **Docker** &rarr; (_FAIL_) always fails to build image
+
 
 
 
@@ -35,17 +36,17 @@
 - **Web Search** &rarr; (_PASS_)
 - **Docker** &rarr; (_PASS_)
 - **Static VA** &rarr; (_FAIL_)
-- **Dynamic VA** &rarr; (_FAIL_) with slight modifications to Docker files the exploit seems to work (see _exploit.txt_), but Docker Scout does not find the CVE even when exploit works.
+- **Dynamic VA** &rarr; (_FAIL_) last step of the exploit fails with error: _Output is None_
 ### 'custom_no_tool'
 - **Web Search** &rarr; (_PASS_)
 - **Docker** &rarr; (_PASS_)
 - **Static VA** &rarr; (_FAIL_)
-- **Dynamic VA** &rarr; (_FAIL_) with slight modifications to Docker files the exploit seems to work (see _exploit.txt_), but Docker Scout does not find the CVE even when exploit works.
+- **Dynamic VA** &rarr; (_FAIL_) last step of the exploit fails with error: _Output is None_
 ### 'openai'
 - **Web Search** &rarr; (_PASS_)
 - **Docker** &rarr; (_PASS_)
 - **Static VA** &rarr; (_FAIL_)
-- **Dynamic VA** &rarr; (_FAIL_) with slight modifications to Docker files the exploit seems to work (see _exploit.txt_), but Docker Scout does not find the CVE even when exploit works.
+- **Dynamic VA** &rarr; (_FAIL_) last step of the exploit fails with error: _Output is None_
 
 
 
@@ -53,13 +54,15 @@
 
 ## CVE-2020-7247 
 ### 'custom'
-- **Web Search** &rarr; (_FAIL_) a vulnerable version of _OpenSMTP_ is identified, but not the one of 'services.json'. CVE description is correct and includes the version of 'services.json'
+- **Web Search** &rarr; (_PASS_)
+- **Docker** &rarr; (_FAIL_) cannot build image
 ### 'custom_no_tool'
 - **Web Search** &rarr; (_PASS_)
-- **Docker** &rarr; (_FAIL_) wrong version of _OpenSMTP_ is used in the container (_alpine:3.12_ is not a vulnerable version). _OpenSMTP_ container cannot be stabilised and keeps failing checks
+- **Docker** &rarr; (_FAIL_) _OpenSMTP_ container cannot be stabilised
+- **Static VA** &rarr; (_FAIL_)
 ### 'openai'
-- **Web Search** &rarr; (_PASS_)
-- **Docker** &rarr; (_FAIL_) an unspecified version of _OpenSMTP_ is used in the container (supposedly the default one of _debian:bullseye-slim_). Moreover, _OpenSMTP_ container cannot be stabilised and keeps failing checks
+- **Web Search** &rarr; (_PASS_) the version in _services.json_ was not included in the web search, LLM-as-a-Judge did not spot this and passed check (**hallucination**)
+- **Docker** &rarr; (_FAIL_) an unspecified version of _OpenSMTP_ is used in the container (supposedly the default one of _debian:oldstable_). Moreover, _OpenSMTP_ container cannot be stabilised and keeps failing checks
 
 
 
@@ -77,10 +80,8 @@
 - **Static VA** &rarr; (_PASS_)
 - **Dynamic VA** &rarr; (_PASS_)
 ### 'openai'
-- **Web Search** &rarr; (_PASS_)
-- **Docker** &rarr; (_PASS_)
-- **Static VA** &rarr; (_PASS_)
-- **Dynamic VA** &rarr; (_PASS_)
+- **Web Search** &rarr; (_FAIL_) wrong 'HARD' service name, _salt-master_ and _salt-minion_ instead of _salt_
+
 
 
 
@@ -98,12 +99,15 @@
 - **Static VA** &rarr; (_PASS_)
 - **Dynamic VA** &rarr; (_PASS_)
 ### 'openai'
-- **Web Search** &rarr; (_FAIL_) wrong 'HARD' service name, _salt-master_ instead of _salt_
+- **Web Search** &rarr; (_PASS_)
+- **Docker** &rarr; (_PASS_)
+- **Static VA** &rarr; (_PASS_)
+- **Dynamic VA** &rarr; (_PASS_)
 
 
 
 
-
+***CONTINUA DA QUA***
 ## CVE-2021-3129 
 ### 'custom'
 - **Web Search** &rarr; (_PASS_)

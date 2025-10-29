@@ -34,7 +34,8 @@ pip-delete-this-directory.txt
 __pycache__
 
 # Other files
-src/tests
-dockers/
-services-backup.json
 backups/
+dockers/
+exploits/
+services-backup.json
+src/tests
