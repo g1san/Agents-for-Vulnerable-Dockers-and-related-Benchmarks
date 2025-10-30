@@ -1,4 +1,5 @@
 """Run the agent by providing it with a CVE ID."""
+import time
 import json
 import builtins
 import subprocess
@@ -20,6 +21,7 @@ def down_docker(code_dir_path):
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL
     )
+    time.sleep(10)
 
 
 def remove_all_images():
@@ -52,7 +54,7 @@ def milestone_file(web_search_mode: str):
             jsonServices = json.load(f)
             
         milestones = {}
-        cve_list = list(jsonServices.keys())   # Limit to first 20 CVEs for benchmarking
+        cve_list = list(jsonServices.keys())[:20]   # Limit to first 20 CVEs for benchmarking
         for cve in cve_list:
             with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/milestones.json', 'r') as f:
                 milestone_data = json.load(f)
@@ -123,7 +125,7 @@ def assess_dockers(cve_list: list[str], model_name: str, model_docker_name: str,
             print("\n\n\n")
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
-# cve_list = list(jsonServices.keys())
+# cve_list = list(jsonServices.keys())[:20]
 # print(len(cve_list), cve_list)
 # df = assess_dockers(
 #     cve_list=cve_list,
@@ -201,25 +203,27 @@ def run_agent(cve_list: list[str], web_search_mode: str, model_name: str, verbos
 
                 if len(cve_list) == 1 and len(web_search_mode) == 1:
                     return result
+                
             except Exception as e:
+                print(f"\n\n===== [AGENTIC WORKFLOW FAILED] =====\n{e}\n"+"="*37+"\n\n")
                 code_dir_path = Path(f"./../../dockers/{cve}/{wsm}/")
                 down_docker(code_dir_path=code_dir_path)
-                remove_all_images()
-                print(f"\n\n===== [AGENTIC WORKFLOW FAILED] =====\n{e}\n"+"="*37+"\n\n")
+                remove_all_images()                
                 continue      
-with builtins.open('services-test-set.json', "r") as f:
-    jsonServices = json.load(f)
-cve_list = list(jsonServices.keys())
-print(len(cve_list), cve_list)
-result = run_agent(
-    cve_list=cve_list,
-    web_search_mode="custom_no_tool",
-    model_name="gpt-oss:120b",                #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss-20b', 'gpt-oss-120b' *#
-    verbose_web_search=False,
-    reuse_web_search=False,
-    reuse_web_search_and_code=False,
-    relax_web_search_constraints=True,
-)
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[20:] # From the 20th onward is the test set
+# cve_list = ['CVE-2015-3337', 'CVE-2016-5385', 'CVE-2017-12149', 'CVE-2017-7525', 'CVE-2018-1000533', 'CVE-2018-7602', 'CVE-2019-9053', 'CVE-2020-11978', 'CVE-2021-21311', 'CVE-2021-22205', 'CVE-2021-41460', 'CVE-2021-42342', 'CVE-2021-42392', 'CVE-2022-23221', 'CVE-2023-22515', 'CVE-2023-25157', 'CVE-2023-26031', 'CVE-2023-51449', 'CVE-2021-28169', 'CVE-2023-4450','CVE-2019-11581','CVE-2018-1297']
+# print(len(cve_list), cve_list)
+# result = run_agent(
+#     cve_list=cve_list,
+#     web_search_mode="custom_no_tool",
+#     model_name="gpt-oss:120b",                #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss-20b', 'gpt-oss-120b' *#
+#     verbose_web_search=False,
+#     reuse_web_search=False,
+#     reuse_web_search_and_code=False,
+#     relax_web_search_constraints=True,
+# )
 
 
 #* TRY TO CREATE DOCKERS WITH A WRONG WEB SEARCH *#
@@ -267,7 +271,7 @@ def test_wrong_web_search(cve_list: list[str], model_name: str, model_docker_nam
     print(f"Docker already ok: {ok_dockers}\nNew Dockers ok: {new_ok_dockers}\n\n\n\n\n")
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
-# cve_list = list(jsonServices.keys())
+# cve_list = list(jsonServices.keys())[:20]
 # print(len(cve_list), cve_list)
 # df = test_wrong_web_search(
 #     cve_list=cve_list,
@@ -318,3 +322,33 @@ def test_wrong_web_search(cve_list: list[str], model_name: str, model_docker_nam
 #         json.dump(code_data, f, indent=4)
 #     
 #     print(cve, web_search_mode)
+
+
+
+wsm = "custom_no_tool"
+with builtins.open('services.json', "r") as f:
+    jsonServices = json.load(f)
+cve_list = list(jsonServices.keys())[20:]        # From the 20th onward is the test set
+to_test_again = []
+for cve in cve_list:
+    try:
+        with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/milestones.json', 'r') as f:
+            milestones = json.load(f)     
+        with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:
+            web_search_data = json.load(f)
+        with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/code.json', 'r') as f:
+            code_data = json.load(f)
+        with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/stats.json', 'r') as f:
+            stats = json.load(f)
+        print(cve)
+        print(f"Web Search {"OK" if milestones["hard_service"] and milestones["hard_version"] and milestones["soft_services"] else "NOT OK"}")
+        print(f"Docker {"OK" if milestones["docker_builds"] and milestones["docker_runs"] and milestones["code_hard_version"] and milestones["network_setup"] else "NOT OK"}")
+        print(f"Docker Scout {"OK" if stats["docker_scout_vulnerable"] else "NOT OK"}")
+        print()
+    except Exception as e: 
+        print(f"{cve} NOT OK {e}\n")
+        to_test_again.append(cve)          
+        continue      
+
+print(len(to_test_again), sorted(to_test_again))
+

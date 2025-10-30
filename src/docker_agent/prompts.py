@@ -40,9 +40,8 @@ GUIDELINES:
     - 'SOFT' if the service is needed just to make the Docker work
     - 'SOFT' service that play a specific role must be associated to a role (format 'SOFT-<role>'). Examples of 'SOFT-<role>' are:
         - 'SOFT-DB' for relational databases (e.g., MySQL, MariaDB, PostgreSQL, MariaDB, Oracle)
-        - 'SOFT-MQ' for message queues (e.g., RabbitMQ, Kafka)
         - 'SOFT-WEB' for web servers (e.g., Nginx, Apache, PHP, Tomcat)
-        - 'SOFT-CACHE' for caching/key-value store/coordination services (e.g., Redis, etcd, ZooKeeper)
+        - 'SOFT-CACHE' for caching/key-value store/coordination services (e.g., Redis, etcd, ZooKeeper, RabbitMQ, Kafka)
 - ABOUT SERVICE VERSIONS:
     - Service version must specified and valid for Docker Hub, do not be vague by citing just 'any compatible version'
     - For 'HARD' services you must list all vulnerable versions cited by the most reliable sources such as MITRE and NIST. Do not use ranges, you must be very specific with version name and list all versions vulnerable to {cve_id}
@@ -66,9 +65,8 @@ GUIDELINES:
     - 'SOFT' if the service is needed just to make the Docker work
     - 'SOFT' service that play a specific role must be associated to a role (format 'SOFT-<role>'). Examples of 'SOFT-<role>' are:
         - 'SOFT-DB' for relational databases (e.g., MySQL, MariaDB, PostgreSQL, MariaDB, Oracle)
-        - 'SOFT-MQ' for message queues (e.g., RabbitMQ, Kafka)
         - 'SOFT-WEB' for web servers (e.g., Nginx, Apache, PHP, Tomcat)
-        - 'SOFT-CACHE' for caching/key-value store/coordination services (e.g., Redis, etcd, ZooKeeper)
+        - 'SOFT-CACHE' for caching/key-value store/coordination services (e.g., Redis, etcd, ZooKeeper, RabbitMQ, Kafka)
 - ABOUT SERVICE VERSIONS:
     - Service version must specified and valid for Docker Hub, do not be vague by citing just 'any compatible version'
     - For 'HARD' services you must list all vulnerable versions cited by the most reliable sources such as MITRE and NIST. Do not use ranges, you must be very specific with version name and list all versions vulnerable to {cve_id}

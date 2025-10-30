@@ -573,6 +573,7 @@ def down_docker(code_dir_path):
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL
     )
+    time.sleep(10)
 
 
 def remove_all_images():
