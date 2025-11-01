@@ -67,9 +67,7 @@ def milestone_file(cve_list: list, web_search_mode: str):
 with builtins.open('services.json', "r") as f:
     jsonServices = json.load(f)
 cve_list = list(jsonServices.keys())[20:]   # Limit to first 20 CVEs for benchmarking
-# milestones = milestone_file("custom")
 milestones = milestone_file(cve_list=cve_list, web_search_mode="custom_no_tool")
-# milestones = milestone_file("openai")
 
 
 #* TEST THE DOCKERS IN THE 'docker' FOLDER *#
