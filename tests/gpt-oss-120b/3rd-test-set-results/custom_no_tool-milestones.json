@@ -1,0 +1,1002 @@
+{
+    "CVE-2015-5254": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2016-3088": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2022-41678": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2023-46604": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2021-21311": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": false
+    },
+    "CVE-2021-43008": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2020-11978": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2020-11981": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2020-17526": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2024-7314": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2021-25646": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2020-13945": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2021-45232": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2018-8715": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2023-39141": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2014-6271": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2016-5385": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2019-9053": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2021-26120": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2010-2861": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2017-3066": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2023-26360": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2023-29300": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2019-3396": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2021-26084": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2022-26134": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2023-22515": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2023-22527": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2017-12635": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2017-12636": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2017-12794": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2018-14574": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2019-14234": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2020-9402": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2021-35042": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2022-34265": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2014-3704": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2017-6920": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2018-7600": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2018-7602": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2019-6339": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2019-6341": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2019-17564": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2021-41460": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": false
+    },
+    "CVE-2014-3120": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2015-1427": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2015-3337": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2015-5531": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2018-15685": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2021-32682": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2017-18349": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2016-1897": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2016-1898": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2017-9993": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2025-23211": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2020-17518": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2020-17519": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2021-40822": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2022-24816": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2023-35042": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2023-25157": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2024-36401": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2018-16509": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2018-19475": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2019-6116": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2017-8386": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2020-14144": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2016-9086": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2021-22205": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2018-1000533": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2017-1000028": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2017-17562": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2021-42342": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2018-18925": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2023-51449": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2024-1561": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2025-4123": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2018-10054": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2021-42392": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2022-23221": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2023-26031": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2024-42323": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2017-15715": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2021-40438": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2024-27348": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2024-43441": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2016-3714": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2020-29599": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2022-44268": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2019-20933": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2025-1974": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2017-7525": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2017-12149": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2017-7504": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2017-1000353": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2018-1000861": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2021-28169": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2023-4450": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    },
+    "CVE-2019-11581": {
+        "cve_id_ok": true,
+        "hard_service": false,
+        "hard_version": false,
+        "soft_services": false,
+        "docker_builds": true,
+        "docker_runs": true,
+        "code_hard_version": true,
+        "network_setup": true
+    },
+    "CVE-2018-1297": {
+        "cve_id_ok": true,
+        "hard_service": true,
+        "hard_version": true,
+        "soft_services": true,
+        "docker_builds": false,
+        "docker_runs": false,
+        "code_hard_version": false,
+        "network_setup": false
+    }
+}

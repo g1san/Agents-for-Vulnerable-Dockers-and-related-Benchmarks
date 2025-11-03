@@ -63,11 +63,11 @@ def milestone_file(cve_list: list, web_search_mode: str):
 
     except Exception as e:
         print(f"Workflow invocation failed: {e}.")
-        
-with builtins.open('services.json', "r") as f:
-    jsonServices = json.load(f)
-cve_list = list(jsonServices.keys())[20:]   # Limit to first 20 CVEs for benchmarking
-milestones = milestone_file(cve_list=cve_list, web_search_mode="custom_no_tool")
+#       
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[20:]   # Limit to first 20 CVEs for benchmarking
+# milestones = milestone_file(cve_list=cve_list, web_search_mode="custom_no_tool")
 
 
 #* TEST THE DOCKERS IN THE 'docker' FOLDER *#
@@ -208,19 +208,19 @@ def run_agent(cve_list: list[str], web_search_mode: str, model_name: str, verbos
                 down_docker(code_dir_path=code_dir_path)
                 remove_all_images()                
                 continue      
-with builtins.open('services.json', "r") as f:
-    jsonServices = json.load(f)
-cve_list = list(jsonServices.keys())[20:] # From the 20th onward is the test set
-print(len(cve_list), cve_list)
-result = run_agent(
-    cve_list=cve_list,
-    web_search_mode="custom_no_tool",
-    model_name="gpt-oss:120b",                #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss-20b', 'gpt-oss-120b' *#
-    verbose_web_search=False,
-    reuse_web_search=False,
-    reuse_web_search_and_code=False,
-    relax_web_search_constraints=True,
-)
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[20:] # From the 20th onward is the test set
+# print(len(cve_list), cve_list)
+# result = run_agent(
+#     cve_list=cve_list,
+#     web_search_mode="custom_no_tool",
+#     model_name="gpt-oss:120b",                #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss-20b', 'gpt-oss-120b' *#
+#     verbose_web_search=False,
+#     reuse_web_search=False,
+#     reuse_web_search_and_code=False,
+#     relax_web_search_constraints=True,
+# )
 
 
 #* TRY TO CREATE DOCKERS WITH A WRONG WEB SEARCH *#
