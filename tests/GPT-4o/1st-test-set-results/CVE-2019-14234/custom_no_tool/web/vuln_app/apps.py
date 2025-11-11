@@ -1,0 +1,5 @@
+from django.apps import AppConfig
+
+
+class VulnAppConfig(AppConfig):
+    name = 'vuln_app'

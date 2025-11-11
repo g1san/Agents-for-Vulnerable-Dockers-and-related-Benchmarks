@@ -13,7 +13,7 @@ from IPython.display import display
 #* GENERATE THE '{wsm}-benchmark.xlsx' and '{wsm}-benchmark.csv' FILEs *#
 def generate_excel_csv():
     # CVE identifiers
-    with builtins.open('services.json', "r") as f:
+    with builtins.open('./../services.json', "r") as f:
         jsonServices = json.load(f)
     cve_list = list(jsonServices.keys())[:20]
     
@@ -100,9 +100,9 @@ def generate_excel_csv():
 
 def generate_excel_csv_mono_mode(model, logs_set, mode):
     # CVE identifiers
-    main_path = Path(f"./../../benchmark_logs/{model}/{logs_set}-benchmark-session/")
+    main_path = Path(f"./../../../benchmark_logs/{model}/{logs_set}-benchmark-session/")
     
-    with builtins.open('services.json', "r") as f:
+    with builtins.open('./../services.json', "r") as f:
         jsonServices = json.load(f)
         
     cve_list = list(jsonServices.keys())[:20]
@@ -194,7 +194,7 @@ def generate_excel_csv_mono_mode(model, logs_set, mode):
 
 def get_cve_df(model: str, logs_set: str, iteration: str, mode: str):
     # CVE identifiers
-    with builtins.open('services.json', "r") as f:
+    with builtins.open('./../services.json', "r") as f:
         jsonServices = json.load(f)
     cve_list = list(jsonServices.keys())[:20]
     
@@ -205,10 +205,10 @@ def get_cve_df(model: str, logs_set: str, iteration: str, mode: str):
         cve_data['web_search_mode'] = mode
         
         if iteration != "":
-            with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{iteration}-iteration/{mode}-milestones.json', 'r') as f:
+            with builtins.open(f'./../../../benchmark_logs/{model}/{logs_set}-benchmark-session/{iteration}-iteration/{mode}-milestones.json', 'r') as f:
                 mode_milestones = json.load(f)
         else:
-            with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{mode}-milestones.json', 'r') as f:
+            with builtins.open(f'./../../../benchmark_logs/{model}/{logs_set}-benchmark-session/{mode}-milestones.json', 'r') as f:
                 mode_milestones = json.load(f)
 
         for milestone, value in mode_milestones[cve].items():
@@ -224,7 +224,7 @@ def get_cve_df(model: str, logs_set: str, iteration: str, mode: str):
 
 def get_twwsr_df(model: str, logs_set: str, iteration: str, mode: str):
     # CVE identifiers
-    with builtins.open('services.json', "r") as f:
+    with builtins.open('./../services.json', "r") as f:
         jsonServices = json.load(f)
     cve_list = list(jsonServices.keys())[:20]
     
@@ -236,10 +236,10 @@ def get_twwsr_df(model: str, logs_set: str, iteration: str, mode: str):
         
         try:
             if iteration != "":
-                with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{iteration}-iteration/test-wrong-web-search-results/{cve}/{mode}/logs/milestones.json', 'r') as f:
+                with builtins.open(f'./../../../benchmark_logs/{model}/{logs_set}-benchmark-session/{iteration}-iteration/test-wrong-web-search-results/{cve}/{mode}/logs/milestones.json', 'r') as f:
                     milestones = json.load(f)
             else:
-                with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/test-wrong-web-search-results/{cve}/{mode}/logs/milestones.json', 'r') as f:
+                with builtins.open(f'./../../../benchmark_logs/{model}/{logs_set}-benchmark-session/test-wrong-web-search-results/{cve}/{mode}/logs/milestones.json', 'r') as f:
                     milestones = json.load(f)
 
             for milestone, value in milestones.items():
@@ -258,7 +258,7 @@ def get_twwsr_df(model: str, logs_set: str, iteration: str, mode: str):
 #* PRINT MILESTONE RELATED STATS *#
 def extract_milestones_stats(model: str, logs_set: str, mode: str):    
     data = {}
-    with builtins.open(f'./../../benchmark_logs/{model}/{logs_set}-benchmark-session/{mode}-milestones.json', 'r') as f:
+    with builtins.open(f'./../../../benchmark_logs/{model}/{logs_set}-benchmark-session/{mode}-milestones.json', 'r') as f:
         mode_milestones = json.load(f)
         
     milestones = list(next(iter(mode_milestones.values())).keys())
@@ -464,7 +464,7 @@ def barh_service_wsm(df, unique_services):
 
 #* SERVICE RELATED STATS *#
 def services_stats(cve_list: list[str], model: str, logs_set: str, iteration: str, web_search_mode: str, filtered_milestones: bool):
-    file_name = f"./../../benchmark_logs/{model}/{logs_set}-benchmark-session/"
+    file_name = f"./../../../benchmark_logs/{model}/{logs_set}-benchmark-session/"
     if iteration != "": file_name += f"{iteration}-iteration/"
     if web_search_mode != "": modes = [web_search_mode]
     else: modes = ["custom", "custom_no_tool", "openai"]
@@ -545,7 +545,7 @@ def services_stats(cve_list: list[str], model: str, logs_set: str, iteration: st
     # barh_mean_std(df, feature="web_search_mode")    #! Use either 'service_name' or 'web_search_mode'
     
     return df
-# with builtins.open('services.json', "r") as f:
+# with builtins.open('./../services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
 # df = services_stats(
@@ -559,7 +559,7 @@ def services_stats(cve_list: list[str], model: str, logs_set: str, iteration: st
 
 
 def get_data(cve_list: list[str], model: str, logs_set: str, iteration: str, web_search_mode: str, correct_web_search_only: bool, correct_docker_only: bool, include_twwsr_data: bool):
-    file_name = f"./../../benchmark_logs/{model}/{logs_set}-benchmark-session/"
+    file_name = f"./../../../benchmark_logs/{model}/{logs_set}-benchmark-session/"
     if iteration != "": file_name += f"{iteration}-iteration/"
     if web_search_mode == "all": modes = ["custom", "custom_no_tool", "openai"]
     elif web_search_mode == "all-openai": modes = ["custom", "custom_no_tool"]
@@ -723,7 +723,7 @@ def vuln_ass_stats(df):
     print(f"CVEs Static VA ({len(static_cves)})\n{sorted(static_cves)}\n\n\n")
     print(f"CVEs Dynamic VA ({len(dynamic_cves)})\n{sorted(dynamic_cves)}\n\n\n")
     print(f"CVEs Static + Dynamic VA ({len(stat_dyn_cves)})\n{sorted(stat_dyn_cves)}\n\n\n")
-# with builtins.open('services.json', "r") as f:
+# with builtins.open('./../services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
 # df = vuln_ass_stats(get_data(
@@ -922,7 +922,7 @@ def all_run_comparison(cve_list: list, models: tuple, logs_sets: tuple, web_sear
       ylim=90, 
       wsm=None,
     )
-# with builtins.open('services.json', "r") as f:
+# with builtins.open('./../services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
 # models = ("gpt-oss-120b", "GPT-4o", "GPT-5")
@@ -930,7 +930,7 @@ def all_run_comparison(cve_list: list, models: tuple, logs_sets: tuple, web_sear
 # web_search_modes = ("all-openai", "all", "all")
 # include_twwsr_data = (False, False, False)
 # all_run_comparison(cve_list=cve_list, models=models, logs_sets=logs_sets, web_search_modes=web_search_modes, include_twwsr_data=include_twwsr_data)
-# with builtins.open('services.json', "r") as f:
+# with builtins.open('./../services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
 # models = ("GPT-4o", "GPT-4o", "GPT-4o")
@@ -991,14 +991,14 @@ def wsm_run_comparison(cve_list: list, models: tuple, logs_sets: tuple, wsm: str
         ylim=40, 
         wsm=wsm,
     )
-# with builtins.open('services.json', "r") as f:
+# with builtins.open('./../services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
 # models = ("gpt-oss-120b", "gpt-oss-120b")
 # logs_sets = ("1st", "2nd")
 # include_twwsr_data = (False, False)
 # wsm_run_comparison(cve_list=cve_list, models=models, logs_sets=logs_sets, wsm="custom", include_twwsr_data=include_twwsr_data)
-# with builtins.open('services.json', "r") as f:
+# with builtins.open('./../services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
 # models = ("GPT-4o", "GPT-4o", "GPT-4o")
@@ -1078,7 +1078,7 @@ def all_run_test_loop_errors(cve_list: list, models: tuple, logs_sets: tuple, we
       models_logs_sets=models_logs_sets,
       wsm=None,
     )
-# with builtins.open('services.json', "r") as f:
+# with builtins.open('./../services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
 # models = ("gpt-oss-120b", "GPT-4o", "GPT-5")
@@ -1086,7 +1086,7 @@ def all_run_test_loop_errors(cve_list: list, models: tuple, logs_sets: tuple, we
 # web_search_modes = ("all-openai", "all", "all")
 # include_twwsr_data = (False, False, False)
 # all_run_test_loop_errors(cve_list=cve_list, models=models, logs_sets=logs_sets, web_search_modes=web_search_modes, include_twwsr_data=include_twwsr_data)
-# with builtins.open('services.json', "r") as f:
+# with builtins.open('./../services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
 # models = ("GPT-4o", "GPT-4o", "GPT-4o")
@@ -1136,7 +1136,7 @@ def wsm_test_loop_errors(cve_list: list, models: tuple, logs_sets: tuple, wsm: s
         models=models if wsm != "openai" else ("GPT-4o", "GPT-5"), 
         wsm=wsm,
     )
-# with builtins.open('services.json', "r") as f:
+# with builtins.open('./../services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
 # models = ("gpt-oss-120b", "GPT-4o", "GPT-5")
@@ -1157,7 +1157,7 @@ def wsm_performance_graph(cve_list: list, model: str, logs_sets: list):
     
     print("="*10 + "START ERROR MESSAGES" + "="*10)
     for logs_set in logs_sets:
-        file_name = f"./../../benchmark_logs/{model}/{logs_set}-benchmark-session/"
+        file_name = f"./../../../benchmark_logs/{model}/{logs_set}-benchmark-session/"
         for cve in cve_list:
             for wsm in modes:
                 try:
@@ -1226,7 +1226,7 @@ def wsm_performance_graph(cve_list: list, model: str, logs_sets: list):
     plt.show()
     
     return df
-# with builtins.open('services.json', "r") as f:
+# with builtins.open('./../services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
 # logs_sets = ["5th", "6th", "7th"]
@@ -1245,7 +1245,7 @@ def wsm_consistency_graph(cve_list: list, model: str, logs_sets: list):
     
     print("="*10 + "START ERROR MESSAGES" + "="*10)
     for logs_set in logs_sets:
-        file_name = f"./../../benchmark_logs/{model}/{logs_set}-benchmark-session/"
+        file_name = f"./../../../benchmark_logs/{model}/{logs_set}-benchmark-session/"
         for cve in cve_list:
             for wsm in modes:
                 try:
@@ -1322,7 +1322,7 @@ def wsm_consistency_graph(cve_list: list, model: str, logs_sets: list):
         plt.show()
     
     return df
-# with builtins.open('services.json', "r") as f:
+# with builtins.open('./../services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
 # logs_sets = ["5th", "6th", "7th"]
@@ -1342,7 +1342,7 @@ def cve_consistency_graph(cve_list: list, model: str, logs_sets: list, horizonta
     
     print("="*10 + "START ERROR MESSAGES" + "="*10)
     for logs_set in logs_sets:
-        file_name = f"./../../benchmark_logs/{model}/{logs_set}-benchmark-session/"
+        file_name = f"./../../../benchmark_logs/{model}/{logs_set}-benchmark-session/"
         for cve in cve_list:
             for wsm in modes:
                 try:
@@ -1469,7 +1469,7 @@ def cve_consistency_graph(cve_list: list, model: str, logs_sets: list, horizonta
         plt.show()
     
     return df
-# with builtins.open('services.json', "r") as f:
+# with builtins.open('./../services.json', "r") as f:
 #     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20]
 # logs_sets = ["5th", "6th", "7th"]

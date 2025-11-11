@@ -39,35 +39,12 @@ def remove_all_images():
 #* DRAW AGENTIC WORKFLOW GRAPH USING MERMAID CHART *#
 def draw_graph():
     try:
-        # print(compiled_workflow.get_graph().draw_mermaid())
+        print(compiled_workflow.get_graph().draw_mermaid())
         display(Image(compiled_workflow.get_graph().draw_mermaid_png(output_file_path="Mermaid Chart.png")))
         
     except Exception as e:
         print(f"Rendering failed with code {e}.\nHere's the Mermaid source:\n{compiled_workflow.get_graph().draw_mermaid()}")
 # draw_graph()
-
-
-#* GENERATE THE '{wsm}-milestones.json' FILE OUT OF ALL DOCKERS IN THE 'docker' FOLDER *#
-def milestone_file(cve_list: list, web_search_mode: str):
-    try:            
-        milestones = {}
-        for cve in cve_list:
-            with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/milestones.json', 'r') as f:
-                milestone_data = json.load(f)
-                
-            milestones[cve] = milestone_data
-        
-        with builtins.open(f'./../../dockers/{web_search_mode}-milestones.json', 'w') as f:
-            json.dump(milestones, f, indent=4)
-        return milestones
-
-    except Exception as e:
-        print(f"Workflow invocation failed: {e}.")
-#       
-# with builtins.open('services.json', "r") as f:
-#     jsonServices = json.load(f)
-# cve_list = list(jsonServices.keys())[20:]   # Limit to first 20 CVEs for benchmarking
-# milestones = milestone_file(cve_list=cve_list, web_search_mode="custom_no_tool")
 
 
 #* TEST THE DOCKERS IN THE 'docker' FOLDER *#
@@ -210,12 +187,14 @@ def run_agent(cve_list: list[str], web_search_mode: str, model_name: str, verbos
                 continue      
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
-# cve_list = list(jsonServices.keys())[20:] # From the 20th onward is the test set
+# # cve_list = list(jsonServices.keys())[:20] # The first 20 are the validation set
+# # cve_list = list(jsonServices.keys())[20:] # From the 20th onward is the test set
+# cve_list = ["CVE-2021-43008"]
 # print(len(cve_list), cve_list)
 # result = run_agent(
 #     cve_list=cve_list,
 #     web_search_mode="custom_no_tool",
-#     model_name="gpt-oss:120b",                #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss-20b', 'gpt-oss-120b' *#
+#     model_name="gpt-4o",                #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss-20b', 'gpt-oss-120b' *#
 #     verbose_web_search=False,
 #     reuse_web_search=False,
 #     reuse_web_search_and_code=False,
@@ -279,6 +258,29 @@ def test_wrong_web_search(cve_list: list[str], model_name: str, model_docker_nam
 # )
 
 
+#* GENERATE THE '{wsm}-milestones.json' FILE OUT OF ALL DOCKERS IN THE 'docker' FOLDER *#
+def milestone_file(cve_list: list, web_search_mode: str):
+    try:            
+        milestones = {}
+        for cve in cve_list:
+            with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/milestones.json', 'r') as f:
+                milestone_data = json.load(f)
+                
+            milestones[cve] = milestone_data
+        
+        with builtins.open(f'./../../dockers/{web_search_mode}-milestones.json', 'w') as f:
+            json.dump(milestones, f, indent=4)
+        return milestones
+
+    except Exception as e:
+        print(f"Workflow invocation failed: {e}.")
+     
+with builtins.open('services.json', "r") as f:
+    jsonServices = json.load(f)
+cve_list = list(jsonServices.keys())[20:]
+milestones = milestone_file(cve_list=cve_list, web_search_mode="custom_no_tool")
+
+
 #! US THIS CODE TO REWRITE SOME DATA !#
 # with builtins.open('services.json', "r") as f:
 #     jsonServices = json.load(f)
@@ -319,33 +321,3 @@ def test_wrong_web_search(cve_list: list[str], model_name: str, model_docker_nam
 #         json.dump(code_data, f, indent=4)
 #     
 #     print(cve, web_search_mode)
-
-
-
-# wsm = "custom_no_tool"
-# with builtins.open('services.json', "r") as f:
-#     jsonServices = json.load(f)
-# cve_list = list(jsonServices.keys())[20:]        # From the 20th onward is the test set
-# to_test_again = []
-# for cve in cve_list:
-#     try:
-#         with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/milestones.json', 'r') as f:
-#             milestones = json.load(f)     
-#         with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:
-#             web_search_data = json.load(f)
-#         with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/code.json', 'r') as f:
-#             code_data = json.load(f)
-#         with builtins.open(f'./../../dockers/{cve}/{wsm}/logs/stats.json', 'r') as f:
-#             stats = json.load(f)
-#         print(cve)
-#         print(f"Web Search {"OK" if milestones["hard_service"] and milestones["hard_version"] and milestones["soft_services"] else "NOT OK"}")
-#         print(f"Docker {"OK" if milestones["docker_builds"] and milestones["docker_runs"] and milestones["code_hard_version"] and milestones["network_setup"] else "NOT OK"}")
-#         print(f"Docker Scout {"OK" if stats["docker_scout_vulnerable"] else "NOT OK"}")
-#         print()
-#     except Exception as e: 
-#         print(f"{cve} NOT OK {e}\n")
-#         to_test_again.append(cve)          
-#         continue      
-# 
-# print(len(to_test_again), sorted(to_test_again))
-
