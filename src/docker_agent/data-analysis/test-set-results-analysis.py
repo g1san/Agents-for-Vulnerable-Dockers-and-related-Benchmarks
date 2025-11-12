@@ -11,7 +11,7 @@ from IPython.display import display
 
 
 #* Prints a brief summary of how test sets went by combining all results
-def result_summary():
+def result_summary(model: str):
     wsm = "custom_no_tool"
     with builtins.open('./../services.json', "r") as f:
         jsonServices = json.load(f)
@@ -28,15 +28,15 @@ def result_summary():
             "Docker + Scout OK": 0,
             "WS + Docker + Scout OK": 0,
         }
-        for test_set in ["1st", "2nd", "3rd"]:
+        for test_set in ["1st"]:
             try:
-                with builtins.open(f'./../../../tests/gpt-oss-120b/{test_set}-test-set-results/{cve}/{wsm}/logs/milestones.json', 'r') as f:
+                with builtins.open(f'./../../../tests/{model}/{test_set}-test-set-results/{cve}/{wsm}/logs/milestones.json', 'r') as f:
                     milestones = json.load(f)     
-                with builtins.open(f'./../../../tests/gpt-oss-120b/{test_set}-test-set-results/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:
+                with builtins.open(f'./../../../tests/{model}/{test_set}-test-set-results/{cve}/{wsm}/logs/web_search_results.json', 'r') as f:
                     web_search_data = json.load(f)
-                with builtins.open(f'./../../../tests/gpt-oss-120b/{test_set}-test-set-results/{cve}/{wsm}/logs/code.json', 'r') as f:
+                with builtins.open(f'./../../../tests/{model}/{test_set}-test-set-results/{cve}/{wsm}/logs/code.json', 'r') as f:
                     code_data = json.load(f)
-                with builtins.open(f'./../../../tests/gpt-oss-120b/{test_set}-test-set-results/{cve}/{wsm}/logs/stats.json', 'r') as f:
+                with builtins.open(f'./../../../tests/{model}/{test_set}-test-set-results/{cve}/{wsm}/logs/stats.json', 'r') as f:
                     stats = json.load(f)
 
                 if milestones["hard_service"] and milestones["hard_version"] and milestones["soft_services"]: 
@@ -289,7 +289,7 @@ def result_summary():
     plt.show()
             
     return cve_data
-result_summary()
+result_summary(model="GPT-4o")
 
 
 #* Chose one model and various benchmark logs set of that model, the output will show a stacked bar plot considering all WSMs

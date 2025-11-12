@@ -155,7 +155,7 @@ class ContextGenerator:
             ]
             
             if self.model == "gpt-4o":
-                llm_model = ChatOpenAI(model=self.model, temperature=0.5, max_retries=2)
+                llm_model = ChatOpenAI(model=self.model, temperature=0.5, max_retries=2, max_completion_tokens=10000)
             elif self.model == "gpt-5":
                 llm_model = ChatOpenAI(model=self.model,
                     max_retries=2, 
@@ -221,7 +221,7 @@ class ContextGenerator:
             ]
             
             if self.model == "gpt-4o":
-                llm_model = ChatOpenAI(model=self.model, temperature=0.5, max_retries=2)
+                llm_model = ChatOpenAI(model=self.model, temperature=0.5, max_retries=2, max_completion_tokens=10000)
             elif self.model == "gpt-5":
                 llm_model = ChatOpenAI(model=self.model,
                     max_retries=2, 

@@ -72,7 +72,7 @@ def get_cve_id(state: OverallState):
         
     # Initialize the LLM
     if state.model_name == "gpt-4o":
-        state.llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2)
+        state.llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_retries=2, max_completion_tokens=10000)
     elif state.model_name == "gpt-5":
         state.llm = ChatOpenAI(
             model="gpt-5", 

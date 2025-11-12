@@ -185,21 +185,21 @@ def run_agent(cve_list: list[str], web_search_mode: str, model_name: str, verbos
                 down_docker(code_dir_path=code_dir_path)
                 remove_all_images()                
                 continue      
-# with builtins.open('services.json', "r") as f:
-#     jsonServices = json.load(f)
-# # cve_list = list(jsonServices.keys())[:20] # The first 20 are the validation set
-# # cve_list = list(jsonServices.keys())[20:] # From the 20th onward is the test set
-# cve_list = ["CVE-2021-43008"]
-# print(len(cve_list), cve_list)
-# result = run_agent(
-#     cve_list=cve_list,
-#     web_search_mode="custom_no_tool",
-#     model_name="gpt-4o",                #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss-20b', 'gpt-oss-120b' *#
-#     verbose_web_search=False,
-#     reuse_web_search=False,
-#     reuse_web_search_and_code=False,
-#     relax_web_search_constraints=True,
-# )
+with builtins.open('services.json', "r") as f:
+    jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[:20] # The first 20 are the validation set
+# cve_list = list(jsonServices.keys())[20:] # From the 20th onward is the test set
+cve_list = ["CVE-2015-5531"]
+print(len(cve_list), cve_list)
+result = run_agent(
+    cve_list=cve_list,
+    web_search_mode="custom_no_tool",
+    model_name="gpt-4o",                #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss-20b', 'gpt-oss-120b' *#
+    verbose_web_search=False,
+    reuse_web_search=False,
+    reuse_web_search_and_code=False,
+    relax_web_search_constraints=True,
+)
 
 
 #* TRY TO CREATE DOCKERS WITH A WRONG WEB SEARCH *#
