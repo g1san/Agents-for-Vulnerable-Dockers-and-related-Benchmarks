@@ -28,7 +28,7 @@ def result_summary(model: str):
             "Docker + Scout OK": 0,
             "WS + Docker + Scout OK": 0,
         }
-        for test_set in ["1st"]:
+        for test_set in ["1st", "2nd", "3rd"]:
             try:
                 with builtins.open(f'./../../../tests/{model}/{test_set}-test-set-results/{cve}/{wsm}/logs/milestones.json', 'r') as f:
                     milestones = json.load(f)     

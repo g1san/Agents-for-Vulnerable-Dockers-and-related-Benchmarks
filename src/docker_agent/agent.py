@@ -189,7 +189,7 @@ with builtins.open('services.json', "r") as f:
     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20] # The first 20 are the validation set
 # cve_list = list(jsonServices.keys())[20:] # From the 20th onward is the test set
-cve_list = ["CVE-2015-5531"]
+cve_list = ['CVE-2020-14144', 'CVE-2021-22205']
 print(len(cve_list), cve_list)
 result = run_agent(
     cve_list=cve_list,
@@ -260,20 +260,24 @@ def test_wrong_web_search(cve_list: list[str], model_name: str, model_docker_nam
 
 #* GENERATE THE '{wsm}-milestones.json' FILE OUT OF ALL DOCKERS IN THE 'docker' FOLDER *#
 def milestone_file(cve_list: list, web_search_mode: str):
-    try:            
-        milestones = {}
-        for cve in cve_list:
+    missing_cves = []
+    milestones = {}
+    for cve in cve_list:
+        try:            
             with builtins.open(f'./../../dockers/{cve}/{web_search_mode}/logs/milestones.json', 'r') as f:
                 milestone_data = json.load(f)
-                
             milestones[cve] = milestone_data
-        
+
+        except:
+            print(f"Missing {cve} milestone file")
+            missing_cves.append(cve)
+            continue
+    
+    if len(missing_cves) == 0:
         with builtins.open(f'./../../dockers/{web_search_mode}-milestones.json', 'w') as f:
             json.dump(milestones, f, indent=4)
-        return milestones
-
-    except Exception as e:
-        print(f"Workflow invocation failed: {e}.")
+        return milestones   
+    else: print(len(missing_cves), missing_cves)
      
 with builtins.open('services.json', "r") as f:
     jsonServices = json.load(f)
