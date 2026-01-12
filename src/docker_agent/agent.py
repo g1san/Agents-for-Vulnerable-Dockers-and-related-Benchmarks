@@ -189,14 +189,14 @@ with builtins.open('services.json', "r") as f:
     jsonServices = json.load(f)
 # cve_list = list(jsonServices.keys())[:20] # The first 20 are the validation set
 # cve_list = list(jsonServices.keys())[20:] # From the 20th onward is the test set
-cve_list = ['CVE-2020-14144', 'CVE-2021-22205']
+cve_list = ['CVE-2021-44228']
 print(len(cve_list), cve_list)
 result = run_agent(
     cve_list=cve_list,
-    web_search_mode="custom_no_tool",
+    web_search_mode="openai",
     model_name="gpt-4o",                #* Models supported: 'gpt-4o','gpt-5','mistralai/Mistral-7B-Instruct-v0.1', 'gpt-oss-20b', 'gpt-oss-120b' *#
     verbose_web_search=False,
-    reuse_web_search=False,
+    reuse_web_search=True,
     reuse_web_search_and_code=False,
     relax_web_search_constraints=True,
 )
@@ -278,11 +278,10 @@ def milestone_file(cve_list: list, web_search_mode: str):
             json.dump(milestones, f, indent=4)
         return milestones   
     else: print(len(missing_cves), missing_cves)
-     
-with builtins.open('services.json', "r") as f:
-    jsonServices = json.load(f)
-cve_list = list(jsonServices.keys())[20:]
-milestones = milestone_file(cve_list=cve_list, web_search_mode="custom_no_tool")
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[20:]
+# milestones = milestone_file(cve_list=cve_list, web_search_mode="custom_no_tool")
 
 
 #! US THIS CODE TO REWRITE SOME DATA !#

@@ -701,7 +701,7 @@ def test_code(state: OverallState):
     print("\tContainers are running! Checking services and versions...")
     
     
-    #* SERVICE(s) and VERSION ASSESSMENT *#
+    #* LLM-as-a-Judge: SERVICE(s) and VERSION ASSESSMENT *#
     service_list = []
     hard_service_versions = ""
     for service in state.web_search_result.services:

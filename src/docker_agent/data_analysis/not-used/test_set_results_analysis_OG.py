@@ -433,11 +433,11 @@ def cve_consistency_graph(cve_list: list, model: str, logs_sets: list, horizonta
         plt.show()
     
     return df
-# with builtins.open('./../services.json', "r") as f:
-#     jsonServices = json.load(f)
-# cve_list = list(jsonServices.keys())[20:]
-# logs_sets = ["1st", "2nd", "3rd"]
-# cve_consistency_graph(cve_list=cve_list, model="gpt-oss-120b", logs_sets=logs_sets, horizontal=False)
+with builtins.open('./../services.json', "r") as f:
+    jsonServices = json.load(f)
+cve_list = list(jsonServices.keys())[20:]
+logs_sets = ["1st", "2nd", "3rd"]
+cve_consistency_graph(cve_list=cve_list, model="gpt-oss-120b", logs_sets=logs_sets, horizontal=False)
 
 
 

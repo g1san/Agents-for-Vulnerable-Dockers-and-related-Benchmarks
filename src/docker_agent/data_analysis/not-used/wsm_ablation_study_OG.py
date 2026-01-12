@@ -1,13 +1,15 @@
-"""Run the agent by providing it with a CVE ID."""
 import math
 import json
 import builtins
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from pathlib import Path
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
+from matplotlib.patches import Patch
+from matplotlib.ticker import FuncFormatter
 from IPython.display import display
+from data_processing import get_val_set_data
 
 
 
@@ -93,11 +95,11 @@ def wsm_performance_graph(cve_list: list, model: str, logs_sets: list):
     plt.show()
     
     return df
-with builtins.open('services.json', "r") as f:
-    jsonServices = json.load(f)
-cve_list = list(jsonServices.keys())[:20]
-logs_sets = ["5th", "6th", "7th"]
-wsm_performance_graph(cve_list=cve_list, model="GPT-4o", logs_sets=logs_sets)
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[:20]
+# logs_sets = ["5th", "6th", "7th"]
+# wsm_performance_graph(cve_list=cve_list, model="GPT-4o", logs_sets=logs_sets)
 
 
 #* Chose one model and various benchmark logs set of that model, the output will show a three bar plots, one for each WSM 
@@ -189,11 +191,11 @@ def wsm_consistency_graph(cve_list: list, model: str, logs_sets: list):
         plt.show()
     
     return df
-with builtins.open('services.json', "r") as f:
-    jsonServices = json.load(f)
-cve_list = list(jsonServices.keys())[:20]
-logs_sets = ["5th", "6th", "7th"]
-wsm_consistency_graph(cve_list=cve_list, model="GPT-4o", logs_sets=logs_sets)
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[:20]
+# logs_sets = ["5th", "6th", "7th"]
+# wsm_consistency_graph(cve_list=cve_list, model="GPT-4o", logs_sets=logs_sets)
 
 
 #* Chose one model and various benchmark logs set of that model, the output will show a one bar plot (ALL RUNS ARE CONSIDERED)
@@ -283,11 +285,11 @@ def cve_consistency_graph(cve_list: list, model: str, logs_sets: list):
     plt.show()
     
     return df
-with builtins.open('services.json', "r") as f:
-    jsonServices = json.load(f)
-cve_list = list(jsonServices.keys())[:20]
-logs_sets = ["5th", "6th", "7th"]
-cve_consistency_graph(cve_list=cve_list, model="GPT-4o", logs_sets=logs_sets)
+# with builtins.open('services.json', "r") as f:
+#     jsonServices = json.load(f)
+# cve_list = list(jsonServices.keys())[:20]
+# logs_sets = ["5th", "6th", "7th"]
+# cve_consistency_graph(cve_list=cve_list, model="GPT-4o", logs_sets=logs_sets)
 
 
 def wsm_ablation_performance_graph(cve_list: list, model: list, logs_set: list, web_search_modes: list):
@@ -387,3 +389,4 @@ def wsm_ablation_performance_graph(cve_list: list, model: list, logs_set: list, 
     print("="*10 + "END ERROR MESSAGES" + "="*10 + "\n"*3)            
     df = pd.DataFrame(df)
     return df
+
